@@ -68,6 +68,15 @@ export default function MarineMap({
   const boatRef = useRef<L.Marker | null>(null);
   const [probe, setProbe] = useState<PositionCheck | null>(null);
   const [dragging, setDragging] = useState(false);
+  const mapHeight = areas.length ? 560 : 430;
+
+  // Leaflet caches the container size, so tell it whenever the height changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const id = window.setTimeout(() => map.invalidateSize(), 60);
+    return () => window.clearTimeout(id);
+  }, [mapHeight]);
 
   // ---- init once -------------------------------------------------------
   useEffect(() => {
@@ -314,7 +323,16 @@ export default function MarineMap({
 
   return (
     <div className="card relative overflow-hidden">
-      <div ref={containerRef} className={areas.length ? "h-[560px] w-full" : "h-[430px] w-full"} />
+      {/*
+        The height is an inline style on purpose. Leaflet adds its own classes
+        (leaflet-container, leaflet-touch, ...) to this element on mount; a
+        conditional `className` makes React rewrite the whole class attribute
+        when it changes, silently removing them. Without leaflet-container the
+        library's CSS stops applying, the tile panes collapse to 0x0 and every
+        tile renders at zero width — tiles download fine, the map just vanishes.
+        React writes style properties individually, so this leaves classes alone.
+      */}
+      <div ref={containerRef} className="w-full" style={{ height: mapHeight }} />
 
       {/* legend */}
       <div className="pointer-events-none absolute bottom-6 left-3 z-[500] space-y-1.5">
