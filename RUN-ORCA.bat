@@ -89,12 +89,14 @@ echo.
 echo     Guided tour   http://127.0.0.1:%PORT%/?tour=1
 echo     API docs      http://127.0.0.1:%PORT%/docs
 echo.
+REM  NOTE: never start an echoed line with "/?" — cmd treats it as a request
+REM  for ECHO's own help text and prints that instead. Full URLs avoid it.
 echo     Demo shortcuts:
-echo       /?demo=safe     Goa      LOW
-echo       /?demo=danger   Mumbai   HIGH     ^(Marathi^)
-echo       /?demo=cyclone  Paradip  EXTREME
-echo       /?demo=pfz      Kochi    fishing zones ^(Hindi^)
-echo       /?demo=route    Mumbai   safest route + geofence
+echo       http://127.0.0.1:%PORT%/?demo=safe     Goa      LOW
+echo       http://127.0.0.1:%PORT%/?demo=danger   Mumbai   HIGH  ^(Marathi^)
+echo       http://127.0.0.1:%PORT%/?demo=cyclone  Paradip  EXTREME
+echo       http://127.0.0.1:%PORT%/?demo=pfz      Kochi    fishing zones ^(Hindi^)
+echo       http://127.0.0.1:%PORT%/?demo=route    Mumbai   safest route + geofence
 echo.
 echo     Close this window to stop ORCA.
 echo   ---------------------------------------------------------------

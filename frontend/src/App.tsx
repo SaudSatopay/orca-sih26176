@@ -1,19 +1,31 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as api from "./api";
 import AgentTracePanel from "./components/AgentTrace";
 import AuthorityPanel from "./components/AuthorityPanel";
 import ChatPanel from "./components/ChatPanel";
 import ConditionsStrip from "./components/ConditionsStrip";
+import FishingPanel from "./components/FishingPanel";
 import GuidedTour, { TOUR } from "./components/GuidedTour";
+import LocationPicker, { PORTS, type PickedLocation } from "./components/LocationPicker";
 import MarineMap from "./components/MarineMap";
 import PFZList from "./components/PFZList";
 import RiskCard from "./components/RiskCard";
 import RiskTimeline from "./components/RiskTimeline";
-import type { ChatMessage, ChatResponse, Language, ZoneFeature } from "./types";
+import type {
+  ChatMessage,
+  ChatResponse,
+  FishingOutlook,
+  Language,
+  Location,
+  ZoneFeature,
+} from "./types";
 
 const SESSION = "demo";
+const RADIUS_KM = 100;
+const DEFAULT_PORT = PORTS[0]; // Mumbai — used only if location is unavailable
 
-/** One-click demo scenarios — the Round-2 safety net. */
+type Tab = "home" | "ask" | "authority";
+
 const SCENARIOS: { id: string; n: string; label: string; ask: string; hint: string }[] = [
   { id: "safe", n: "1", label: "Safe", ask: "Is it safe to go fishing tomorrow morning near Goa?", hint: "Goa · LOW" },
   { id: "danger", n: "2", label: "Rough", ask: "मी उद्या सकाळी ६ वाजता मुंबईजवळ मासेमारीला जाऊ शकतो का?", hint: "Mumbai · मराठी" },
@@ -22,13 +34,17 @@ const SCENARIOS: { id: string; n: string; label: string; ask: string; hint: stri
   { id: "route", n: "5", label: "Safe route", ask: "Give me the safest route to the nearest fishing zone near Mumbai", hint: "Mumbai · geofence" },
 ];
 
+const TAB_LABEL: Record<Language, Record<Tab, string>> = {
+  en: { home: "Today", ask: "Ask ORCA", authority: "Authority" },
+  hi: { home: "आज", ask: "ORCA से पूछें", authority: "प्रशासन" },
+  mr: { home: "आज", ask: "ORCA ला विचारा", authority: "प्रशासन" },
+};
+
 export default function App() {
-  const [tab, setTab] = useState<"fisher" | "authority">("fisher");
+  const [tab, setTab] = useState<Tab>("home");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [latest, setLatest] = useState<ChatResponse | null>(null);
   const [busy, setBusy] = useState(false);
-  // null = auto-detect from the message. Only a deliberate click on EN/हिं/मरा
-  // pins the language — otherwise asking in Marathi must answer in Marathi.
   const [langChoice, setLangChoice] = useState<Language | null>(null);
   const [detected, setDetected] = useState<Language>("en");
   const language = langChoice ?? detected;
@@ -38,78 +54,80 @@ export default function App() {
   const [speak, setSpeak] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ---- fisher's own position + outlook ----
+  const [place, setPlace] = useState<PickedLocation | null>(null);
+  const [outlook, setOutlook] = useState<FishingOutlook | null>(null);
+  const [loadingOutlook, setLoadingOutlook] = useState(false);
+  const [focusRank, setFocusRank] = useState<number | null>(null);
+
   // ---- guided tour ----
   const [tourOn, setTourOn] = useState(false);
   const [tourStep, setTourStep] = useState(0);
   const [tourPaused, setTourPaused] = useState(false);
   const tourActionDone = useRef(-1);
 
+  // ---------------------------------------------------------------- boot
   useEffect(() => {
     api.zones().then((z) => setZones(z.features)).catch(() => setZones([]));
     api.health().then((h) => setMode(h.data_mode)).catch(() => setMode("DEMO"));
+
+    // The app must be useful the moment it opens: find the fisher, then load
+    // safety, grounds and warnings without them touching anything.
+    const fallback = () =>
+      setPlace({
+        latitude: DEFAULT_PORT.lat,
+        longitude: DEFAULT_PORT.lon,
+        label: DEFAULT_PORT.name,
+        source: "default",
+      });
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) =>
+          setPlace({
+            latitude: +pos.coords.latitude.toFixed(4),
+            longitude: +pos.coords.longitude.toFixed(4),
+            label: "Your location",
+            source: "gps",
+          }),
+        fallback,
+        { enableHighAccuracy: true, timeout: 7000, maximumAge: 300_000 },
+      );
+    } else {
+      fallback();
+    }
 
     const params = new URLSearchParams(window.location.search);
     const wanted = params.get("demo");
     if (wanted) {
       const s = SCENARIOS.find((x) => x.id === wanted || x.n === wanted);
-      // Go through runScenario so the server-side conversation is cleared first.
       if (s) setTimeout(() => runScenario(s.ask), 250);
     }
-    if (params.get("tour") === "1") setTimeout(() => startTour(), 400);
+    if (params.get("tour") === "1") setTimeout(() => startTour(), 500);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Drives the walkthrough. The action for a step fires exactly once, so
-  // pausing and resuming never re-runs a query.
+  // ---------------------------------------------------- outlook on position
   useEffect(() => {
-    if (!tourOn || tourPaused) return;
-    const s = TOUR[tourStep];
-    if (!s) return;
-
-    let cancelled = false;
-    let timer = 0;
-
-    (async () => {
-      if (tourActionDone.current !== tourStep) {
-        tourActionDone.current = tourStep;
-        if (s.tab) setTab(s.tab);
-        if (s.ask) {
-          if (s.followUp) await send(s.ask);
-          else await runScenario(s.ask);
-        }
-      }
-      if (cancelled) return;
-      timer = window.setTimeout(() => {
-        if (cancelled) return;
-        if (tourStep + 1 < TOUR.length) setTourStep(tourStep + 1);
-        else setTourOn(false);
-      }, s.dwell);
-    })();
-
+    if (!place) return;
+    let alive = true;
+    setLoadingOutlook(true);
+    setFocusRank(null);
+    api
+      .fishingOutlook(place.latitude, place.longitude, {
+        radiusKm: RADIUS_KM,
+        days: 3,
+        lang: language,
+      })
+      .then((d) => alive && setOutlook(d))
+      .catch(() => alive && setOutlook(null))
+      .finally(() => alive && setLoadingOutlook(false));
     return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
+      alive = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tourOn, tourStep, tourPaused]);
+  }, [place?.latitude, place?.longitude, language]);
 
-  const startTour = async () => {
-    await api.resetSession(SESSION).catch(() => {});
-    setMessages([]);
-    setLatest(null);
-    setLangChoice(null);
-    setTab("fisher");
-    tourActionDone.current = -1;
-    setTourStep(0);
-    setTourPaused(false);
-    setTourOn(true);
-  };
-
-  const gotoStep = (n: number) => {
-    tourActionDone.current = -1; // let the new step run its action
-    setTourStep(Math.max(0, Math.min(TOUR.length - 1, n)));
-  };
-
+  // ------------------------------------------------------------- chat
   const send = async (text: string) => {
     setError(null);
     setBusy(true);
@@ -135,7 +153,7 @@ export default function App() {
           window.speechSynthesis.cancel();
           window.speechSynthesis.speak(u);
         } catch {
-          /* TTS unavailable — silent, non-fatal */
+          /* TTS unavailable — non-fatal */
         }
       }
     } catch (e) {
@@ -154,11 +172,61 @@ export default function App() {
   };
 
   const runScenario = async (ask: string) => {
+    setTab("ask");
     await api.resetSession(SESSION).catch(() => {});
     setMessages([]);
     setLatest(null);
     setLangChoice(null);
     await send(ask);
+  };
+
+  // ------------------------------------------------------------- tour
+  useEffect(() => {
+    if (!tourOn || tourPaused) return;
+    const s = TOUR[tourStep];
+    if (!s) return;
+    let cancelled = false;
+    let timer = 0;
+
+    (async () => {
+      if (tourActionDone.current !== tourStep) {
+        tourActionDone.current = tourStep;
+        if (s.tab) setTab(s.tab as Tab);
+        if (s.ask) {
+          if (s.followUp) await send(s.ask);
+          else await runScenario(s.ask);
+        }
+      }
+      if (cancelled) return;
+      timer = window.setTimeout(() => {
+        if (cancelled) return;
+        if (tourStep + 1 < TOUR.length) setTourStep(tourStep + 1);
+        else setTourOn(false);
+      }, s.dwell);
+    })();
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tourOn, tourStep, tourPaused]);
+
+  const startTour = async () => {
+    await api.resetSession(SESSION).catch(() => {});
+    setMessages([]);
+    setLatest(null);
+    setLangChoice(null);
+    setTab("home");
+    tourActionDone.current = -1;
+    setTourStep(0);
+    setTourPaused(false);
+    setTourOn(true);
+  };
+
+  const gotoStep = (n: number) => {
+    tourActionDone.current = -1;
+    setTourStep(Math.max(0, Math.min(TOUR.length - 1, n)));
   };
 
   const toggleMode = async () => {
@@ -167,6 +235,7 @@ export default function App() {
     try {
       const r = await api.setMode(next);
       setMode(r.data_mode);
+      if (place) setPlace({ ...place }); // re-fetch the outlook under the new mode
     } catch {
       /* keep current mode */
     } finally {
@@ -174,7 +243,21 @@ export default function App() {
     }
   };
 
+  const pickLocation = useCallback((lat: number, lon: number) => {
+    setPlace({ latitude: lat, longitude: lon, label: "Selected point", source: "map" });
+  }, []);
+
   const suggestions = useMemo(() => latest?.suggestions ?? [], [latest]);
+  const tabLabels = TAB_LABEL[language] ?? TAB_LABEL.en;
+
+  const homeOrigin: Location | null = place
+    ? {
+        name: outlook?.location.name ?? place.label,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        state: outlook?.location.state ?? null,
+      }
+    : null;
 
   return (
     <div className="mx-auto flex min-h-full max-w-[1580px] flex-col gap-4 p-4 lg:p-6">
@@ -210,8 +293,7 @@ export default function App() {
                 : "bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
             }`}
           >
-            {switching ? "…" : `${mode} DATA`}
-            <span className="ml-1.5 opacity-55">⇄</span>
+            {switching ? "…" : `${mode} DATA`} <span className="opacity-55">⇄</span>
           </button>
 
           <button
@@ -220,7 +302,7 @@ export default function App() {
             className={`rounded-full px-3.5 py-1.5 text-[11px] font-bold transition ${
               tourOn
                 ? "bg-teal-500/25 text-teal-100 hover:bg-teal-500/35"
-                : "bg-gradient-to-r from-ocean-700 to-teal-700 text-white hover:brightness-115"
+                : "bg-gradient-to-r from-ocean-700 to-teal-700 text-white hover:brightness-110"
             }`}
           >
             {tourOn ? "■ Stop tour" : "▶ Tour"}
@@ -237,13 +319,13 @@ export default function App() {
           </button>
 
           <div className="seg">
-            {(["fisher", "authority"] as const).map((t) => (
+            {(["home", "ask", "authority"] as Tab[]).map((x) => (
               <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`seg-btn ${tab === t ? "seg-btn-on" : "seg-btn-off"}`}
+                key={x}
+                onClick={() => setTab(x)}
+                className={`seg-btn ${tab === x ? "seg-btn-on" : "seg-btn-off"}`}
               >
-                {t === "fisher" ? "Fisher app" : "Authority"}
+                {tabLabels[x]}
               </button>
             ))}
           </div>
@@ -261,26 +343,6 @@ export default function App() {
         />
       )}
 
-      {/* ---------------- scenario launcher ---------------- */}
-      {tab === "fisher" && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="label mr-1">Demo</span>
-          {SCENARIOS.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => runScenario(s.ask)}
-              disabled={busy}
-              title={s.ask}
-              className="chip disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              <span className="mr-1.5 font-mono text-[10px] text-ocean-300">{s.n}</span>
-              <span className="font-semibold">{s.label}</span>
-              <span className="ml-1.5 text-[10px] opacity-55">{s.hint}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
       {error && (
         <div className="card border-red-400/30 bg-red-500/10 px-4 py-2.5 text-[12px] text-red-100">
           {error} — start the backend with{" "}
@@ -288,114 +350,206 @@ export default function App() {
         </div>
       )}
 
-      {/* ---------------- body ---------------- */}
-      {tab === "authority" ? (
-        <AuthorityPanel />
-      ) : (
-        <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(350px,1fr)_1.6fr]">
-          <div className="min-h-[540px] lg:h-[calc(100vh-215px)]">
-            <ChatPanel
-              messages={messages}
-              busy={busy}
-              language={language}
-              suggestions={suggestions}
-              onSend={send}
-              onLanguage={setLangChoice}
-            />
-          </div>
-
-          <div className="space-y-4 lg:h-[calc(100vh-215px)] lg:overflow-y-auto lg:pr-1">
-            {latest && <ConditionsStrip res={latest} language={latest.language} />}
+      {/* ================= HOME : location + today's plan ================= */}
+      {tab === "home" && (
+        <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1.35fr_minmax(370px,1fr)]">
+          <div className="space-y-4">
+            <LocationPicker current={place} language={language} onPick={setPlace} />
 
             <MarineMap
-              origin={latest?.intent.location ?? null}
+              origin={homeOrigin}
               zones={zones}
-              pfz={latest?.pfz ?? []}
-              routes={latest?.routes ?? []}
-              geofence={latest?.geofence ?? []}
+              pfz={[]}
+              areas={outlook?.areas ?? []}
+              radiusKm={outlook?.radius_km ?? RADIUS_KM}
+              routes={outlook?.routes ?? []}
+              geofence={[]}
               language={language}
+              onPickLocation={pickLocation}
+              focusRank={focusRank}
             />
 
-            {latest?.risk && (
-              <RiskCard
-                risk={latest.risk}
-                evidence={latest.evidence}
-                language={latest.language}
-              />
-            )}
-
-            {latest && (
-              <RiskTimeline
-                location={latest.intent.location}
-                language={latest.language}
-              />
-            )}
-
-            {latest && latest.alerts.length > 0 && (
-              <div className="card border-risk-extreme/40 bg-risk-extreme/10 p-4">
-                <div className="label mb-2 text-red-200/80">Official marine warnings</div>
-                {latest.alerts.map((a, i) => (
-                  <div key={i} className="mb-2.5 last:mb-0">
-                    <div className="text-[13px] font-bold text-red-100">{a.headline}</div>
-                    <div className="mt-0.5 text-[11px] leading-relaxed text-red-200/80">
-                      {a.detail}
-                    </div>
-                    <div className="mt-1 font-mono text-[10px] text-red-200/60">
-                      {a.source} · {a.severity}
-                      {a.valid_till ? ` · valid till ${a.valid_till}` : ""}
+            {outlook && (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {[
+                  {
+                    k: language === "mr" ? "सुरक्षा" : language === "hi" ? "सुरक्षा" : "Safety",
+                    v: `${outlook.safety.score}`,
+                    s: outlook.safety.category,
+                  },
+                  {
+                    k: language === "mr" ? "लाटा" : language === "hi" ? "लहरें" : "Waves",
+                    v: `${outlook.safety.wave_height_m ?? "—"}`,
+                    s: "m",
+                  },
+                  {
+                    k: language === "mr" ? "वारा" : language === "hi" ? "हवा" : "Wind",
+                    v: `${Math.round(outlook.safety.wind_speed_kmh ?? 0)}`,
+                    s: "km/h",
+                  },
+                  {
+                    k: language === "mr" ? "जागा" : language === "hi" ? "जगहें" : "Areas",
+                    v: `${outlook.areas.length}`,
+                    s: `in ${outlook.radius_km} km`,
+                  },
+                ].map((x) => (
+                  <div key={x.k} className="card-flat px-3 py-2.5">
+                    <div className="label truncate">{x.k}</div>
+                    <div className="mt-0.5 font-mono text-[19px] font-extrabold tabular-nums text-ocean-100">
+                      {x.v}
+                      <span className="ml-1 text-[10px] font-semibold opacity-65">{x.s}</span>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+          </div>
 
-            {latest && <PFZList zones={latest.pfz} language={latest.language} />}
-
-            {latest && latest.routes.length > 0 && (
-              <div className="card p-4">
-                <div className="label mb-2.5">Route options</div>
-                <div className="space-y-2">
-                  {latest.routes.map((r) => (
-                    <div
-                      key={r.name}
-                      className={`rounded-xl border px-3 py-2.5 ${
-                        r.recommended
-                          ? "border-emerald-400/40 bg-emerald-400/10"
-                          : "border-white/10 bg-white/[0.03]"
-                      }`}
-                    >
-                      <div className="flex items-baseline justify-between gap-3">
-                        <span className="text-[13px] font-bold text-ocean-100">
-                          {r.name}
-                          {r.recommended && (
-                            <span className="ml-2 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
-                              RECOMMENDED
-                            </span>
-                          )}
-                        </span>
-                        <span className="shrink-0 font-mono text-[11px] tabular-nums text-ocean-300">
-                          {r.distance_km} km · {Math.round(r.eta_minutes)} min
-                        </span>
-                      </div>
-                      <div className="mt-1 text-[11px] leading-relaxed text-ocean-300/85">
-                        {r.notes}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          <div className="space-y-4 lg:h-[calc(100vh-215px)] lg:overflow-y-auto lg:pr-1">
+            {loadingOutlook && !outlook && (
+              <div className="card p-6 text-center text-sm text-ocean-300">
+                {language === "mr"
+                  ? "तुमच्या ठिकाणाची माहिती घेत आहे…"
+                  : language === "hi"
+                    ? "आपके स्थान की जानकारी ले रहे हैं…"
+                    : "Reading the sea at your location…"}
               </div>
             )}
-
-            {latest && <AgentTracePanel trace={latest.trace} elapsed={latest.elapsed_ms} />}
-
-            {latest && (
-              <p className="px-1 pb-2 text-[11px] leading-relaxed text-ocean-300/60">
-                {latest.disclaimer}
-              </p>
+            {outlook && (
+              <FishingPanel
+                data={outlook}
+                language={language}
+                onSelectArea={(rank) => setFocusRank(rank)}
+              />
             )}
           </div>
         </div>
       )}
+
+      {/* ================= ASK : the conversational view ================= */}
+      {tab === "ask" && (
+        <>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="label mr-1">Demo</span>
+            {SCENARIOS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => runScenario(s.ask)}
+                disabled={busy}
+                title={s.ask}
+                className="chip disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <span className="mr-1.5 font-mono text-[10px] text-ocean-300">{s.n}</span>
+                <span className="font-semibold">{s.label}</span>
+                <span className="ml-1.5 text-[10px] opacity-55">{s.hint}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(350px,1fr)_1.6fr]">
+            <div className="min-h-[540px] lg:h-[calc(100vh-260px)]">
+              <ChatPanel
+                messages={messages}
+                busy={busy}
+                language={language}
+                suggestions={suggestions}
+                onSend={send}
+                onLanguage={setLangChoice}
+              />
+            </div>
+
+            <div className="space-y-4 lg:h-[calc(100vh-260px)] lg:overflow-y-auto lg:pr-1">
+              {latest && <ConditionsStrip res={latest} language={latest.language} />}
+
+              <MarineMap
+                origin={latest?.intent.location ?? null}
+                zones={zones}
+                pfz={latest?.pfz ?? []}
+                routes={latest?.routes ?? []}
+                geofence={latest?.geofence ?? []}
+                language={language}
+              />
+
+              {latest?.risk && (
+                <RiskCard
+                  risk={latest.risk}
+                  evidence={latest.evidence}
+                  language={latest.language}
+                />
+              )}
+
+              {latest && (
+                <RiskTimeline location={latest.intent.location} language={latest.language} />
+              )}
+
+              {latest && latest.alerts.length > 0 && (
+                <div className="card border-risk-extreme/40 bg-risk-extreme/10 p-4">
+                  <div className="label mb-2 text-red-200/80">Official marine warnings</div>
+                  {latest.alerts.map((a, i) => (
+                    <div key={i} className="mb-2.5 last:mb-0">
+                      <div className="text-[13px] font-bold text-red-100">{a.headline}</div>
+                      <div className="mt-0.5 text-[11px] leading-relaxed text-red-200/80">
+                        {a.detail}
+                      </div>
+                      <div className="mt-1 font-mono text-[10px] text-red-200/60">
+                        {a.source} · {a.severity}
+                        {a.valid_till ? ` · valid till ${a.valid_till}` : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {latest && <PFZList zones={latest.pfz} language={latest.language} />}
+
+              {latest && latest.routes.length > 0 && (
+                <div className="card p-4">
+                  <div className="label mb-2.5">Route options</div>
+                  <div className="space-y-2">
+                    {latest.routes.map((r) => (
+                      <div
+                        key={r.name}
+                        className={`rounded-xl border px-3 py-2.5 ${
+                          r.recommended
+                            ? "border-emerald-400/40 bg-emerald-400/10"
+                            : "border-white/10 bg-white/[0.03]"
+                        }`}
+                      >
+                        <div className="flex items-baseline justify-between gap-3">
+                          <span className="text-[13px] font-bold text-ocean-100">
+                            {r.name}
+                            {r.recommended && (
+                              <span className="ml-2 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
+                                RECOMMENDED
+                              </span>
+                            )}
+                          </span>
+                          <span className="shrink-0 font-mono text-[11px] tabular-nums text-ocean-300">
+                            {r.distance_km} km · {Math.round(r.eta_minutes)} min
+                          </span>
+                        </div>
+                        <div className="mt-1 text-[11px] leading-relaxed text-ocean-300/85">
+                          {r.notes}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {latest && <AgentTracePanel trace={latest.trace} elapsed={latest.elapsed_ms} />}
+
+              {latest && (
+                <p className="px-1 pb-2 text-[11px] leading-relaxed text-ocean-300/60">
+                  {latest.disclaimer}
+                </p>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {tab === "authority" && <AuthorityPanel />}
     </div>
   );
 }

@@ -202,6 +202,23 @@ def sea_state(wave_m: float) -> str:
 # --------------------------------------------------------------------------
 # Interpolation
 # --------------------------------------------------------------------------
+# Day-to-day drift so a 2-day forecast is a genuine forecast rather than the
+# same day repeated. Day 1 settles, day 2 builds again — the pattern a fisher
+# actually plans around.
+DAY_MODIFIERS: Dict[int, Dict[str, float]] = {
+    0: {"wave": 1.00, "wind": 1.00, "chl": 1.00, "rain": 1.00},
+    1: {"wave": 0.78, "wind": 0.84, "chl": 1.10, "rain": 0.72},
+    2: {"wave": 1.14, "wind": 1.10, "chl": 0.90, "rain": 1.18},
+}
+
+
+def day_offset(when: Optional[datetime]) -> int:
+    """Whole days between `when` and today (IST), clamped to the forecast range."""
+    if when is None:
+        return 0
+    return max(0, min(2, (when.date() - now_ist().date()).days))
+
+
 def _interpolate(keyframes: Keyframes, hour: float) -> Dict[str, float]:
     hours = sorted(keyframes)
     lo = max([h for h in hours if h <= hour], default=hours[-1])
@@ -232,10 +249,19 @@ def conditions(location_name: str, when: Optional[datetime] = None) -> Dict:
     sc = SCENARIOS[key]
     hour = resolve_hour(when)
     values = _interpolate(sc["keyframes"], hour)
+
+    offset = day_offset(when)
+    mod = DAY_MODIFIERS[offset]
+    values["wave"] = round(values["wave"] * mod["wave"], 2)
+    values["wind"] = round(values["wind"] * mod["wind"], 1)
+    values["chl"] = round(values["chl"] * mod["chl"], 2)
+    values["rain"] = min(100.0, round(values["rain"] * mod["rain"], 1))
+
     values["lightning"] = key in LIGHTNING_SCENARIOS and values["rain"] > 70
     values["sea_state"] = sea_state(values["wave"])
     values["scenario"] = key
     values["scenario_label"] = sc["label"]
+    values["day_offset"] = offset
     values["disclaimer"] = DEMO_DISCLAIMER
     return values
 
@@ -276,9 +302,35 @@ def next_improvement_hour(location_name: str, from_hour: float) -> Optional[int]
     return None
 
 
+# Candidate grounds around the offshore arc. Deterministic (no RNG) so the same
+# place always returns the same grounds — a fisher must be able to come back to
+# "zone 2" tomorrow and find the same patch of sea.
+#
+# NOTE on sst_delta: it is the ground's temperature difference from the
+# surrounding water, i.e. the strength of the thermal front. A delta of 0.0
+# means flat, featureless water and scores BADLY however rich it is — an
+# earlier version gave the nearest ground the best chlorophyll but no front,
+# so the model ranked the richest patch of sea last.
+#
+# The shelf here is modelled with the productive water closer in and thinning
+# offshore, which is the usual picture along this coast.
+_CANDIDATE_LAYOUT = [
+    {"d_bearing": -20, "distance": 31.0, "sst_delta": 0.90, "chl_mult": 1.00},
+    {"d_bearing": 45, "distance": 38.0, "sst_delta": 0.70, "chl_mult": 0.90},
+    {"d_bearing": 25, "distance": 46.5, "sst_delta": -0.60, "chl_mult": 0.84},
+    {"d_bearing": -42, "distance": 54.0, "sst_delta": 0.50, "chl_mult": 0.78},
+    {"d_bearing": 5, "distance": 62.0, "sst_delta": 0.45, "chl_mult": 0.72},
+    {"d_bearing": 62, "distance": 71.0, "sst_delta": -0.35, "chl_mult": 0.68},
+    {"d_bearing": -8, "distance": 78.0, "sst_delta": 0.30, "chl_mult": 0.64},
+    {"d_bearing": -58, "distance": 88.0, "sst_delta": -0.25, "chl_mult": 0.60},
+    {"d_bearing": 33, "distance": 96.0, "sst_delta": 0.20, "chl_mult": 0.56},
+]
+
+
 def pfz_zones(lat: float, lon: float, location_name: str,
-              when: Optional[datetime] = None, count: int = 3) -> List[Dict]:
-    """Synthetic Potential Fishing Zones.
+              when: Optional[datetime] = None, count: int = 3,
+              radius_km: float = 100.0) -> List[Dict]:
+    """Synthetic Potential Fishing Zone candidates within `radius_km`.
 
     Mirrors the INCOIS approach conceptually: zones sit on SST/chlorophyll
     fronts. Values here are SIMULATED — production ORCA parses the INCOIS PFZ
@@ -288,36 +340,28 @@ def pfz_zones(lat: float, lon: float, location_name: str,
     port = nearest_port(lat, lon)
     offshore = float(port.get("shore_bearing", 270))
 
-    # Offsets chosen so zone #1 is the strongest front and closest-but-not-trivial.
-    # More candidates than requested: the PFZ agent drops any that fall inside a
-    # restricted zone, and we still want a full list to show the user.
-    layout = [
-        {"bearing": offshore - 20, "distance": 31.0, "sst_delta": 0.0, "chl_mult": 1.00, "conf": 0.82},
-        {"bearing": offshore + 25, "distance": 46.5, "sst_delta": -0.6, "chl_mult": 0.82, "conf": 0.71},
-        {"bearing": offshore + 5,  "distance": 62.0, "sst_delta": 0.9, "chl_mult": 0.68, "conf": 0.63},
-        {"bearing": offshore - 40, "distance": 54.0, "sst_delta": 0.4, "chl_mult": 0.74, "conf": 0.66},
-        {"bearing": offshore + 45, "distance": 38.0, "sst_delta": -0.3, "chl_mult": 0.79, "conf": 0.69},
-    ][: max(count + 2, count)]
-
     zones: List[Dict] = []
-    for i, spec in enumerate(layout, start=1):
-        plat, plon = destination((lat, lon), spec["bearing"] % 360, spec["distance"])
+    for i, spec in enumerate(_CANDIDATE_LAYOUT, start=1):
+        if spec["distance"] > radius_km:
+            continue
+        plat, plon = destination((lat, lon), (offshore + spec["d_bearing"]) % 360, spec["distance"])
+        actual_km = haversine_km((lat, lon), (plat, plon))
+        if actual_km > radius_km:
+            continue
         chl = round(cond["chl"] * spec["chl_mult"], 2)
         sst = round(cond["sst"] + spec["sst_delta"], 1)
         zones.append({
+            "id": f"z{i}",
             "rank": i,
             "latitude": round(plat, 4),
             "longitude": round(plon, 4),
-            "distance_km": round(haversine_km((lat, lon), (plat, plon)), 1),
+            "distance_km": round(actual_km, 1),
             "bearing": compass(bearing_deg((lat, lon), (plat, plon))),
             "sst_c": sst,
             "chlorophyll_mg_m3": chl,
-            "wave_height_m": round(max(0.4, cond["wave"] - 0.3 - 0.1 * i), 1),
-            "confidence": spec["conf"],
-            "rationale": (
-                f"SST front at {sst} deg C with chlorophyll {chl} mg/m3 — "
-                "thermal boundary typically associated with fish aggregation."
-            ),
+            "wave_height_m": round(max(0.3, cond["wave"] - 0.25 - 0.03 * i), 2),
+            "confidence": 0.0,   # filled in by services/fishing.py
+            "rationale": "",
             "source": "DEMO",
             "disclaimer": DEMO_DISCLAIMER,
         })

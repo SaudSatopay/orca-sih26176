@@ -6,7 +6,7 @@ export interface TourStep {
   /** Question to run through the full agent pipeline for this step. */
   ask?: string;
   /** Switch view before narrating. */
-  tab?: "fisher" | "authority";
+  tab?: "home" | "ask" | "authority";
   /** How long to dwell after the action, in ms. */
   dwell: number;
   /** Highlighted feature name shown as a chip. */
@@ -23,8 +23,37 @@ export const TOUR: TourStep[] = [
   {
     title: "What ORCA is",
     say: "ORCA is not a chatbot. It is a crew of ten AI agents that read India's marine data together and return one safe, explainable decision for a fisher.",
+    tab: "home",
     dwell: 7000,
     feature: "Overview",
+  },
+  {
+    title: "It opens knowing where you are",
+    say: "The moment the app opens it finds the fisher's position and reads the sea around it — no typing, no settings. He sees his answer before he asks a question.",
+    tab: "home",
+    dwell: 9000,
+    feature: "Auto location",
+  },
+  {
+    title: "Plain words, not weather jargon",
+    say: "Everything is written the way a fisherman speaks: do not enter the red area between 2 PM and 6 PM, areas 1, 2 and 3 are your best chances, stay about three hours.",
+    tab: "home",
+    dwell: 10000,
+    feature: "Plain language",
+  },
+  {
+    title: "Where the fish are, within 100 km",
+    say: "ORCA scores every ground within 100 kilometres for the chance of fish, and ranks them by what the trip is actually worth — a slightly better ground twice as far is usually the wrong advice.",
+    tab: "home",
+    dwell: 10000,
+    feature: "Fishing probability",
+  },
+  {
+    title: "How long to stay, and the next two days",
+    say: "It recommends how many hours to work the ground and how long the whole trip takes, then shows whether tomorrow or the day after will be better.",
+    tab: "home",
+    dwell: 9000,
+    feature: "Trip plan · 3-day outlook",
   },
   {
     title: "Ask in your own language",
@@ -89,14 +118,14 @@ export const TOUR: TourStep[] = [
   {
     title: "It scales past one fisherman",
     say: "The authority view scores every landing centre on the coast with the same engine — the district administration sees the same evidence the fisher sees.",
-    tab: "authority",
+    tab: "authority" as const,
     dwell: 10000,
     feature: "Authority dashboard",
   },
   {
     title: "Built to be trusted",
     say: "Every value carries its source, timestamp and confidence. Simulated data is always labelled. ORCA is decision support — it never replaces an official advisory.",
-    tab: "fisher",
+    tab: "home",
     dwell: 8000,
     feature: "Provenance",
   },

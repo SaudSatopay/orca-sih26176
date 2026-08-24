@@ -2,6 +2,7 @@ import L from "leaflet";
 import { useEffect, useRef, useState } from "react";
 import * as api from "../api";
 import type {
+  FishingArea,
   GeofenceAlert,
   Language,
   Location,
@@ -10,6 +11,7 @@ import type {
   RouteOption,
   ZoneFeature,
 } from "../types";
+import { RATING_COLOR } from "./FishingPanel";
 
 const ZONE_COLOR: Record<string, string> = {
   critical: "#E05B4A",
@@ -39,16 +41,26 @@ export default function MarineMap({
   origin,
   zones,
   pfz,
+  areas = [],
+  radiusKm,
   routes,
   geofence,
   language = "en",
+  onPickLocation,
+  focusRank,
 }: {
   origin: Location | null;
   zones: ZoneFeature[];
   pfz: PFZZone[];
+  /** Scored fishing grounds — takes precedence over `pfz` when present. */
+  areas?: FishingArea[];
+  radiusKm?: number;
   routes: RouteOption[];
   geofence: GeofenceAlert[];
   language?: Language;
+  /** Tap anywhere on the water to move the fisher's position. */
+  onPickLocation?: (lat: number, lon: number) => void;
+  focusRank?: number | null;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -98,6 +110,19 @@ export default function MarineMap({
     };
   }, []);
 
+  // Tap-to-choose-position. Registered separately so the handler always closes
+  // over the latest callback rather than the one from first render.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !onPickLocation) return;
+    const handler = (e: L.LeafletMouseEvent) =>
+      onPickLocation(+e.latlng.lat.toFixed(4), +e.latlng.lng.toFixed(4));
+    map.on("click", handler);
+    return () => {
+      map.off("click", handler);
+    };
+  }, [onPickLocation]);
+
   // ---- redraw content --------------------------------------------------
   useEffect(() => {
     const map = mapRef.current;
@@ -108,6 +133,22 @@ export default function MarineMap({
     setProbe(null);
 
     const bounds: L.LatLngExpression[] = [];
+
+    // search radius — shows exactly how far ORCA looked for grounds
+    if (origin && radiusKm) {
+      L.circle([origin.latitude, origin.longitude], {
+        radius: radiusKm * 1000,
+        color: "#9FCBEF",
+        weight: 2,
+        opacity: 0.85,
+        dashArray: "10 9",
+        fillColor: "#7FB2E5",
+        fillOpacity: 0.055,
+        interactive: false,
+      })
+        .bindTooltip(`${radiusKm} km search area`, { permanent: false, direction: "top" })
+        .addTo(group);
+    }
 
     // restricted zones
     zones.forEach((z) => {
@@ -143,31 +184,67 @@ export default function MarineMap({
         .addTo(group);
     });
 
-    // fishing zones
-    pfz.forEach((z) => {
-      const best = z.rank === 1;
-      const size = best ? 36 : 29;
-      const color = best ? "#2FBF71" : "#3FA0E0";
-      L.marker([z.latitude, z.longitude], {
-        icon: L.divIcon({
-          className: "",
-          iconSize: [size, size],
-          iconAnchor: [size / 2, size / 2],
-          html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};
-                   border:3px solid rgba(255,255,255,.92);display:grid;place-items:center;
-                   color:#08131f;font:800 ${best ? 15 : 13}px Inter,sans-serif;
-                   box-shadow:0 4px 14px rgba(0,0,0,.55)">${z.rank}</div>`,
-        }),
-      })
-        .bindPopup(
-          `<b>Fishing zone #${z.rank}</b><br/>${z.distance_km} km ${z.bearing}<br/>
-           SST ${z.sst_c ?? "—"} °C · chlorophyll ${z.chlorophyll_mg_m3 ?? "—"} mg/m³<br/>
-           confidence ${Math.round(z.confidence * 100)}%<br/>
-           <span style="font-size:10px;opacity:.65">Potential zone — not a guarantee of fish.</span>`,
-        )
-        .addTo(group);
-      bounds.push([z.latitude, z.longitude]);
-    });
+    // fishing grounds — scored areas when available, otherwise chat PFZ pins
+    if (areas.length) {
+      areas.forEach((a) => {
+        const best = a.rank === 1;
+        const size = best ? 42 : 34;
+        const color = RATING_COLOR[a.rating];
+        const focused = focusRank === a.rank;
+        L.marker([a.latitude, a.longitude], {
+          zIndexOffset: best ? 500 : 0,
+          icon: L.divIcon({
+            className: "",
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2],
+            html: `<div style="position:relative;width:${size}px;height:${size}px">
+                     ${focused ? `<div style="position:absolute;inset:-8px;border-radius:50%;
+                        border:2px solid ${color};animation:ping2 1.6s cubic-bezier(0,0,.2,1) infinite"></div>` : ""}
+                     <div style="position:absolute;inset:0;border-radius:50%;background:${color};
+                       border:3px solid rgba(255,255,255,.92);display:flex;flex-direction:column;
+                       align-items:center;justify-content:center;line-height:1;
+                       box-shadow:0 4px 16px rgba(0,0,0,.6);color:#08131f">
+                       <span style="font:800 ${best ? 14 : 12}px Inter,sans-serif">${a.rank}</span>
+                       <span style="font:700 ${best ? 9 : 8}px Inter,sans-serif;opacity:.85">${a.probability}%</span>
+                     </div>
+                   </div>`,
+          }),
+        })
+          .bindPopup(
+            `<b>Area ${a.rank}</b> — ${a.probability}% chance of fish<br/>
+             ${Math.round(a.distance_km)} km ${a.bearing}<br/>
+             SST ${a.sst_c ?? "—"} °C · chlorophyll ${a.chlorophyll_mg_m3 ?? "—"} mg/m³<br/>
+             <span style="font-size:10px;opacity:.65">A likelihood from the data — never a guarantee of fish.</span>`,
+          )
+          .addTo(group);
+        bounds.push([a.latitude, a.longitude]);
+      });
+    } else {
+      pfz.forEach((z) => {
+        const best = z.rank === 1;
+        const size = best ? 36 : 29;
+        const color = best ? "#2FBF71" : "#3FA0E0";
+        L.marker([z.latitude, z.longitude], {
+          icon: L.divIcon({
+            className: "",
+            iconSize: [size, size],
+            iconAnchor: [size / 2, size / 2],
+            html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};
+                     border:3px solid rgba(255,255,255,.92);display:grid;place-items:center;
+                     color:#08131f;font:800 ${best ? 15 : 13}px Inter,sans-serif;
+                     box-shadow:0 4px 14px rgba(0,0,0,.55)">${z.rank}</div>`,
+          }),
+        })
+          .bindPopup(
+            `<b>Fishing zone #${z.rank}</b><br/>${z.distance_km} km ${z.bearing}<br/>
+             SST ${z.sst_c ?? "—"} °C · chlorophyll ${z.chlorophyll_mg_m3 ?? "—"} mg/m³<br/>
+             confidence ${Math.round(z.confidence * 100)}%<br/>
+             <span style="font-size:10px;opacity:.65">Potential zone — not a guarantee of fish.</span>`,
+          )
+          .addTo(group);
+        bounds.push([z.latitude, z.longitude]);
+      });
+    }
 
     // draggable vessel
     if (origin) {
@@ -215,9 +292,17 @@ export default function MarineMap({
       bounds.push([origin.latitude, origin.longitude]);
     }
 
-    if (bounds.length > 1) map.fitBounds(L.latLngBounds(bounds).pad(0.28), { animate: true });
+    if (bounds.length > 1) map.fitBounds(L.latLngBounds(bounds).pad(0.22), { animate: true });
     else if (origin) map.setView([origin.latitude, origin.longitude], 10, { animate: true });
-  }, [origin, zones, pfz, routes]);
+  }, [origin, zones, pfz, areas, routes, radiusKm, focusRank]);
+
+  // Fly to a ground when the user taps its card in the list.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !focusRank) return;
+    const target = areas.find((a) => a.rank === focusRank);
+    if (target) map.flyTo([target.latitude, target.longitude], 11, { duration: 0.8 });
+  }, [focusRank, areas]);
 
   const critical = geofence.filter((g) => g.severity === "critical");
   const banner =
@@ -229,14 +314,14 @@ export default function MarineMap({
 
   return (
     <div className="card relative overflow-hidden">
-      <div ref={containerRef} className="h-[430px] w-full" />
+      <div ref={containerRef} className={areas.length ? "h-[560px] w-full" : "h-[430px] w-full"} />
 
       {/* legend */}
       <div className="pointer-events-none absolute bottom-6 left-3 z-[500] space-y-1.5">
         {[
-          ["#2FBF71", "Best fishing zone"],
-          ["#3FA0E0", "Fishing zone"],
-          ["#E05B4A", "Restricted area"],
+          ["#2FBF71", "Very good chance"],
+          ["#D9A63C", "Some chance"],
+          ["#E05B4A", "Do not enter"],
         ].map(([c, label]) => (
           <div
             key={label}

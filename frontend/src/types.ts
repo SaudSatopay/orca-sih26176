@@ -189,6 +189,95 @@ export interface TimelinePoint {
   warning: boolean;
 }
 
+export type CatchRating = "very_good" | "good" | "fair" | "poor";
+
+export interface FishingArea {
+  id: string;
+  rank: number;
+  latitude: number;
+  longitude: number;
+  distance_km: number;
+  bearing: string;
+  sst_c: number | null;
+  chlorophyll_mg_m3: number | null;
+  wave_height_m: number | null;
+  probability: number;
+  value_score: number;
+  rating: CatchRating;
+  confidence: number;
+  rationale: string;
+  factors: Record<string, number>;
+  /** Best balance of odds against the run out — the one we route to. */
+  recommended?: boolean;
+}
+
+export interface ForecastDay {
+  day_offset: number;
+  date: string;
+  label: string;
+  best_hour: number;
+  probability: number;
+  rating: CatchRating;
+  wave_height_m: number;
+  wind_speed_kmh: number;
+  sea_state: string;
+  calmer: boolean;
+  official_warning: boolean;
+  best_area_rank: number | null;
+  best_area_distance_km: number | null;
+}
+
+export interface AvoidZone {
+  name: string;
+  zone_type: string;
+  distance_km: number;
+  window: string | null;
+  active_now: boolean;
+  severity: string;
+}
+
+export interface TripDuration {
+  recommended_hours: number;
+  travel_each_way_minutes: number;
+  round_trip_hours: number;
+  total_trip_hours: number;
+  safe_window_hours: number;
+  limited_by_weather: boolean;
+  feasible: boolean;
+}
+
+export interface FishingOutlook {
+  location: {
+    latitude: number;
+    longitude: number;
+    name: string;
+    state: string | null;
+    nearest_landing_centre: string;
+    distance_from_shore_km: number;
+  };
+  generated_at: string;
+  radius_km: number;
+  safety: {
+    score: number;
+    category: RiskCategory;
+    official_warning: boolean;
+    improves_after: string | null;
+    wave_height_m: number | null;
+    wind_speed_kmh: number | null;
+    sea_state: string | null;
+  };
+  areas: FishingArea[];
+  best_window: { from_hour: number; to_hour: number } | null;
+  hourly_ranking: { hour: number; probability: number }[];
+  duration: TripDuration | null;
+  routes: RouteOption[];
+  avoid: AvoidZone[];
+  forecast: ForecastDay[];
+  advice: string[];
+  mode: DataMode;
+  method: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: "user" | "orca";

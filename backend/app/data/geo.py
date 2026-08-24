@@ -193,6 +193,9 @@ RESTRICTED_ZONES: List[Dict] = [
         "zone_type": "defence",
         "severity": "critical",
         "polygon": [(18.9100, 72.5800), (18.9100, 72.7000), (18.8500, 72.7000), (18.8500, 72.5800)],
+        # Firing/exercise windows are time-bound in real notifications, which is
+        # why a zone can be "closed this afternoon, open tomorrow morning".
+        "active_hours": (14, 18),
         "note": "Illustrative notified-area polygon for demo purposes.",
     },
     {
@@ -222,7 +225,27 @@ RESTRICTED_ZONES: List[Dict] = [
 ]
 
 
-def zones_near(lat: float, lon: float, radius_km: float = 60.0) -> List[Dict]:
+def zone_active_at(zone: Dict, hour: Optional[float] = None) -> bool:
+    """Is this restriction in force at `hour`? Zones with no window are always on."""
+    window = zone.get("active_hours")
+    if not window:
+        return True
+    if hour is None:
+        return True
+    start, end = window
+    return start <= hour < end
+
+
+def zone_window_text(zone: Dict) -> Optional[str]:
+    window = zone.get("active_hours")
+    if not window:
+        return None
+    start, end = window
+    return f"{start:02d}:00-{end:02d}:00"
+
+
+def zones_near(lat: float, lon: float, radius_km: float = 60.0,
+               hour: Optional[float] = None) -> List[Dict]:
     """Restricted zones within `radius_km`, annotated with distance/containment."""
     out: List[Dict] = []
     for zone in RESTRICTED_ZONES:
@@ -231,6 +254,8 @@ def zones_near(lat: float, lon: float, radius_km: float = 60.0) -> List[Dict]:
             item = dict(zone)
             item["distance_km"] = round(d, 2)
             item["inside"] = d == 0.0
+            item["active_now"] = zone_active_at(zone, hour)
+            item["window"] = zone_window_text(zone)
             out.append(item)
     return sorted(out, key=lambda z: z["distance_km"])
 

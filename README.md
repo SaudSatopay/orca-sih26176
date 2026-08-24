@@ -28,6 +28,16 @@ no database, no API key, no internet required.
 
 ### What's in the app
 
+**Today view — what a fisher sees the moment the app opens**
+- **Finds your location automatically** (GPS), or pick a harbour, or tap anywhere on the map
+- **Fishing chances within 100 km** — every ground scored for the likelihood of fish
+- **Plain language, no jargon** — "Do not go into the red area from 2 PM to 6 PM today",
+  "Areas 1, 2, 3 are your best chances", "waves are taller than a person"
+- **Best time to fish** and **how long to stay** — hours on the ground, travel each way,
+  total trip length, shortened automatically if the weather closes in
+- **Three-day outlook** — today, tomorrow and the day after, each at its own best hour
+- **Areas to stay out of**, with the hours they are closed
+
 **Fisher view**
 - Ask in English / Hindi / Marathi, by **typing or speaking** (Web Speech API — no key)
 - Spoken answers back in the same language, toggleable
@@ -98,6 +108,30 @@ route · explanation`.
 
 ---
 
+## The fishing model
+
+Answers *where am I likely to catch something, when, and for how long* — the
+question a fisher actually asks. Five documented factors:
+
+| Factor | Weight | Why |
+|---|---|---|
+| Chlorophyll | 34% | plankton → forage fish → catch; the core INCOIS PFZ signal |
+| Sea-surface temperature | 20% | target species concentrate in a temperature band |
+| Thermal front strength | 16% | a sharp SST change marks where bait accumulates |
+| Sea state | 18% | rough water scatters shoals and stops gear being worked |
+| Time of day | 12% | dawn and dusk feeding peaks |
+
+Two numbers come out of it, and they are deliberately different:
+
+- **Chance of fish** — a statement about the water. Grounds are numbered by this,
+  so "area 1" always means "best chance".
+- **Trip value** — the same odds discounted by how far you have to steam. This
+  picks the ground we actually route to and badge *Best trip*, because a
+  slightly better ground twice as far away is usually the wrong advice.
+
+Trip length comes from the odds, the distance and the remaining safe-weather
+window — and is cut short automatically when the weather closes in.
+
 ## The risk engine
 
 ```
@@ -157,6 +191,7 @@ The demo geofence polygons are **illustrative**, not official maritime boundarie
 
 | Endpoint | Purpose |
 |---|---|
+| `GET /api/fishing?lat&lon&radius_km&days&lang` | **everything for a position** — safety, grounds, timing, trip length, 3-day outlook, plain-language advice |
 | `POST /api/chat` | the full agent pipeline for one question |
 | `GET /api/forecast?lat&lon&when` | raw weather + ocean |
 | `GET /api/risk?lat&lon&when` | risk assessment with inputs |

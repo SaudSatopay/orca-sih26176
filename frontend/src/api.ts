@@ -1,6 +1,7 @@
 import type {
   AuthorityDashboard,
   ChatResponse,
+  FishingOutlook,
   Language,
   PositionCheck,
   RiskCategory,
@@ -70,6 +71,22 @@ export function riskTimeline(lat: number, lon: number, hours = 24) {
 /** Fast geofence check — called while the vessel marker is dragged. */
 export function checkPosition(lat: number, lon: number): Promise<PositionCheck> {
   return json<PositionCheck>(`${BASE}/position?lat=${lat}&lon=${lon}`);
+}
+
+/** Everything a fisher needs for a position: safety, grounds, timing, forecast. */
+export function fishingOutlook(
+  lat: number,
+  lon: number,
+  opts: { radiusKm?: number; days?: number; lang?: Language } = {},
+): Promise<FishingOutlook> {
+  const p = new URLSearchParams({
+    lat: String(lat),
+    lon: String(lon),
+    radius_km: String(opts.radiusKm ?? 100),
+    days: String(opts.days ?? 3),
+    lang: opts.lang ?? "en",
+  });
+  return json<FishingOutlook>(`${BASE}/fishing?${p}`);
 }
 
 export function setMode(mode: "LIVE" | "DEMO") {
