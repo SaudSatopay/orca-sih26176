@@ -1,0 +1,175 @@
+@import "leaflet/dist/leaflet.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --edge: rgba(255, 255, 255, 0.09);
+  --edge-strong: rgba(127, 178, 229, 0.28);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(1300px 780px at 78% -12%, rgba(20, 157, 191, 0.2), transparent 62%),
+    radial-gradient(1000px 680px at 4% 108%, rgba(31, 73, 125, 0.34), transparent 64%),
+    radial-gradient(700px 480px at 50% 50%, rgba(15, 90, 110, 0.1), transparent 70%),
+    #080e1a;
+  color: #e8eef7;
+  font-family: Inter, "Segoe UI", "Nirmala UI", system-ui, sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Bathymetric contour wash — the deck's identity, carried into the product. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.55;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0 82px,
+    rgba(127, 178, 229, 0.045) 82px 83px
+  );
+  mask-image: radial-gradient(circle at 50% 38%, black, transparent 80%);
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+@layer components {
+  .card {
+    @apply relative rounded-2xl border bg-white/[0.045] shadow-xl shadow-black/30 backdrop-blur-md;
+    border-color: var(--edge);
+  }
+  /* Subtle top highlight so cards read as lit from above rather than flat. */
+  .card::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    border-radius: 1rem 1rem 0 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.14) 22%,
+      rgba(255, 255, 255, 0.14) 78%,
+      transparent
+    );
+    pointer-events: none;
+  }
+  .card-flat {
+    @apply rounded-xl border bg-white/[0.03];
+    border-color: var(--edge);
+  }
+  .chip {
+    @apply rounded-full border px-3 py-1.5 text-xs font-medium text-ocean-100 transition;
+    border-color: var(--edge-strong);
+    background: rgba(31, 73, 125, 0.28);
+  }
+  .chip:hover:not(:disabled) {
+    background: rgba(42, 95, 160, 0.45);
+    border-color: rgba(127, 178, 229, 0.6);
+    transform: translateY(-1px);
+  }
+  .label {
+    @apply font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ocean-300/75;
+  }
+  .seg {
+    @apply flex gap-0.5 rounded-full border p-0.5;
+    border-color: var(--edge);
+    background: rgba(255, 255, 255, 0.04);
+  }
+  .seg-btn {
+    @apply rounded-full px-3 py-1.5 text-[11px] font-semibold transition;
+  }
+  .seg-btn-on {
+    @apply bg-ocean-700 text-white shadow;
+  }
+  .seg-btn-off {
+    @apply text-ocean-300 hover:text-ocean-100;
+  }
+}
+
+/* ---- Leaflet theming ---- */
+.leaflet-container {
+  background: #0a1524;
+  font-family: inherit;
+}
+.leaflet-control-attribution {
+  background: rgba(8, 14, 26, 0.8) !important;
+  color: #7c8199 !important;
+  font-size: 9px !important;
+}
+.leaflet-control-attribution a {
+  color: #7fb2e5 !important;
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #13223c;
+  color: #e8eef7;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+.leaflet-popup-content {
+  margin: 12px 14px;
+  line-height: 1.5;
+  font-size: 12px;
+}
+.leaflet-bar a {
+  background: #13223c !important;
+  color: #cfe0f5 !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.leaflet-bar a:hover {
+  background: #1f497d !important;
+}
+
+/* ---- scrollbars ---- */
+::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(127, 178, 229, 0.22);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(127, 178, 229, 0.38);
+  background-clip: content-box;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  /* Entrance animations use fill-mode:both, which would otherwise leave
+     elements stuck at opacity 0 when animation is suppressed. */
+  .animate-rise {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
