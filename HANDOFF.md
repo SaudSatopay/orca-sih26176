@@ -1,0 +1,180 @@
+# ORCA — session handoff
+
+Everything a new session (or a teammate) needs to pick this up cold.
+Last updated: **24 August 2026**.
+
+---
+
+## 1. Who and what
+
+| | |
+|---|---|
+| Event | Smart India Hackathon 2026 — college internal round was **24 Aug 2026** |
+| Team | **Team Random**, Team ID **U3M71E5U** |
+| Problem statement | **SIH26176 — ORCA: Marine EcOsystem Reasoning with Collaborative Agents** (ISRO, Software, theme *Miscellaneous*) |
+| National idea deadline | **20 September 2026** |
+| GitHub | https://github.com/SaudSatopay/orca-sih26176 (public, account `SaudSatopay`) |
+
+**The pitch in one line:** ORCA is not a chatbot — it is a crew of ten cooperating
+AI agents that turn India's marine data into one safe, explainable decision for a
+fisher, in his own language.
+
+---
+
+## 2. Where everything lives
+
+```
+C:\Users\USER\Desktop\SIH\
+├─ ORCA-SIH26176-Idea.pptx      Round-1 deck, FINAL (team details filled in)
+├─ ORCA-SIH26176-Idea.pdf       PDF copy — the format the SIH portal accepts
+├─ SIH-2026-Playbook.pdf        earlier problem-statement strategy brief
+└─ orca\                        the application (git repo, pushed to GitHub)
+   ├─ RUN-ORCA.bat              ONE-CLICK LAUNCH — double-click this
+   ├─ start-orca.ps1 / dev.ps1  PowerShell equivalents
+   ├─ README.md                 architecture, model docs, API table
+   ├─ HANDOFF.md                this file
+   ├─ backend\                  FastAPI + the ten agents
+   └─ frontend\                 React + TypeScript + Tailwind + Leaflet
+```
+
+**Run it:** double-click `RUN-ORCA.bat`, or:
+
+```bash
+cd C:\Users\USER\Desktop\SIH\orca\backend; python -m uvicorn app.main:app --port 8000
+```
+
+Then open <http://127.0.0.1:8000>. Single process serves API *and* the built UI.
+`cd backend; python smoke_test.py` runs all five demo scenarios headless.
+
+Deep links: `/?tour=1` (guided walkthrough), `/?demo=safe|danger|cyclone|pfz|route`.
+
+---
+
+## 3. Current state — what is DONE
+
+**Deck** — 6 slides in the official SIH template, ocean visual identity, team
+details filled, app mockup on slide 2. Considered final.
+
+**Backend** (FastAPI, only 4 dependencies: fastapi, uvicorn, pydantic, httpx)
+- Ten agents: `intent, planner, weather, ocean, pfz, cyclone, gis, risk, route, explanation`.
+  Independent specialists run concurrently via `ThreadPoolExecutor` in `agents/planner.py`.
+- `services/risk_engine.py` — weighted model + **deterministic safety floors that can
+  only raise a score**. An official IMD severe warning forces EXTREME.
+- `services/fishing.py` — chance-of-fish model (chlorophyll 34%, SST 20%, front 16%,
+  sea state 18%, time of day 12%) + trip-duration recommendation.
+- `services/plain_language.py` — non-technical advice in EN/HI/MR.
+- `services/route_optimizer.py` — A* on a risk-weighted grid; safest ≠ shortest.
+- `data/geo.py` — **pure-Python** geospatial (haversine, ray-casting point-in-polygon,
+  A*). No shapely/GEOS to fail on stage.
+- `data/demo_store.py` — cached scenarios keyed by *hour of day* (so "tomorrow 6 AM"
+  always resolves to the rehearsed sea state) with day-to-day drift for forecasts.
+
+**Frontend** — three tabs:
+- **Today** (default): GPS auto-location, harbour picker, tap-map, 100 km radius,
+  ranked fishing grounds, plain-language advice, trip plan, 3-day outlook.
+- **Ask ORCA**: multilingual chat, voice in/out, risk card, 24-h risk timeline,
+  agent-crew panel, route options.
+- **Authority**: every landing centre scored, auto-refreshing.
+- **Guided tour**: 17 auto-advancing narrated steps — also the demo fallback.
+
+**Verified demo numbers (Mumbai):** area 1 = 80% at 31 km · best time 2–7 PM ·
+stay ~3–4 h · trip ~8 h · 3-day outlook 82/84/79%.
+Chat scenarios: Mumbai 06:00 → 70 HIGH, 12:00 → 37 MODERATE, Paradip → 92 EXTREME,
+Goa → 9 LOW.
+
+---
+
+## 4. Design decisions to defend in Q&A
+
+These are deliberate. Do not "simplify" them away.
+
+1. **The LLM never decides safety.** Intent parsing is rule-based and multilingual;
+   the score comes from a documented weighted model; deterministic floors override
+   everything. No API key is needed for the whole demo to run.
+2. **Two separate fishing numbers.** *Chance of fish* is a statement about the water
+   and drives the numbering, so "area 1" always means best chance. *Trip value*
+   discounts those odds by distance and picks the ground we route to and badge
+   "Best trip" — a slightly better ground twice as far is usually wrong advice.
+3. **Demo data is always labelled.** Synthetic values carry
+   *"Demo / simulated data — not a live government feed"*. Never claim otherwise.
+4. **INCOIS / IMD / MOSDAC have no open public JSON API.** Say this honestly.
+   Open-Meteo Marine + Forecast are the verified live providers (keyless, tested
+   working); the agencies slot in behind the same provider interface. Never label
+   Open-Meteo output as INCOIS or IMD data.
+5. **Restricted-zone polygons are illustrative**, not official maritime boundaries.
+6. **A fishing ground inside a restricted zone is filtered out** before ranking —
+   a good catch prediction that gets a fisher arrested is not a good recommendation.
+7. **Risk bands:** LOW ≤25, MODERATE ≤50, HIGH ≤79, EXTREME 80+. EXTREME is reserved
+   for official severe warnings / life-threatening seas so it always means
+   "do not launch, no judgement call". (This deviates from the original spec's 76+;
+   the deviation is intentional and documented.)
+
+---
+
+## 5. Bugs already fixed — do not reintroduce
+
+| Bug | Lesson |
+|---|---|
+| **Map rendered empty** while tiles downloaded fine | A conditional `className` on the Leaflet container made React rewrite the class attribute and delete Leaflet's own classes (`leaflet-container`…), collapsing tile panes to 0×0. **Any DOM node handed to an imperative library must have a constant `className`** — drive size via inline `style`, and call `invalidateSize()` on change. |
+| Safest route drew as a straight line through restricted zones | The naive "drop near-collinear points" simplifier flattened the detour. Uses **Douglas–Peucker** now, plus a guard that refuses to reintroduce a zone conflict. |
+| Risk dial rendered **0** instead of 92 | `requestAnimationFrame` is suspended in hidden/non-compositing tabs. Animation is decoration; the number is safety information — there is a `setTimeout` fail-safe that snaps to the final value. |
+| Agent-trace rows invisible | Staggered entrance animation with `fill-mode: both` leaves rows at opacity 0 if animations never run. Per-row stagger removed. |
+| Nearest fishing ground ranked **worst** | It had the best chlorophyll but `sst_delta = 0` → no thermal front → near-zero front factor. Ground profiles now model productive water closer in. |
+| Marathi question answered in English | The UI was forcing its language selection over server-side detection. Language is now auto-detected unless the user explicitly clicks EN/हिं/मरा. |
+| PFZ #1 sat inside the naval exclusion zone | Added the restricted-zone filter to `pfz_agent`. |
+| `RUN-ORCA.bat` printed ECHO help text | A batch `echo` line must never start with `/?`. Use full URLs. |
+
+---
+
+## 6. Environment quirks on this machine
+
+- **PowerShell, not bash.** No `&&`, no ternary. Use `;` and `if ($?)`.
+- **Multi-line strings:** PowerShell here-strings (`@'…'@`) have repeatedly mangled
+  git commit messages. Write the message to a file and use `git commit -F <file>`.
+- **git/gh write to stderr**, which PowerShell surfaces as a red error even on
+  success. Check the actual output (`main -> main`) before believing a failure.
+- **`gh` is installed and authenticated** as `SaudSatopay` with `repo` scope.
+- **Screenshots:** the in-app Browser pane does not composite, so
+  `mcp__Claude_Browser__computer screenshot` fails. Use headless Edge instead:
+  `msedge --headless=new --disable-gpu --screenshot=out.png --window-size=W,H
+  --virtual-time-budget=15000 <url>`. Note that under virtual time, `rAF`-driven
+  animations may capture mid-flight — verify real values via `javascript_tool`.
+- **Rendering PPTX/PDF:** LibreOffice is absent; PowerPoint COM automation works
+  (`New-Object -ComObject PowerPoint.Application`) for export and slide images.
+- **Stop a stuck server:**
+  `Get-NetTCPConnection -LocalPort 8000 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }`
+- After editing backend code, **restart uvicorn** (it runs without `--reload`).
+  After editing frontend code, **`npm run build`** — the backend serves `frontend/dist`.
+  `frontend/dist` is committed on purpose so `RUN-ORCA.bat` works without npm.
+
+---
+
+## 7. Sensible next steps
+
+Not started, roughly in order of value:
+
+1. **Species-specific predictions** — mackerel/sardine/pomfret have different SST bands;
+   the model already has the shape for it.
+2. **Offline PWA install** + service-worker caching, so the app opens at sea.
+3. **SMS / IVR fallback** for feature phones — the real last mile.
+4. **Train the risk model** (XGBoost) on historical incident data instead of the
+   documented weighted baseline. Currently claimed honestly as future work.
+5. **Real INCOIS/IMD ingestion** via bulletin parsing or a data-sharing arrangement.
+6. **Tide and moon phase** as fishing-model inputs.
+7. Deploy somewhere public (Render/Railway + Vercel) for the national round.
+
+---
+
+## 8. Pitch script that maps to the current build
+
+1. Open the app — *"it already knows where he is, and it has already read the sea."*
+2. Point at the plain-language panel — *"no jargon: do not enter the red area between
+   2 and 6 PM, areas 1, 2, 3 are your best chances, stay about three hours."*
+3. Ask in Marathi (Ask ORCA tab, scenario 2) — Marathi in, Marathi out, 70/100 HIGH.
+4. Follow up *"दुपारी १२ वाजता काय?"* — context kept, drops to MODERATE.
+5. Scenario 3 (Paradip) — **official warning overrides the model**, forced EXTREME.
+6. Scenario 5 — safest route detours around the naval area; hand a judge the mouse
+   and let them **drag the boat** into the red zone.
+7. Authority tab — same engine, district scale.
+8. Close: *"Built entirely on India's own data infrastructure. Every number carries
+   its source. ORCA is decision support — it never replaces an official advisory."*
