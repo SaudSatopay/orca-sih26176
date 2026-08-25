@@ -73,7 +73,7 @@ export default function RiskTimeline({
   const window = useMemo(() => (points ? bestWindow(points) : null), [points]);
 
   if (!location) return null;
-  if (!points) return <div className="card p-5 text-sm text-ocean-300">{t.loading}</div>;
+  if (!points) return <div className="panel p-5 text-sm italic text-ink-400">{t.loading}</div>;
   if (!points.length) return null;
 
   const W = 720;
@@ -93,19 +93,19 @@ export default function RiskTimeline({
   const peak = points.reduce((a, b) => (b.score > a.score ? b : a), points[0]);
 
   return (
-    <div className="card overflow-hidden">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 px-5 pt-4">
+    <div className="panel overflow-hidden">
+      <div className="hd">
         <div>
-          <h3 className="text-sm font-bold text-ocean-100">{t.title}</h3>
-          <p className="mt-0.5 text-[11px] text-ocean-300/75">{t.sub}</p>
+          <h3 className="font-display text-[15px] font-bold text-ink-900">{t.title}</h3>
+          <p className="mt-0.5 text-[11px] text-ink-400">{t.sub}</p>
         </div>
         {window ? (
-          <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-[11px] font-bold text-emerald-200">
-            {t.best}: {String(points[window[0]].hour).padStart(2, "0")}:00 –{" "}
+          <span className="shrink-0 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-2.5 py-1 font-mono text-[10.5px] font-bold tabular-nums text-risk-low">
+            {t.best}: {String(points[window[0]].hour).padStart(2, "0")}:00–
             {String((points[window[1]].hour + 1) % 24).padStart(2, "0")}:00
           </span>
         ) : (
-          <span className="rounded-full bg-risk-extreme/20 px-3 py-1 text-[11px] font-bold text-red-200">
+          <span className="stamp shrink-0 !px-2 !py-0.5 !text-[9px] text-risk-extreme">
             {t.none}
           </span>
         )}
@@ -115,8 +115,8 @@ export default function RiskTimeline({
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 150 }}>
           <defs>
             <linearGradient id="riskArea" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#7FB2E5" stopOpacity="0.45" />
-              <stop offset="100%" stopColor="#7FB2E5" stopOpacity="0.02" />
+              <stop offset="0%" stopColor="#2A7391" stopOpacity="0.22" />
+              <stop offset="100%" stopColor="#2A7391" stopOpacity="0.02" />
             </linearGradient>
           </defs>
 
@@ -134,9 +134,25 @@ export default function RiskTimeline({
               width={W - padX * 2}
               height={Math.max(0, y(b.from) - y(b.to))}
               fill={b.color}
-              opacity={0.07}
+              opacity={0.055}
             />
           ))}
+
+          {/* hour grid, as chart graticule */}
+          {points.map((p, i) =>
+            i % 4 === 0 && i > 0 ? (
+              <line
+                key={`g${i}`}
+                x1={x(i)}
+                y1={padTop}
+                x2={x(i)}
+                y2={padTop + plotH}
+                stroke="#12212D"
+                strokeWidth="0.5"
+                opacity="0.12"
+              />
+            ) : null,
+          )}
 
           {/* safe window highlight */}
           {window && (
@@ -145,14 +161,26 @@ export default function RiskTimeline({
               y={padTop}
               width={(window[1] - window[0] + 1) * stepX}
               height={plotH}
-              fill="#1E7A4D"
-              opacity={0.16}
-              rx={6}
+              fill="#1D7A50"
+              opacity={0.1}
+            />
+          )}
+          {window && (
+            <rect
+              x={x(window[0]) - stepX / 2}
+              y={padTop}
+              width={(window[1] - window[0] + 1) * stepX}
+              height={plotH}
+              fill="none"
+              stroke="#1D7A50"
+              strokeWidth="1"
+              strokeDasharray="4 3"
+              opacity={0.55}
             />
           )}
 
           <path d={area} fill="url(#riskArea)" />
-          <path d={line} fill="none" stroke="#BBD6F2" strokeWidth={2.5} strokeLinejoin="round" />
+          <path d={line} fill="none" stroke="#12212D" strokeWidth={2} strokeLinejoin="round" />
 
           {/* per-hour dots coloured by category */}
           {points.map((p, i) => (
@@ -160,10 +188,10 @@ export default function RiskTimeline({
               key={i}
               cx={x(i)}
               cy={y(p.score)}
-              r={p.warning ? 3.6 : 2.6}
+              r={p.warning ? 3.8 : 2.7}
               fill={RISK_COLOR[p.category]}
-              stroke={p.warning ? "#fff" : "none"}
-              strokeWidth={p.warning ? 1.2 : 0}
+              stroke={p.warning ? "#FBF7ED" : "none"}
+              strokeWidth={p.warning ? 1.4 : 0}
             >
               <title>
                 {String(p.hour).padStart(2, "0")}:00 — {p.score}/100 {p.category}
@@ -180,22 +208,31 @@ export default function RiskTimeline({
             y1={padTop - 4}
             x2={x(nowIdx)}
             y2={padTop + plotH}
-            stroke="#7FB2E5"
-            strokeWidth={1.4}
+            stroke="#2A7391"
+            strokeWidth={1.3}
             strokeDasharray="4 4"
           />
-          <text x={x(nowIdx) + 5} y={padTop + 6} fill="#7FB2E5" fontSize="10" fontWeight="600">
+          <text
+            x={x(nowIdx) + 5}
+            y={padTop + 6}
+            fill="#2A7391"
+            fontSize="10"
+            fontWeight="700"
+            fontFamily="'Spline Sans Mono Variable', monospace"
+          >
             {t.now}
           </text>
 
-          {/* peak label */}
+          {/* peak label — a sounding above the worst hour */}
           <text
             x={Math.min(W - 60, Math.max(30, x(points.indexOf(peak))))}
             y={Math.max(14, y(peak.score) - 7)}
             fill={RISK_COLOR[peak.category]}
-            fontSize="10"
+            fontSize="12"
             fontWeight="700"
+            fontStyle="italic"
             textAnchor="middle"
+            fontFamily="'Fraunces Variable', Georgia, serif"
           >
             {peak.score}
           </text>
@@ -207,10 +244,10 @@ export default function RiskTimeline({
                 key={`t${i}`}
                 x={x(i)}
                 y={H - 8}
-                fill="#7C8199"
+                fill="#5D7386"
                 fontSize="9.5"
                 textAnchor="middle"
-                fontFamily="ui-monospace, monospace"
+                fontFamily="'Spline Sans Mono Variable', monospace"
               >
                 {String(p.hour).padStart(2, "0")}
               </text>

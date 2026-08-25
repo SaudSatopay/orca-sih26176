@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Evidence, Language, RiskAssessment } from "../types";
+import { LockGlyph } from "./glyphs";
 import RiskDial, { RISK_COLOR } from "./RiskDial";
 
 const VERDICT: Record<Language, Record<string, string>> = {
@@ -26,7 +27,7 @@ const VERDICT: Record<Language, Record<string, string>> = {
 const UI: Record<Language, Record<string, string>> = {
   en: {
     why: "Why — ranked contribution to the score",
-    warning: "OFFICIAL WARNING ACTIVE",
+    warning: "Official warning",
     improves: "Conditions expected to improve after",
     askAgain: "— ask again then.",
     overrides: "Safety overrides applied",
@@ -34,13 +35,13 @@ const UI: Record<Language, Record<string, string>> = {
       "Deterministic rules can only raise a risk score — never lower it. No model or language output can talk ORCA down from an official warning.",
     evidence: "Evidence",
     traced: "traced values",
-    show: "show ▼",
-    hide: "hide ▲",
+    show: "show ▾",
+    hide: "hide ▴",
     cols: "Value|Reading|Source|Updated",
   },
   hi: {
     why: "क्यों — स्कोर में योगदान",
-    warning: "आधिकारिक चेतावनी सक्रिय",
+    warning: "आधिकारिक चेतावनी",
     improves: "स्थिति सुधरने की संभावना",
     askAgain: "बजे के बाद — तब दोबारा पूछें।",
     overrides: "सुरक्षा नियम लागू",
@@ -48,13 +49,13 @@ const UI: Record<Language, Record<string, string>> = {
       "नियम केवल जोखिम बढ़ा सकते हैं, घटा नहीं। कोई भी मॉडल आधिकारिक चेतावनी को रद्द नहीं कर सकता।",
     evidence: "प्रमाण",
     traced: "स्रोत-सहित मान",
-    show: "दिखाएँ ▼",
-    hide: "छिपाएँ ▲",
+    show: "दिखाएँ ▾",
+    hide: "छिपाएँ ▴",
     cols: "मान|रीडिंग|स्रोत|अपडेट",
   },
   mr: {
     why: "का — गुणांमधील योगदान",
-    warning: "अधिकृत इशारा सक्रिय",
+    warning: "अधिकृत इशारा",
     improves: "परिस्थिती सुधारण्याची शक्यता",
     askAgain: "नंतर — तेव्हा पुन्हा विचारा.",
     overrides: "सुरक्षा नियम लागू",
@@ -62,8 +63,8 @@ const UI: Record<Language, Record<string, string>> = {
       "नियम फक्त धोका वाढवू शकतात, कमी करू शकत नाहीत. कोणतेही मॉडेल अधिकृत इशाऱ्याला ओलांडू शकत नाही.",
     evidence: "पुरावा",
     traced: "स्रोतासह मूल्ये",
-    show: "दाखवा ▼",
-    hide: "लपवा ▲",
+    show: "दाखवा ▾",
+    hide: "लपवा ▴",
     cols: "मूल्य|वाचन|स्रोत|अपडेट",
   },
 };
@@ -85,56 +86,62 @@ export default function RiskCard({
   const max = Math.max(...top.map((f) => f.contribution), 1);
 
   return (
-    <div className="card overflow-hidden">
+    <div className="panel rule-double overflow-hidden">
       <div className="flex items-center gap-5 p-5">
         <RiskDial score={risk.score} category={risk.category} />
-        <div className="min-w-0">
-          <div className="text-xl font-extrabold leading-tight" style={{ color }}>
+        <div className="min-w-0 flex-1">
+          <div
+            className="font-display text-[22px] font-bold leading-tight tracking-tight"
+            style={{ color }}
+          >
             {(VERDICT[language] ?? VERDICT.en)[risk.category]}
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
+          <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+            {/* the verdict, stamped on the document */}
             <span
-              className="rounded-full px-2.5 py-0.5 text-[11px] font-bold tracking-wide"
-              style={{ background: `${color}22`, color }}
+              key={`${risk.category}-${risk.score}`}
+              className="stamp animate-stampIn text-[11px]"
+              style={{ color }}
             >
               {risk.category}
             </span>
             {risk.official_warning && (
-              <span className="rounded-full bg-risk-extreme/20 px-2.5 py-0.5 text-[11px] font-bold text-red-200">
+              <span className="stamp animate-stampIn text-[11px] text-risk-extreme" style={{ animationDelay: "120ms" }}>
                 {ui.warning}
               </span>
             )}
-            <span className="rounded-full bg-white/5 px-2.5 py-0.5 font-mono text-[10px] text-ocean-300">
-              {risk.mode}
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-400">
+              {risk.mode} data
             </span>
           </div>
           {risk.window && (
-            <div className="mt-2.5 rounded-xl bg-emerald-400/10 px-3 py-2 text-sm text-emerald-200">
-              {ui.improves} <span className="font-bold">{risk.window}</span> {ui.askAgain}
+            <div className="mt-3 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-3 py-2 text-[13px] text-risk-low">
+              {ui.improves} <span className="font-display font-bold">{risk.window}</span>{" "}
+              {ui.askAgain}
             </div>
           )}
         </div>
       </div>
 
       {/* why */}
-      <div className="border-t border-white/10 px-5 py-4">
-        <div className="label mb-2.5">{ui.why}</div>
-        <ul className="space-y-2">
+      <div className="border-t px-5 py-4" style={{ borderColor: "var(--rule-faint)" }}>
+        <div className="label mb-3">{ui.why}</div>
+        <ul className="space-y-2.5">
           {top.map((f) => (
             <li key={f.key}>
               <div className="flex items-baseline justify-between gap-3 text-sm">
-                <span className="font-medium text-ocean-100">{f.label}</span>
-                <span className="shrink-0 font-mono text-xs" style={{ color }}>
+                <span className="font-medium text-ink-800">{f.label}</span>
+                <span className="shrink-0 font-mono text-xs font-bold tabular-nums" style={{ color }}>
                   +{f.contribution.toFixed(1)}
                 </span>
               </div>
-              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div className="mt-1.5 h-[3px] bg-ink-900/10">
                 <div
-                  className="h-full rounded-full transition-all duration-700"
+                  className="h-full transition-all duration-700"
                   style={{ width: `${(f.contribution / max) * 100}%`, background: color }}
                 />
               </div>
-              <div className="mt-1 text-[11px] text-ocean-300/80">{f.detail}</div>
+              <div className="mt-1 text-[11px] leading-relaxed text-ink-400">{f.detail}</div>
             </li>
           ))}
         </ul>
@@ -142,22 +149,22 @@ export default function RiskCard({
 
       {/* deterministic overrides — the trust moment */}
       {risk.overrides.length > 0 && (
-        <div className="border-t border-white/10 bg-risk-extreme/10 px-5 py-3">
-          <div className="label mb-1.5 text-red-200/80">{ui.overrides}</div>
-          <ul className="space-y-1">
+        <div className="hatch-danger border-t border-risk-extreme/40 px-5 py-3.5">
+          <div className="label mb-2 !text-risk-extreme">{ui.overrides}</div>
+          <ul className="space-y-1.5">
             {risk.overrides.map((o, i) => (
-              <li key={i} className="flex gap-2 text-[12px] text-red-100">
-                <span aria-hidden>🔒</span>
+              <li key={i} className="flex items-start gap-2 text-[12.5px] font-medium text-ink-800">
+                <LockGlyph size={13} className="mt-0.5 shrink-0 text-risk-extreme" />
                 <span>{o}</span>
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-[11px] text-red-200/70">{ui.overrideNote}</p>
+          <p className="mt-2 text-[11px] italic leading-relaxed text-ink-500">{ui.overrideNote}</p>
         </div>
       )}
 
       {/* evidence */}
-      <div className="border-t border-white/10 px-5 py-3">
+      <div className="border-t px-5 py-3" style={{ borderColor: "var(--rule-faint)" }}>
         <button
           onClick={() => setShowEvidence((v) => !v)}
           className="flex w-full items-center justify-between text-left"
@@ -165,27 +172,29 @@ export default function RiskCard({
           <span className="label">
             {ui.evidence} · {evidence.length} {ui.traced}
           </span>
-          <span className="text-xs text-ocean-300">{showEvidence ? ui.hide : ui.show}</span>
+          <span className="font-mono text-[11px] text-chart-600">
+            {showEvidence ? ui.hide : ui.show}
+          </span>
         </button>
 
         {showEvidence && (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left text-[11px]">
-              <thead className="text-ocean-300/70">
-                <tr>
-                  <th className="pb-1.5 pr-3 font-medium">{colValue}</th>
-                  <th className="pb-1.5 pr-3 font-medium">{colReading}</th>
-                  <th className="pb-1.5 pr-3 font-medium">{colSource}</th>
-                  <th className="pb-1.5 font-medium">{colUpdated}</th>
+            <table className="w-full text-left font-mono text-[11px]">
+              <thead>
+                <tr className="border-b" style={{ borderColor: "var(--rule)" }}>
+                  <th className="pb-1.5 pr-3 text-[9px] font-bold uppercase tracking-[0.12em] text-ink-400">{colValue}</th>
+                  <th className="pb-1.5 pr-3 text-[9px] font-bold uppercase tracking-[0.12em] text-ink-400">{colReading}</th>
+                  <th className="pb-1.5 pr-3 text-[9px] font-bold uppercase tracking-[0.12em] text-ink-400">{colSource}</th>
+                  <th className="pb-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-ink-400">{colUpdated}</th>
                 </tr>
               </thead>
-              <tbody className="text-ocean-100">
+              <tbody className="text-ink-800">
                 {evidence.map((e, i) => (
-                  <tr key={i} className="border-t border-white/5">
-                    <td className="py-1.5 pr-3">{e.label}</td>
-                    <td className="py-1.5 pr-3 font-mono">{e.value}</td>
-                    <td className="py-1.5 pr-3 text-ocean-300">{e.source}</td>
-                    <td className="py-1.5 font-mono text-ocean-300">
+                  <tr key={i} className="border-t" style={{ borderColor: "var(--rule-faint)" }}>
+                    <td className="py-1.5 pr-3 font-sans">{e.label}</td>
+                    <td className="py-1.5 pr-3 font-bold tabular-nums">{e.value}</td>
+                    <td className="py-1.5 pr-3 text-ink-500">{e.source}</td>
+                    <td className="py-1.5 tabular-nums text-ink-500">
                       {e.timestamp?.slice(0, 16).replace("T", " ")}
                     </td>
                   </tr>

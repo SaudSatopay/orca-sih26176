@@ -1,10 +1,12 @@
 import type { CatchRating, FishingOutlook, Language } from "../types";
+import { WarnGlyph } from "./glyphs";
 
+/** Rating colours tuned for chart paper — inky enough to read as drafted. */
 export const RATING_COLOR: Record<CatchRating, string> = {
-  very_good: "#2FBF71",
-  good: "#7FC96B",
-  fair: "#D9A63C",
-  poor: "#B06A5A",
+  very_good: "#1D7A50",
+  good: "#63862B",
+  fair: "#B08000",
+  poor: "#9C5F44",
 };
 
 const RATING_WORD: Record<Language, Record<CatchRating, string>> = {
@@ -113,112 +115,118 @@ export default function FishingPanel({
   return (
     <div className="space-y-4">
       {/* ---------- plain-language advice: the most important panel ---------- */}
-      <div className="card overflow-hidden">
-        <div className="border-b border-white/10 px-5 py-3">
-          <div className="label">{t.advice}</div>
+      <div className="panel rule-double overflow-hidden">
+        <div className="hd">
+          <span className="label">{t.advice}</span>
         </div>
-        <ul className="space-y-2.5 px-5 py-4">
-          {data.advice.map((line, i) => (
-            <li key={i} className="flex gap-3">
-              <span
-                className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full"
-                style={{ background: i === 0 ? "#2FBF71" : "rgba(127,178,229,.55)" }}
-              />
-              <span
-                className={
-                  i === 0
-                    ? "text-[15px] font-bold leading-relaxed text-white"
-                    : "text-[13.5px] leading-relaxed text-ocean-100/90"
-                }
+        <div className="px-5 py-4">
+          {data.advice.map((line, i) =>
+            i === 0 ? (
+              <p
+                key={i}
+                className="font-display text-[19px] font-semibold leading-snug text-ink-900"
               >
                 {line}
-              </span>
-            </li>
-          ))}
-        </ul>
+              </p>
+            ) : (
+              <p
+                key={i}
+                className="mt-2.5 flex gap-2.5 text-[13.5px] leading-relaxed text-ink-700"
+              >
+                <span className="mt-[8px] h-1.5 w-1.5 shrink-0 rotate-45 bg-chart-500/70" />
+                <span>{line}</span>
+              </p>
+            ),
+          )}
+        </div>
       </div>
 
       {/* ---------- best places ---------- */}
       {top.length > 0 && (
-        <div className="card p-4">
-          <div className="mb-3 flex items-baseline justify-between">
+        <div className="panel overflow-hidden">
+          <div className="hd">
             <span className="label">{t.areas}</span>
-            <span className="font-mono text-[10px] text-ocean-300">
+            <span className="font-mono text-[10px] tabular-nums text-ink-400">
               {t.within} {data.radius_km} km
             </span>
           </div>
 
-          <div className="space-y-2">
-            {top.map((a) => (
-              <button
-                key={a.id}
-                onClick={() => onSelectArea?.(a.rank)}
-                className="flex w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3 text-left transition hover:border-ocean-500/50 hover:bg-white/[0.06]"
-              >
-                <div
-                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-[15px] font-extrabold text-ocean-950"
-                  style={{ background: RATING_COLOR[a.rating] }}
+          <div className="px-4 py-3.5">
+            <div className="space-y-2">
+              {top.map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => onSelectArea?.(a.rank)}
+                  className="flex w-full items-center gap-3.5 rounded-[2px] border bg-paper-100 px-3 py-3 text-left transition hover:border-ink-700 hover:bg-paper-150"
+                  style={{ borderColor: "var(--rule)" }}
                 >
-                  {a.rank}
-                </div>
-
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <span className="text-[14px] font-bold text-ocean-100">
-                      {Math.round(a.distance_km)} km {t.away}
-                    </span>
-                    {a.recommended && (
-                      <span className="rounded-full bg-emerald-400/20 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-emerald-200">
-                        {language === "mr" ? "सुचवलेली" : language === "hi" ? "सुझाई गई" : "Best trip"}
-                      </span>
-                    )}
-                  </div>
-                  <div className="mt-0.5 text-[11.5px] text-ocean-300/85">
-                    {words[a.rating]} {t.chance}
-                  </div>
-                </div>
-
-                <div className="shrink-0 text-right">
+                  {/* buoy badge — identical symbology to the map markers */}
                   <div
-                    className="font-mono text-[20px] font-extrabold leading-none tabular-nums"
-                    style={{ color: RATING_COLOR[a.rating] }}
+                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-[3.5px] bg-paper-50 font-display text-[17px] font-extrabold text-ink-900 shadow-sm"
+                    style={{ borderColor: RATING_COLOR[a.rating] }}
                   >
-                    {a.probability}%
+                    {a.rank}
                   </div>
-                  <div className="mt-1 h-1.5 w-16 overflow-hidden rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${a.probability}%`,
-                        background: RATING_COLOR[a.rating],
-                      }}
-                    />
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
 
-          {data.best_window && (
-            <div className="mt-3 rounded-xl bg-emerald-400/10 px-3.5 py-2.5">
-              <div className="text-[11px] font-semibold uppercase tracking-wide text-emerald-300/80">
-                {t.bestTime}
-              </div>
-              <div className="mt-0.5 text-[15px] font-bold text-emerald-200">
-                {clock12(data.best_window.from_hour)} – {clock12(data.best_window.to_hour)}
-              </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[14px] font-bold text-ink-900">
+                        {Math.round(a.distance_km)} km {t.away}
+                      </span>
+                      {a.recommended && (
+                        <span className="stamp !px-1.5 !py-0.5 !text-[8.5px] text-risk-low">
+                          {language === "mr" ? "सुचवलेली" : language === "hi" ? "सुझाई गई" : "Best trip"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-0.5 text-[11.5px] text-ink-500">
+                      {words[a.rating]} {t.chance}
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    <div
+                      className="sounding text-[24px] leading-none tabular-nums"
+                      style={{ color: RATING_COLOR[a.rating] }}
+                    >
+                      {a.probability}
+                      <span className="text-[13px]">%</span>
+                    </div>
+                    <div className="ml-auto mt-1.5 h-[3px] w-16 bg-ink-900/10">
+                      <div
+                        className="h-full"
+                        style={{
+                          width: `${a.probability}%`,
+                          background: RATING_COLOR[a.rating],
+                        }}
+                      />
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
-          )}
+
+            {data.best_window && (
+              <div className="mt-3 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-3.5 py-2.5">
+                <div className="label !text-risk-low">{t.bestTime}</div>
+                <div className="mt-0.5 font-display text-[17px] font-bold text-risk-low">
+                  {clock12(data.best_window.from_hour)} – {clock12(data.best_window.to_hour)}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
       {/* ---------- trip plan ---------- */}
       {data.duration && (
-        <div className="card p-4">
-          <div className="label mb-3">{t.trip}</div>
+        <div className="panel overflow-hidden">
+          <div className="hd">
+            <span className="label">{t.trip}</span>
+          </div>
           {data.duration.feasible ? (
             <>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3">
                 {[
                   { k: t.stay, v: `${data.duration.recommended_hours}`, u: t.hours, hero: true },
                   {
@@ -228,30 +236,31 @@ export default function FishingPanel({
                     hero: false,
                   },
                   { k: t.total, v: `${data.duration.total_trip_hours}`, u: t.hours, hero: false },
-                ].map((x) => (
+                ].map((x, i) => (
                   <div
                     key={x.k}
-                    className={`rounded-xl border px-3 py-2.5 ${
-                      x.hero
-                        ? "border-emerald-400/40 bg-emerald-400/10"
-                        : "border-white/10 bg-white/[0.03]"
-                    }`}
+                    className={`px-4 py-3 ${i > 0 ? "border-l" : ""} ${x.hero ? "bg-risk-low/[0.07]" : ""}`}
+                    style={{ borderColor: "var(--rule-faint)" }}
                   >
                     <div className="label truncate">{x.k}</div>
                     <div
-                      className={`mt-0.5 font-mono text-[19px] font-extrabold tabular-nums ${
-                        x.hero ? "text-emerald-200" : "text-ocean-100"
+                      className={`mt-1 font-mono text-[20px] font-bold tabular-nums leading-none ${
+                        x.hero ? "text-risk-low" : "text-ink-900"
                       }`}
                     >
                       {x.v}
-                      <span className="ml-1 text-[11px] font-semibold opacity-70">{x.u}</span>
+                      <span className="ml-1 text-[10.5px] font-semibold opacity-65">{x.u}</span>
                     </div>
                   </div>
                 ))}
               </div>
               {data.duration.limited_by_weather && (
-                <p className="mt-2.5 text-[12px] text-amber-200/90">
-                  ⚠ {language === "mr"
+                <p
+                  className="flex items-center gap-2 border-t px-4 py-2.5 text-[12px] font-medium text-risk-high"
+                  style={{ borderColor: "var(--rule-faint)" }}
+                >
+                  <WarnGlyph size={13} className="shrink-0" />
+                  {language === "mr"
                     ? "हवामानामुळे वेळ कमी आहे — लवकर परत या."
                     : language === "hi"
                       ? "मौसम के कारण समय कम है — जल्दी लौटें।"
@@ -260,25 +269,31 @@ export default function FishingPanel({
               )}
             </>
           ) : (
-            <p className="text-[13px] text-amber-200">{t.notWorth}</p>
+            <p className="px-4 py-3.5 text-[13px] font-medium text-risk-high">{t.notWorth}</p>
           )}
         </div>
       )}
 
-      {/* ---------- avoid ---------- */}
+      {/* ---------- avoid: drawn as the chart's danger areas ---------- */}
       {data.avoid.length > 0 && (
-        <div className="card border-risk-extreme/35 bg-risk-extreme/[0.07] p-4">
-          <div className="label mb-2.5 text-red-200/80">{t.avoid}</div>
-          <div className="space-y-2">
+        <div className="panel hatch-danger overflow-hidden border-risk-extreme/60">
+          <div className="hd border-risk-extreme/25">
+            <span className="label flex items-center gap-2 !text-risk-extreme">
+              <WarnGlyph size={13} /> {t.avoid}
+            </span>
+          </div>
+          <div className="space-y-2.5 px-4 py-3.5">
             {data.avoid.map((z) => (
               <div key={z.name} className="flex items-start gap-2.5">
-                <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-sm bg-risk-extreme" />
+                <svg width="14" height="14" className="mt-0.5 shrink-0" aria-hidden>
+                  <rect x="0.5" y="0.5" width="13" height="13" fill="url(#hatch-critical)" stroke="#AF2318" strokeWidth="1" />
+                </svg>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-semibold text-red-100">{z.name}</div>
-                  <div className="mt-0.5 text-[11.5px] text-red-200/75">
+                  <div className="text-[13px] font-bold text-ink-900">{z.name}</div>
+                  <div className="mt-0.5 font-mono text-[11px] text-ink-500">
                     {Math.round(z.distance_km)} km {t.away} ·{" "}
                     {z.window ? (
-                      <span className={z.active_now ? "font-bold text-red-100" : ""}>
+                      <span className={z.active_now ? "font-bold text-risk-extreme" : ""}>
                         {t.closedBetween} {z.window}
                         {z.active_now ? ` (${t.closedNow})` : ""}
                       </span>
@@ -295,40 +310,44 @@ export default function FishingPanel({
 
       {/* ---------- 3-day outlook ---------- */}
       {data.forecast.length > 1 && (
-        <div className="card p-4">
-          <div className="label mb-3">{t.forecast}</div>
-          <div className="grid grid-cols-3 gap-2">
-            {data.forecast.map((f) => (
+        <div className="panel overflow-hidden">
+          <div className="hd">
+            <span className="label">{t.forecast}</span>
+          </div>
+          <div className="grid grid-cols-3">
+            {data.forecast.map((f, i) => (
               <div
                 key={f.day_offset}
-                className={`rounded-xl border px-3 py-3 text-center ${
-                  f.day_offset === 0
-                    ? "border-ocean-500/40 bg-ocean-500/10"
-                    : "border-white/10 bg-white/[0.03]"
+                className={`px-3 py-3.5 text-center ${i > 0 ? "border-l" : ""} ${
+                  f.day_offset === 0 ? "bg-chart-100/40" : ""
                 }`}
+                style={{ borderColor: "var(--rule-faint)" }}
               >
-                <div className="label truncate">{dayName(f.day_offset, t)}</div>
+                <div className="label truncate !tracking-[0.1em]">{dayName(f.day_offset, t)}</div>
                 <div
-                  className="mt-1 font-mono text-[24px] font-extrabold leading-none tabular-nums"
+                  className="sounding mt-1.5 text-[27px] leading-none tabular-nums"
                   style={{ color: RATING_COLOR[f.rating] }}
                 >
-                  {f.probability}%
+                  {f.probability}
+                  <span className="text-[14px]">%</span>
                 </div>
-                <div className="mt-1.5 text-[10.5px] leading-tight text-ocean-300/85">
+                <div className="mt-1.5 text-[10.5px] leading-tight text-ink-500">
                   {t.bestAt} {clock12(f.best_hour)}
                 </div>
-                <div className="mt-1 font-mono text-[10px] text-ocean-300/70">
-                  {f.wave_height_m} m
-                </div>
+                <div className="mt-0.5 font-mono text-[10px] text-ink-400">{f.wave_height_m} m</div>
                 {f.official_warning && (
-                  <div className="mt-1.5 rounded-full bg-risk-extreme/25 px-1.5 py-0.5 text-[9px] font-bold text-red-200">
-                    ⚠
+                  <div className="mt-1.5 inline-flex items-center gap-1 border border-risk-extreme/60 px-1.5 py-0.5 text-risk-extreme">
+                    <WarnGlyph size={10} />
+                    <span className="font-mono text-[8.5px] font-bold uppercase tracking-wide">Warning</span>
                   </div>
                 )}
               </div>
             ))}
           </div>
-          <p className="mt-2.5 text-[10.5px] leading-relaxed text-ocean-300/60">
+          <p
+            className="border-t px-4 py-2.5 font-mono text-[10px] leading-relaxed text-ink-400"
+            style={{ borderColor: "var(--rule-faint)" }}
+          >
             {data.method}
           </p>
         </div>

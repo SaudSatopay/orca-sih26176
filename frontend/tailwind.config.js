@@ -4,43 +4,72 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Same palette as the SIH deck so the demo and the slides feel like one product.
-        ocean: {
-          950: "#0B1220",
-          900: "#13223C",
-          800: "#1B3054",
-          700: "#1F497D",
-          600: "#2A5FA0",
-          500: "#0070C0",
-          300: "#7FB2E5",
-          100: "#DCE9F7",
-          50: "#F4F8FC",
+        // "Living nautical chart": warm chart paper, marine ink, shallow-water
+        // teal, and buoy/signal colours. Everything reads like a drafted sheet.
+        paper: {
+          50: "#FBF7ED",
+          100: "#F5EEDD",
+          150: "#EFE6CF",
+          200: "#E6DABD",
+          300: "#D6C7A2",
+          400: "#B9A67C",
         },
-        teal: { 700: "#0F5A6E", 500: "#149DBF" },
+        ink: {
+          900: "#12212D",
+          800: "#1B2F3E",
+          700: "#263B4D",
+          500: "#42596D",
+          400: "#5D7386",
+          300: "#82949F",
+        },
+        chart: {
+          700: "#174F68",
+          600: "#1E5F7A",
+          500: "#2A7391",
+          300: "#7FA9BC",
+          100: "#D8E7EB",
+        },
+        signal: "#C7442E",
         risk: {
-          low: "#1E7A4D",
-          moderate: "#B8860B",
-          high: "#C55A11",
-          extreme: "#B3372B",
+          low: "#1D7A50",
+          moderate: "#A17000",
+          high: "#BF4E12",
+          extreme: "#AF2318",
         },
       },
       fontFamily: {
-        sans: ["Inter", "Segoe UI", "Nirmala UI", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "Consolas", "monospace"],
+        display: [
+          '"Fraunces Variable"',
+          '"Noto Serif Devanagari Variable"',
+          "Georgia",
+          "serif",
+        ],
+        sans: [
+          '"Archivo Variable"',
+          '"Segoe UI"',
+          '"Nirmala UI"',
+          "system-ui",
+          "sans-serif",
+        ],
+        mono: ['"Spline Sans Mono Variable"', '"Nirmala UI"', "Consolas", "monospace"],
       },
+      // Transform-only entrances, deliberately: an animation that starts at
+      // opacity 0 with fill-mode both leaves content INVISIBLE if animations
+      // never run (hidden tab, some projectors) — and these carry safety data.
       keyframes: {
-        ping2: {
-          "0%": { transform: "scale(1)", opacity: "0.6" },
-          "100%": { transform: "scale(2.4)", opacity: "0" },
-        },
         rise: {
-          "0%": { opacity: "0", transform: "translateY(8px)" },
-          "100%": { opacity: "1", transform: "translateY(0)" },
+          "0%": { transform: "translateY(8px)" },
+          "100%": { transform: "translateY(0)" },
+        },
+        stampIn: {
+          "0%": { transform: "scale(1.3) rotate(-5deg)" },
+          "60%": { transform: "scale(0.96) rotate(-1.4deg)" },
+          "100%": { transform: "scale(1) rotate(-2deg)" },
         },
       },
       animation: {
-        ping2: "ping2 2s cubic-bezier(0,0,0.2,1) infinite",
         rise: "rise .35s ease-out both",
+        stampIn: "stampIn .45s cubic-bezier(.2,.9,.3,1.2) both",
       },
     },
   },

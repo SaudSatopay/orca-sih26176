@@ -2,17 +2,21 @@ import { useEffect, useState } from "react";
 import type { RiskCategory } from "../types";
 
 export const RISK_COLOR: Record<RiskCategory, string> = {
-  LOW: "#1E7A4D",
-  MODERATE: "#B8860B",
-  HIGH: "#C55A11",
-  EXTREME: "#B3372B",
+  LOW: "#1D7A50",
+  MODERATE: "#A17000",
+  HIGH: "#BF4E12",
+  EXTREME: "#AF2318",
 };
 
-/** Animated 0-100 dial. The number counts up so the verdict lands with weight. */
+/**
+ * The risk gauge, drawn like a ship's instrument: a fine tick ring, an ink
+ * arc, threshold marks at the band edges, and a serif numeral that counts up
+ * so the verdict lands with weight.
+ */
 export default function RiskDial({
   score,
   category,
-  size = 132,
+  size = 138,
 }: {
   score: number;
   category: RiskCategory;
@@ -20,9 +24,9 @@ export default function RiskDial({
 }) {
   const [shown, setShown] = useState(0);
   const color = RISK_COLOR[category];
-  const stroke = 11;
-  const r = (size - stroke) / 2;
-  const circumference = 2 * Math.PI * r;
+  const c = size / 2;
+  const rArc = c - 13;
+  const circumference = 2 * Math.PI * rArc;
 
   useEffect(() => {
     const duration = 750;
@@ -53,36 +57,89 @@ export default function RiskDial({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [score]);
 
+  // Outer instrument ticks: a mark every 2 points, a major every 10.
+  const ticks = Array.from({ length: 50 }, (_, i) => {
+    const a = (i / 50) * 2 * Math.PI - Math.PI / 2;
+    const major = i % 5 === 0;
+    const r1 = major ? c - 5.5 : c - 3.5;
+    return {
+      x1: c + r1 * Math.cos(a),
+      y1: c + r1 * Math.sin(a),
+      x2: c + (c - 1) * Math.cos(a),
+      y2: c + (c - 1) * Math.sin(a),
+      major,
+    };
+  });
+
+  // Band thresholds marked on the ring, as an instrument prints its red-lines.
+  const thresholds = [
+    { v: 25, col: RISK_COLOR.LOW },
+    { v: 50, col: RISK_COLOR.MODERATE },
+    { v: 79, col: RISK_COLOR.HIGH },
+  ].map(({ v, col }) => {
+    const a = (v / 100) * 2 * Math.PI - Math.PI / 2;
+    return {
+      x1: c + (c - 8) * Math.cos(a),
+      y1: c + (c - 8) * Math.sin(a),
+      x2: c + (c - 1) * Math.cos(a),
+      y2: c + (c - 1) * Math.sin(a),
+      col,
+    };
+  });
+
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
+      <svg width={size} height={size}>
+        {ticks.map((tk, i) => (
+          <line
+            key={i}
+            x1={tk.x1}
+            y1={tk.y1}
+            x2={tk.x2}
+            y2={tk.y2}
+            stroke="#12212D"
+            strokeWidth={tk.major ? 1.3 : 0.6}
+            opacity={tk.major ? 0.7 : 0.35}
+          />
+        ))}
+        {thresholds.map((th, i) => (
+          <line
+            key={`t${i}`}
+            x1={th.x1}
+            y1={th.y1}
+            x2={th.x2}
+            y2={th.y2}
+            stroke={th.col}
+            strokeWidth={2.4}
+          />
+        ))}
+        <circle cx={c} cy={c} r={rArc} fill="#FBF7ED" stroke="rgba(18,33,45,0.2)" strokeWidth={7} />
         <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="rgba(127,178,229,0.18)"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
+          cx={c}
+          cy={c}
+          r={rArc}
           fill="none"
           stroke={color}
-          strokeWidth={stroke}
-          strokeLinecap="round"
+          strokeWidth={7}
+          strokeLinecap="butt"
           strokeDasharray={circumference}
           strokeDashoffset={circumference * (1 - shown / 100)}
           style={{ transition: "stroke-dashoffset .12s linear" }}
+          transform={`rotate(-90 ${c} ${c})`}
         />
+        <circle cx={c} cy={c} r={rArc - 6.5} fill="none" stroke="rgba(18,33,45,0.3)" strokeWidth={0.8} />
       </svg>
       <div className="absolute inset-0 grid place-items-center">
         <div className="text-center leading-none">
-          <div className="text-[34px] font-extrabold tabular-nums" style={{ color }}>
+          <div
+            className="font-display text-[38px] font-black tabular-nums tracking-tight"
+            style={{ color }}
+          >
             {Math.max(0, shown)}
           </div>
-          <div className="mt-0.5 text-[11px] font-medium text-ocean-300">/100</div>
+          <div className="mt-1 font-mono text-[9px] font-semibold uppercase tracking-[0.2em] text-ink-400">
+            / 100
+          </div>
         </div>
       </div>
     </div>

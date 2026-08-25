@@ -42,7 +42,7 @@ no database, no API key, no internet required.
 - Ask in English / Hindi / Marathi, by **typing or speaking** (Web Speech API — no key)
 - Spoken answers back in the same language, toggleable
 - **Live conditions strip** — wave, wind, sea state, rain, visibility, sea temperature
-- **Dark marine map** with restricted zones, ranked fishing zones and both route options
+- **Chart-sheet map** — drawn like a drafted nautical chart: tick-marked neatline, compass rose, hatched danger areas, numbered buoy markers, plotted courses
 - **Draggable vessel** — drag the boat anywhere and ORCA geofences that position live
 - **Risk card** — animated score, ranked factor contributions, safety overrides, evidence table
 - **"When is it safe to go?"** — 24-hour risk curve with the best departure window highlighted
@@ -218,6 +218,14 @@ PostGIS and XGBoost are the documented production path, not demo requirements.
 
 **Frontend** React 18 · TypeScript · Tailwind · Leaflet · Vite. Voice in/out uses
 the browser's own Web Speech API — no key, no server round-trip.
+
+The visual identity is a **living nautical chart**: warm chart paper, marine ink,
+hairline rules and hatched danger areas, the way INCOIS PFZ advisories are
+actually drawn. Fraunces (serif) carries verdicts and headings, Archivo the body,
+Spline Sans Mono the instrument readouts; Noto Serif Devanagari keeps Hindi and
+Marathi headings in the same voice. All fonts are self-hosted through Fontsource,
+so the identity survives with no internet. A light UI also projects far better
+than a dark one on hackathon projectors.
 
 ```
 orca/

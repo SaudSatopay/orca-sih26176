@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { PauseGlyph, PlayGlyph } from "./glyphs";
 
 export interface TourStep {
   title: string;
@@ -166,33 +167,36 @@ export default function GuidedTour({
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-0 z-[1000] flex justify-center p-4">
-      <div className="pointer-events-auto w-full max-w-3xl rounded-2xl border border-ocean-300/25 bg-ocean-950/95 shadow-2xl shadow-black/60 backdrop-blur-xl">
+      <div
+        className="panel rule-double pointer-events-auto w-full max-w-3xl shadow-2xl"
+        style={{ background: "var(--paper-bright)" }}
+      >
         {/* progress */}
-        <div className="h-1 overflow-hidden rounded-t-2xl bg-white/10">
+        <div className="h-[3px] bg-ink-900/10">
           <div
-            className="h-full bg-gradient-to-r from-ocean-500 to-teal-500 transition-[width] duration-100 ease-linear"
+            className="h-full bg-ink-900 transition-[width] duration-100 ease-linear"
             style={{ width: `${progress * 100}%` }}
           />
         </div>
 
         <div className="flex items-start gap-4 px-5 py-4">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-ocean-700 to-teal-700 font-mono text-sm font-bold text-white">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[2px] bg-ink-900 font-display text-[16px] font-black text-paper-50">
             {step + 1}
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-[15px] font-bold text-white">{s.title}</h3>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h3 className="font-display text-[16px] font-bold text-ink-900">{s.title}</h3>
               {s.feature && (
-                <span className="rounded-full bg-ocean-700/50 px-2.5 py-0.5 font-mono text-[9.5px] font-bold uppercase tracking-wider text-ocean-100">
+                <span className="border border-chart-500/50 bg-chart-100/50 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-chart-700">
                   {s.feature}
                 </span>
               )}
-              <span className="ml-auto font-mono text-[10px] text-ocean-300/70">
+              <span className="ml-auto font-mono text-[10px] tabular-nums text-ink-400">
                 {step + 1} / {TOUR.length}
               </span>
             </div>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-ocean-100/90">{s.say}</p>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-700">{s.say}</p>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5">
@@ -200,28 +204,24 @@ export default function GuidedTour({
               onClick={onPrev}
               disabled={step === 0}
               title="Previous"
-              className="grid h-8 w-8 place-items-center rounded-lg bg-white/5 text-ocean-200 transition hover:bg-white/10 disabled:opacity-30"
+              className="btn-square !h-8 !w-8 disabled:opacity-30"
             >
               ‹
             </button>
             <button
               onClick={onPause}
               title={paused ? "Resume" : "Pause"}
-              className="grid h-9 w-9 place-items-center rounded-lg bg-ocean-700 text-white transition hover:bg-ocean-600"
+              className="grid h-9 w-9 place-items-center rounded-[2px] bg-ink-900 text-paper-50 transition hover:bg-ink-700"
             >
-              {paused ? "▶" : "❚❚"}
+              {paused ? <PlayGlyph size={12} /> : <PauseGlyph size={12} />}
             </button>
-            <button
-              onClick={onNext}
-              title="Next"
-              className="grid h-8 w-8 place-items-center rounded-lg bg-white/5 text-ocean-200 transition hover:bg-white/10"
-            >
+            <button onClick={onNext} title="Next" className="btn-square !h-8 !w-8">
               ›
             </button>
             <button
               onClick={onExit}
               title="Exit tour"
-              className="ml-1 grid h-8 w-8 place-items-center rounded-lg bg-white/5 text-ocean-300 transition hover:bg-red-500/25 hover:text-red-200"
+              className="btn-square !h-8 !w-8 hover:!border-risk-extreme hover:!bg-risk-extreme"
             >
               ✕
             </button>

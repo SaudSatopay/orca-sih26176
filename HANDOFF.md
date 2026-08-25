@@ -46,7 +46,8 @@ cd C:\Users\USER\Desktop\SIH\orca\backend; python -m uvicorn app.main:app --port
 Then open <http://127.0.0.1:8000>. Single process serves API *and* the built UI.
 `cd backend; python smoke_test.py` runs all five demo scenarios headless.
 
-Deep links: `/?tour=1` (guided walkthrough), `/?demo=safe|danger|cyclone|pfz|route`.
+Deep links: `/?tour=1` (guided walkthrough), `/?demo=safe|danger|cyclone|pfz|route`,
+`/?tab=home|ask|authority`, `/?at=lat,lon` (pin the Today-tab position, skips GPS).
 
 ---
 
@@ -76,6 +77,28 @@ details filled, app mockup on slide 2. Considered final.
   agent-crew panel, route options.
 - **Authority**: every landing centre scored, auto-refreshing.
 - **Guided tour**: 17 auto-advancing narrated steps — also the demo fallback.
+
+**Design identity (redesigned 24 Aug 2026)** — a "living nautical chart":
+warm chart-paper background with graticule, bathymetric-contour and compass-rose
+watermarks; marine-ink foreground; hairline rules; 2–3 px corner radii.
+- Fonts (all self-hosted via `@fontsource-variable/*`, offline-safe):
+  **Fraunces** display serif (verdicts, headings, buoy numbers, italic
+  "sounding" percentages), **Archivo** body, **Spline Sans Mono** labels/data,
+  **Noto Serif Devanagari** for hi/mr headings. Nirmala UI remains the
+  Devanagari fallback in body/mono stacks.
+- Component vocabulary in `index.css`: `.panel`, `.rule-double`, `.hd`,
+  `.label`, `.btn-ink`, `.btn-line`, `.btn-square`, `.chip`, `.tab`, `.field`,
+  `.stamp` (rotated rubber-stamp verdicts), `.hatch-danger`, `.sounding`,
+  `.chart-sheet`/`.chart-frame` (the map's tick-marked neatline).
+- The map: CARTO **voyager** tiles (sepia-filtered to match paper), SVG
+  renderer (NOT canvas — required for the pattern fills), restricted zones use
+  real SVG hatch patterns from `<ChartDefs/>` in App via classes
+  `zone-hatch-{critical|warning|info}`, recommended route animates its dashes
+  via class `route-live`, markers are paper-faced "buoys" with rating-coloured
+  rings that match the list badges 1:1.
+- All icons are inline SVGs in `components/glyphs.tsx` — **no emoji anywhere**
+  (OS-dependent rendering). The ORCA mark is a compass rose whose needle is an
+  orca fin.
 
 **Verified demo numbers (Mumbai):** area 1 = 80% at 31 km · best time 2–7 PM ·
 stay ~3–4 h · trip ~8 h · 3-day outlook 82/84/79%.
@@ -118,11 +141,19 @@ These are deliberate. Do not "simplify" them away.
 | **Map rendered empty** while tiles downloaded fine | A conditional `className` on the Leaflet container made React rewrite the class attribute and delete Leaflet's own classes (`leaflet-container`…), collapsing tile panes to 0×0. **Any DOM node handed to an imperative library must have a constant `className`** — drive size via inline `style`, and call `invalidateSize()` on change. |
 | Safest route drew as a straight line through restricted zones | The naive "drop near-collinear points" simplifier flattened the detour. Uses **Douglas–Peucker** now, plus a guard that refuses to reintroduce a zone conflict. |
 | Risk dial rendered **0** instead of 92 | `requestAnimationFrame` is suspended in hidden/non-compositing tabs. Animation is decoration; the number is safety information — there is a `setTimeout` fail-safe that snaps to the final value. |
-| Agent-trace rows invisible | Staggered entrance animation with `fill-mode: both` leaves rows at opacity 0 if animations never run. Per-row stagger removed. |
+| Agent-trace rows invisible | Staggered entrance animation with `fill-mode: both` leaves rows at opacity 0 if animations never run. Per-row stagger removed. **Follow-through:** every entrance keyframe (`rise`, `stampIn`) is now transform-only — opacity never animates, so nothing can be left invisible. Keep it that way. |
 | Nearest fishing ground ranked **worst** | It had the best chlorophyll but `sst_delta = 0` → no thermal front → near-zero front factor. Ground profiles now model productive water closer in. |
 | Marathi question answered in English | The UI was forcing its language selection over server-side detection. Language is now auto-detected unless the user explicitly clicks EN/हिं/मरा. |
 | PFZ #1 sat inside the naval exclusion zone | Added the restricted-zone filter to `pfz_agent`. |
 | `RUN-ORCA.bat` printed ECHO help text | A batch `echo` line must never start with `/?`. Use full URLs. |
+| **LIVE mode looked broken** — Today tab hung ~10 s, risk timeline ~32 s, and values kept falling back to demo | `live_client` made a fresh HTTPS call per agent per hour per port (timeline = 48 sequential requests, safe-window scan = 28, authority board = 20 every 30 s poll) even though ONE Open-Meteo response already contains 3 days of hourly data. The burst also got the IP throttled → silent demo fallbacks. Fixed with a TTL cache of the full hourly series per (provider, ~km-rounded position) in `data/live_client.py` (10 min for hits, 60 s for failures so offline live-mode fails fast, cleared on mode toggle). After: fishing 1.4 s cold, timeline 0.02 s warm, authority 0.01 s repeat. **Don't add per-hour fetching back.** |
+
+| **Fishing grounds rendered on land** (tap near Bhavnagar → markers inland across Saurashtra) | Candidates were fanned around the nearest port's hard-coded `shore_bearing` (Veraval's 200° is wrong from inside the Gulf of Khambhat) and nothing anywhere tested land vs sea. Fix in `geo.py`: a simplified pure-Python landmass polygon set (mainland + Andaman + Sri Lanka, ±10-20 km in deltas, honesty-noted) with `is_on_land()` and `seaward_bearing()` (picks the compass direction with the most open water, tie-broken toward the port prior so rehearsed layouts don't move). `pfz_zones` now fans around that axis and slides any on-land candidate along its distance arc into water or drops it. Distance is preserved, and probability/ranking never used bearing, so all rehearsed numbers are unchanged (verified). The boat-drag position check also says "That position is on land" now. |
+
+Also know: in LIVE mode the **ocean agent always reports `degraded` (amber)** —
+that is honest labelling, not a failure: Open-Meteo Marine has no surface-current
+field, so the current comes from demo data and the agent says so. Wave/SST are
+genuinely live (check the evidence table's source column).
 
 ---
 

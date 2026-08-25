@@ -20,7 +20,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Optional, Tuple
 
 from ..config import DEMO_DISCLAIMER
-from .geo import PORTS, compass, bearing_deg, destination, haversine_km, nearest_port
+from .geo import (PORTS, compass, bearing_deg, destination, haversine_km,
+                  is_on_land, nearest_port, seaward_bearing)
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
@@ -338,13 +339,33 @@ def pfz_zones(lat: float, lon: float, location_name: str,
     """
     cond = conditions(location_name, when)
     port = nearest_port(lat, lon)
-    offshore = float(port.get("shore_bearing", 270))
+    # The fan axis is wherever the most open water actually lies FROM THIS
+    # POINT, not the nearest port's coast direction — a point inside the Gulf
+    # of Khambhat is 'near Veraval', but its sea is down the gulf, not SSW
+    # across the Saurashtra peninsula.
+    offshore = seaward_bearing(lat, lon, prior=float(port.get("shore_bearing", 270)))
 
     zones: List[Dict] = []
     for i, spec in enumerate(_CANDIDATE_LAYOUT, start=1):
         if spec["distance"] > radius_km:
             continue
-        plat, plon = destination((lat, lon), (offshore + spec["d_bearing"]) % 360, spec["distance"])
+        # A fishing ground on land is nonsense (the on-screen equivalent of
+        # recommending a wheat field), so a candidate that falls on land slides
+        # along its distance arc toward the open-water axis until it is wet —
+        # or is dropped. Distance is preserved, so ranking and trip maths
+        # (which never use the bearing) are unaffected.
+        placed = None
+        off = spec["d_bearing"]
+        step = 18 if off <= 0 else -18
+        for attempt in range(8):
+            trial = off + attempt * step
+            cand = destination((lat, lon), (offshore + trial) % 360, spec["distance"])
+            if not is_on_land(cand[0], cand[1]):
+                placed = cand
+                break
+        if placed is None:
+            continue
+        plat, plon = placed
         actual_km = haversine_km((lat, lon), (plat, plon))
         if actual_km > radius_km:
             continue

@@ -12,11 +12,13 @@ import type {
   ZoneFeature,
 } from "../types";
 import { RATING_COLOR } from "./FishingPanel";
+import { CompassMark } from "./glyphs";
 
+/** Zone stroke colours; the fills are true chart hatching via CSS patterns. */
 const ZONE_COLOR: Record<string, string> = {
-  critical: "#E05B4A",
-  warning: "#E08A3C",
-  info: "#3FA0E0",
+  critical: "#AF2318",
+  warning: "#BF4E12",
+  info: "#2A7391",
 };
 
 const HINT: Record<Language, string> = {
@@ -26,13 +28,17 @@ const HINT: Record<Language, string> = {
 };
 
 const STATUS_STYLE: Record<PositionCheck["status"], string> = {
-  clear: "bg-emerald-500/90",
-  warning: "bg-amber-500/90",
-  critical: "bg-red-600/95",
+  clear: "bg-risk-low",
+  warning: "bg-risk-high",
+  critical: "bg-risk-extreme",
 };
 
+const SERIF = `'Fraunces Variable',Georgia,serif`;
+const MONO = `'Spline Sans Mono Variable',Consolas,monospace`;
+
 /**
- * Leaflet map with a draggable vessel marker.
+ * Leaflet map presented as a chart sheet: paper margin, tick marks, double
+ * neatline, compass rose, hatched danger areas, plotted courses.
  *
  * Custom divIcons throughout so we never depend on Leaflet's default marker
  * image assets, which break under bundlers and would 404 with no network.
@@ -68,7 +74,7 @@ export default function MarineMap({
   const boatRef = useRef<L.Marker | null>(null);
   const [probe, setProbe] = useState<PositionCheck | null>(null);
   const [dragging, setDragging] = useState(false);
-  const mapHeight = areas.length ? 560 : 430;
+  const mapHeight = areas.length ? 540 : 420;
 
   // Leaflet caches the container size, so tell it whenever the height changes.
   useEffect(() => {
@@ -81,17 +87,18 @@ export default function MarineMap({
   // ---- init once -------------------------------------------------------
   useEffect(() => {
     if (mapRef.current || !containerRef.current) return;
+    // SVG renderer (not canvas): zone polygons take CSS pattern fills, and the
+    // recommended course animates its dashes — neither works on canvas.
     const map = L.map(containerRef.current, {
       zoomControl: false,
       attributionControl: true,
-      preferCanvas: true,
     }).setView([18.92, 72.6], 10);
 
-    L.control.zoom({ position: "topright" }).addTo(map);
+    L.control.zoom({ position: "topleft" }).addTo(map);
 
-    // Dark basemap to match the console; OSM standard as the fallback.
-    const dark = L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    // Warm light basemap to match the paper; OSM standard as the fallback.
+    const light = L.tileLayer(
+      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
       {
         maxZoom: 19,
         subdomains: "abcd",
@@ -99,16 +106,16 @@ export default function MarineMap({
       },
     );
     let fellBack = false;
-    dark.on("tileerror", () => {
+    light.on("tileerror", () => {
       if (fellBack) return;
       fellBack = true;
-      map.removeLayer(dark);
+      map.removeLayer(light);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
         attribution: "&copy; OpenStreetMap contributors",
       }).addTo(map);
     });
-    dark.addTo(map);
+    light.addTo(map);
 
     mapRef.current = map;
     layerRef.current = L.layerGroup().addTo(map);
@@ -147,28 +154,28 @@ export default function MarineMap({
     if (origin && radiusKm) {
       L.circle([origin.latitude, origin.longitude], {
         radius: radiusKm * 1000,
-        color: "#9FCBEF",
-        weight: 2,
-        opacity: 0.85,
-        dashArray: "10 9",
-        fillColor: "#7FB2E5",
-        fillOpacity: 0.055,
+        color: "#2A7391",
+        weight: 1.6,
+        opacity: 0.75,
+        dashArray: "2 7",
+        fillColor: "#2A7391",
+        fillOpacity: 0.03,
         interactive: false,
       })
         .bindTooltip(`${radiusKm} km search area`, { permanent: false, direction: "top" })
         .addTo(group);
     }
 
-    // restricted zones
+    // restricted zones — hatched like chart danger areas
     zones.forEach((z) => {
       const ring = z.geometry.coordinates[0].map(([lon, lat]) => [lat, lon] as [number, number]);
-      const color = ZONE_COLOR[z.properties.severity] ?? "#E05B4A";
+      const severity = z.properties.severity in ZONE_COLOR ? z.properties.severity : "critical";
+      const color = ZONE_COLOR[severity];
       L.polygon(ring, {
         color,
-        weight: 2.5,
-        dashArray: "8 6",
-        fillColor: color,
-        fillOpacity: 0.22,
+        weight: 2,
+        dashArray: "9 5",
+        className: `zone-hatch-${severity}`,
       })
         .bindPopup(
           `<b>${z.properties.name}</b><br/><span style="opacity:.75">${z.properties.zone_type.replace(/_/g, " ")}</span><br/><span style="font-size:10px;opacity:.6">${z.properties.note}</span>`,
@@ -176,16 +183,17 @@ export default function MarineMap({
         .addTo(group);
     });
 
-    // routes (under the pins)
+    // plotted courses (under the pins)
     routes.forEach((r) => {
       const line = r.legs.map((l) => [l.latitude, l.longitude] as [number, number]);
       line.forEach((p) => bounds.push(p));
       const rec = r.recommended;
       L.polyline(line, {
-        color: rec ? "#2FBF71" : "#8FA6C4",
-        weight: rec ? 5 : 3,
-        opacity: rec ? 0.95 : 0.6,
-        dashArray: rec ? "14 10" : "5 9",
+        color: rec ? "#1D7A50" : "#5D7386",
+        weight: rec ? 4 : 2.5,
+        opacity: rec ? 0.95 : 0.55,
+        dashArray: rec ? "12 12" : "2 8",
+        className: rec ? "route-live" : "",
       })
         .bindPopup(
           `<b>${r.name}</b><br/>${r.distance_km} km · ${Math.round(r.eta_minutes)} min<br/><span style="font-size:11px;opacity:.8">${r.notes}</span>`,
@@ -193,11 +201,12 @@ export default function MarineMap({
         .addTo(group);
     });
 
-    // fishing grounds — scored areas when available, otherwise chat PFZ pins
+    // fishing grounds as numbered buoys: paper face, rating-coloured ring,
+    // rank set in the chart's serif, probability as a sounding beneath it.
     if (areas.length) {
       areas.forEach((a) => {
         const best = a.rank === 1;
-        const size = best ? 42 : 34;
+        const size = best ? 46 : 38;
         const color = RATING_COLOR[a.rating];
         const focused = focusRank === a.rank;
         L.marker([a.latitude, a.longitude], {
@@ -209,12 +218,12 @@ export default function MarineMap({
             html: `<div style="position:relative;width:${size}px;height:${size}px">
                      ${focused ? `<div style="position:absolute;inset:-8px;border-radius:50%;
                         border:2px solid ${color};animation:ping2 1.6s cubic-bezier(0,0,.2,1) infinite"></div>` : ""}
-                     <div style="position:absolute;inset:0;border-radius:50%;background:${color};
-                       border:3px solid rgba(255,255,255,.92);display:flex;flex-direction:column;
-                       align-items:center;justify-content:center;line-height:1;
-                       box-shadow:0 4px 16px rgba(0,0,0,.6);color:#08131f">
-                       <span style="font:800 ${best ? 14 : 12}px Inter,sans-serif">${a.rank}</span>
-                       <span style="font:700 ${best ? 9 : 8}px Inter,sans-serif;opacity:.85">${a.probability}%</span>
+                     <div style="position:absolute;inset:0;border-radius:50%;background:#FBF7ED;
+                       border:${best ? 4 : 3.5}px solid ${color};display:flex;flex-direction:column;
+                       align-items:center;justify-content:center;line-height:1;gap:1px;
+                       box-shadow:0 3px 10px rgba(18,33,45,.4);color:#12212D">
+                       <span style="font:${best ? "800 16px" : "700 14px"} ${SERIF}">${a.rank}</span>
+                       <span style="font:600 ${best ? 8.5 : 8}px ${MONO};color:#42596D">${a.probability}%</span>
                      </div>
                    </div>`,
           }),
@@ -231,17 +240,17 @@ export default function MarineMap({
     } else {
       pfz.forEach((z) => {
         const best = z.rank === 1;
-        const size = best ? 36 : 29;
-        const color = best ? "#2FBF71" : "#3FA0E0";
+        const size = best ? 40 : 32;
+        const color = best ? "#1D7A50" : "#2A7391";
         L.marker([z.latitude, z.longitude], {
           icon: L.divIcon({
             className: "",
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2],
-            html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};
-                     border:3px solid rgba(255,255,255,.92);display:grid;place-items:center;
-                     color:#08131f;font:800 ${best ? 15 : 13}px Inter,sans-serif;
-                     box-shadow:0 4px 14px rgba(0,0,0,.55)">${z.rank}</div>`,
+            html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#FBF7ED;
+                     border:${best ? 4 : 3}px solid ${color};display:grid;place-items:center;
+                     color:#12212D;font:${best ? "800 16px" : "700 13px"} ${SERIF};
+                     box-shadow:0 3px 10px rgba(18,33,45,.4)">${z.rank}</div>`,
           }),
         })
           .bindPopup(
@@ -255,28 +264,28 @@ export default function MarineMap({
       });
     }
 
-    // draggable vessel
+    // draggable vessel — ink boat on a paper disc
     if (origin) {
       const boat = L.marker([origin.latitude, origin.longitude], {
         draggable: true,
         autoPan: true,
         icon: L.divIcon({
           className: "",
-          iconSize: [30, 30],
-          iconAnchor: [15, 15],
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
           // Inline SVG rather than an emoji: emoji glyphs vary by OS and can
           // fail to render entirely on a projector/kiosk machine.
-          html: `<div style="position:relative;width:30px;height:30px;cursor:grab">
+          html: `<div style="position:relative;width:34px;height:34px;cursor:grab">
                    <div style="position:absolute;inset:-9px;border-radius:50%;
-                     border:2px solid rgba(127,178,229,.65);
+                     border:2px solid rgba(42,115,145,.6);
                      animation:ping2 2s cubic-bezier(0,0,.2,1) infinite"></div>
-                   <div style="position:absolute;inset:0;border-radius:50%;background:#1F497D;
-                     border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,.6);
+                   <div style="position:absolute;inset:0;border-radius:50%;background:#12212D;
+                     border:2.5px solid #FBF7ED;box-shadow:0 3px 10px rgba(18,33,45,.5);
                      display:grid;place-items:center">
-                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                          stroke="#fff" stroke-width="2.2" stroke-linecap="round"
+                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                          stroke="#FBF7ED" stroke-width="2" stroke-linecap="round"
                           stroke-linejoin="round">
-                       <path d="M12 3v10"/><path d="M12 5l7 8H5l7-8z" fill="#fff" stroke="none"/>
+                       <path d="M12 3v10"/><path d="M12 5l7 8H5l7-8z" fill="#FBF7ED" stroke="none"/>
                        <path d="M3 17c2 1.6 4 1.6 6 0s4-1.6 6 0 4 1.6 6 0"/>
                      </svg>
                    </div>
@@ -322,55 +331,85 @@ export default function MarineMap({
         : null;
 
   return (
-    <div className="card relative overflow-hidden">
-      {/*
-        The height is an inline style on purpose. Leaflet adds its own classes
-        (leaflet-container, leaflet-touch, ...) to this element on mount; a
-        conditional `className` makes React rewrite the whole class attribute
-        when it changes, silently removing them. Without leaflet-container the
-        library's CSS stops applying, the tile panes collapse to 0x0 and every
-        tile renders at zero width — tiles download fine, the map just vanishes.
-        React writes style properties individually, so this leaves classes alone.
-      */}
-      <div ref={containerRef} className="w-full" style={{ height: mapHeight }} />
+    <div className="chart-sheet">
+      <div className="chart-frame">
+        {/*
+          The height is an inline style on purpose. Leaflet adds its own classes
+          (leaflet-container, leaflet-touch, ...) to this element on mount; a
+          conditional `className` makes React rewrite the whole class attribute
+          when it changes, silently removing them. Without leaflet-container the
+          library's CSS stops applying, the tile panes collapse to 0x0 and every
+          tile renders at zero width — tiles download fine, the map just vanishes.
+          React writes style properties individually, so this leaves classes alone.
+        */}
+        <div ref={containerRef} className="w-full" style={{ height: mapHeight }} />
 
-      {/* legend */}
-      <div className="pointer-events-none absolute bottom-6 left-3 z-[500] space-y-1.5">
-        {[
-          ["#2FBF71", "Very good chance"],
-          ["#D9A63C", "Some chance"],
-          ["#E05B4A", "Do not enter"],
-        ].map(([c, label]) => (
-          <div
-            key={label}
-            className="flex items-center gap-2 rounded-lg bg-ocean-950/85 px-2.5 py-1 text-[11px] font-medium text-ocean-100 backdrop-blur"
-          >
-            <span className="h-2.5 w-2.5 rounded-full" style={{ background: c }} />
-            {label}
+        {/* compass rose, printed on the water */}
+        <CompassMark
+          size={62}
+          className="pointer-events-none absolute right-3 top-3 z-[500] text-ink-800 opacity-70"
+        />
+
+        {/* symbols legend, as a chart's key */}
+        <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-[2px] border border-ink-700/50 bg-paper-50/95 px-3 pb-2 pt-1.5 shadow-md">
+          <div className="mb-1 font-mono text-[8.5px] font-bold uppercase tracking-[0.16em] text-ink-400">
+            Symbols
           </div>
-        ))}
-        <div className="flex items-center gap-2 rounded-lg bg-ocean-950/85 px-2.5 py-1 text-[11px] font-medium text-ocean-100 backdrop-blur">
-          <span className="h-0.5 w-5 rounded" style={{ background: "#2FBF71" }} />
-          Safest route
+          {[
+            ["#1D7A50", "Very good chance"],
+            ["#B08000", "Some chance"],
+          ].map(([c, label]) => (
+            <div key={label} className="flex items-center gap-2 py-[1.5px] text-[10.5px] font-medium text-ink-700">
+              <span
+                className="h-2.5 w-2.5 rounded-full border-2 bg-paper-50"
+                style={{ borderColor: c }}
+              />
+              {label}
+            </div>
+          ))}
+          <div className="flex items-center gap-2 py-[1.5px] text-[10.5px] font-medium text-ink-700">
+            <svg width="10" height="10" aria-hidden>
+              <rect x="0.5" y="0.5" width="9" height="9" fill="url(#hatch-critical)" stroke="#AF2318" strokeWidth="1" />
+            </svg>
+            Do not enter
+          </div>
+          <div className="flex items-center gap-2 py-[1.5px] text-[10.5px] font-medium text-ink-700">
+            <svg width="12" height="6" aria-hidden>
+              <line x1="0" y1="3" x2="12" y2="3" stroke="#1D7A50" strokeWidth="2" strokeDasharray="4 2.5" />
+            </svg>
+            Safest course
+          </div>
         </div>
+
+        {/* drag hint */}
+        {origin && !probe && !dragging && (
+          <div className="pointer-events-none absolute bottom-3 right-3 z-[500] rounded-[2px] border border-ink-700/40 bg-paper-50/95 px-2.5 py-1.5 text-[10.5px] font-medium text-ink-700 shadow-md">
+            {HINT[language] ?? HINT.en}
+          </div>
+        )}
+
+        {/* live geofence banner */}
+        {banner && (
+          <div
+            className={`absolute left-1/2 top-3 z-[500] max-w-[78%] -translate-x-1/2 animate-rise rounded-[2px] px-3.5 py-2 text-[12px] font-semibold text-paper-50 shadow-lg ${banner.style}`}
+          >
+            <div>{banner.text}</div>
+            {banner.sub && (
+              <div className="mt-0.5 font-mono text-[10px] font-normal opacity-85">{banner.sub}</div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* drag hint */}
-      {origin && !probe && !dragging && (
-        <div className="pointer-events-none absolute left-3 top-3 z-[500] rounded-lg bg-ocean-950/85 px-2.5 py-1.5 text-[11px] font-medium text-ocean-200 backdrop-blur">
-          ⛵ {HINT[language] ?? HINT.en}
-        </div>
-      )}
-
-      {/* live geofence banner */}
-      {banner && (
-        <div
-          className={`absolute right-3 top-3 z-[500] max-w-[64%] animate-rise rounded-xl px-3 py-2 text-[12px] font-semibold text-white shadow-xl backdrop-blur ${banner.style}`}
-        >
-          <div>{probe?.status === "clear" ? "✓" : "⚠"} {banner.text}</div>
-          {banner.sub && <div className="mt-0.5 font-mono text-[10px] opacity-85">{banner.sub}</div>}
-        </div>
-      )}
+      {/* sheet margin note */}
+      <div className="mt-[7px] flex items-baseline justify-between">
+        <span className="font-mono text-[8.5px] font-semibold uppercase tracking-[0.18em] text-ink-400">
+          Indian coastal waters · scale varies
+        </span>
+        <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-300">
+          Illustrative boundaries — not for navigation
+        </span>
+      </div>
     </div>
   );
 }

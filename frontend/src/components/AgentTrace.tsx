@@ -26,23 +26,16 @@ const PHASES: { key: string; title: string; note: string; agents: string[] }[] =
 ];
 
 const STATUS_DOT: Record<Trace["status"], string> = {
-  ok: "bg-emerald-400",
-  degraded: "bg-amber-400",
-  failed: "bg-red-400",
-  skipped: "bg-white/25",
-};
-
-const STATUS_ROW: Record<Trace["status"], string> = {
-  ok: "border-white/10 bg-white/[0.035]",
-  degraded: "border-amber-400/30 bg-amber-400/[0.07]",
-  failed: "border-red-400/30 bg-red-400/[0.07]",
-  skipped: "border-white/5 bg-white/[0.02]",
+  ok: "#1D7A50",
+  degraded: "#A17000",
+  failed: "#AF2318",
+  skipped: "#82949F",
 };
 
 /**
- * The "ten agents actually ran" panel — the screen that proves ORCA is a crew
- * rather than a single prompt. Grouped by execution phase so the parallel fan-out
- * is visible, with real measured latencies.
+ * The crew manifest — the panel that proves ORCA is a crew rather than a
+ * single prompt. Grouped by execution phase so the parallel fan-out is
+ * visible, with real measured latencies, set like a ship's log.
  */
 export default function AgentTracePanel({
   trace,
@@ -61,22 +54,22 @@ export default function AgentTracePanel({
   })).filter((p) => p.rows.length);
 
   return (
-    <div className="card p-4">
-      <div className="mb-3 flex items-baseline justify-between">
+    <div className="panel overflow-hidden">
+      <div className="hd">
         <span className="label">Agent crew</span>
-        <span className="font-mono text-[10px] tabular-nums text-ocean-300">
+        <span className="font-mono text-[10px] tabular-nums text-ink-400">
           {trace.length} agents · {elapsed ?? trace.reduce((s, t) => s + t.latency_ms, 0)} ms total
         </span>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3.5 px-4 py-3.5">
         {ran.map((phase) => (
           <div key={phase.key}>
             <div className="mb-1.5 flex items-baseline gap-2">
-              <span className="text-[11px] font-bold text-ocean-100">{phase.title}</span>
-              <span className="text-[10px] text-ocean-300/65">{phase.note}</span>
+              <span className="font-display text-[13px] font-bold text-ink-900">{phase.title}</span>
+              <span className="text-[10.5px] italic text-ink-400">{phase.note}</span>
               {phase.key === "gather" && phase.rows.length > 1 && (
-                <span className="ml-auto rounded-full bg-ocean-500/15 px-2 py-0.5 font-mono text-[9px] font-bold text-ocean-300">
+                <span className="ml-auto border border-chart-500/50 bg-chart-100/50 px-2 py-0.5 font-mono text-[9px] font-bold tracking-wide text-chart-700">
                   ∥ {phase.rows.length} CONCURRENT
                 </span>
               )}
@@ -85,7 +78,7 @@ export default function AgentTracePanel({
             <div
               className={
                 phase.key === "gather"
-                  ? "space-y-1 border-l-2 border-ocean-500/30 pl-2.5"
+                  ? "space-y-1 border-l-2 border-chart-500/40 pl-2.5"
                   : "space-y-1"
               }
             >
@@ -98,24 +91,33 @@ export default function AgentTracePanel({
                   // or invisible safety data, is not an acceptable failure.
                   <div
                     key={t.agent}
-                    className={`rounded-lg border px-2.5 py-1.5 ${STATUS_ROW[t.status]}`}
+                    className="rounded-[2px] border bg-paper-100 px-2.5 py-1.5"
+                    style={{
+                      borderColor:
+                        t.status === "ok" || t.status === "skipped"
+                          ? "var(--rule-faint)"
+                          : STATUS_DOT[t.status] + "66",
+                    }}
                   >
                     <div className="flex items-center gap-2 text-[11.5px]">
-                      <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${STATUS_DOT[t.status]}`} />
-                      <span className="w-[84px] shrink-0 font-semibold text-ocean-100">
+                      <span
+                        className="h-2 w-2 shrink-0 rotate-45"
+                        style={{ background: STATUS_DOT[t.status] }}
+                      />
+                      <span className="w-[88px] shrink-0 font-semibold text-ink-900">
                         {LABEL[t.agent] ?? t.agent}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-ocean-300/90">
+                      <span className="min-w-0 flex-1 truncate text-ink-500">
                         {t.summary || "—"}
                       </span>
-                      <span className="shrink-0 font-mono text-[9.5px] tabular-nums text-ocean-300/70">
+                      <span className="shrink-0 font-mono text-[9.5px] tabular-nums text-ink-400">
                         {t.latency_ms}ms
                       </span>
                     </div>
                     {t.latency_ms > 0 && (
-                      <div className="mt-1 h-0.5 overflow-hidden rounded-full bg-white/[0.06]">
+                      <div className="mt-1 h-[2px] bg-ink-900/[0.07]">
                         <div
-                          className="h-full rounded-full bg-ocean-500/70 transition-all duration-500"
+                          className="h-full bg-chart-500/70 transition-all duration-500"
                           style={{ width: `${(t.latency_ms / maxLatency) * 100}%` }}
                         />
                       </div>
@@ -128,7 +130,10 @@ export default function AgentTracePanel({
         ))}
       </div>
 
-      <p className="mt-3 border-t border-white/[0.07] pt-2.5 text-[10.5px] leading-relaxed text-ocean-300/65">
+      <p
+        className="border-t px-4 py-2.5 text-[10.5px] italic leading-relaxed text-ink-400"
+        style={{ borderColor: "var(--rule-faint)" }}
+      >
         The planner decides which specialists a question needs and runs the independent ones
         concurrently. The risk engine waits for all of them — no agent's opinion can skip it.
       </p>

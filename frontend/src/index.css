@@ -3,10 +3,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   ORCA — "the living nautical chart"
+   Warm chart paper, marine ink, hairline rules, hatched danger
+   areas. The app should read like a beautifully drafted sea
+   chart that happens to be alive.
+   ============================================================ */
+
 :root {
-  color-scheme: dark;
-  --edge: rgba(255, 255, 255, 0.09);
-  --edge-strong: rgba(127, 178, 229, 0.28);
+  color-scheme: light;
+  --paper: #f5eedd;
+  --paper-bright: #fbf7ed;
+  --ink: #12212d;
+  --rule: rgba(18, 33, 45, 0.28);
+  --rule-strong: rgba(18, 33, 45, 0.55);
+  --rule-faint: rgba(18, 33, 45, 0.14);
+  --chart-teal: #2a7391;
+}
+
+html {
+  background: var(--paper);
 }
 
 html,
@@ -17,31 +33,49 @@ body,
 }
 
 body {
-  background:
-    radial-gradient(1300px 780px at 78% -12%, rgba(20, 157, 191, 0.2), transparent 62%),
-    radial-gradient(1000px 680px at 4% 108%, rgba(31, 73, 125, 0.34), transparent 64%),
-    radial-gradient(700px 480px at 50% 50%, rgba(15, 90, 110, 0.1), transparent 70%),
-    #080e1a;
-  color: #e8eef7;
-  font-family: Inter, "Segoe UI", "Nirmala UI", system-ui, sans-serif;
-  font-feature-settings: "cv02", "cv03", "cv04";
+  color: #263b4d;
+  font-family: "Archivo Variable", "Segoe UI", "Nirmala UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* The sheet itself: graticule grid, aged edges, base paper. */
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(42, 115, 145, 0.055) 0 1px,
+      transparent 1px 130px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(42, 115, 145, 0.055) 0 1px,
+      transparent 1px 130px
+    ),
+    radial-gradient(130% 100% at 50% -10%, transparent 55%, rgba(185, 166, 124, 0.28) 100%),
+    var(--paper);
 }
 
-/* Bathymetric contour wash — the deck's identity, carried into the product. */
+/* Bathymetric contours — a surveyed seamount, lower left of the sheet. */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
-  pointer-events: none;
   z-index: 0;
-  opacity: 0.55;
-  background-image: repeating-linear-gradient(
-    0deg,
-    transparent 0 82px,
-    rgba(127, 178, 229, 0.045) 82px 83px
-  );
-  mask-image: radial-gradient(circle at 50% 38%, black, transparent 80%);
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='860' height='640' viewBox='0 0 860 640' fill='none' stroke='%232A7391' stroke-width='1'%3E%3Cg opacity='0.16'%3E%3Cpath d='M430 40 C640 55 800 170 805 320 C810 470 640 595 430 600 C220 605 55 480 60 320 C65 160 220 25 430 40 Z'/%3E%3Cpath d='M430 92 C598 102 742 196 748 320 C754 444 604 543 430 549 C256 555 112 452 116 320 C120 188 262 82 430 92 Z'/%3E%3Cpath d='M441 146 C574 152 684 231 689 325 C694 419 575 494 441 499 C307 504 196 424 201 325 C206 226 308 140 441 146 Z'/%3E%3Cpath d='M446 201 C545 206 624 261 627 325 C630 389 546 444 446 447 C346 450 266 394 269 325 C272 256 347 196 446 201 Z'/%3E%3Cpath d='M451 256 C515 259 564 291 566 327 C568 363 516 394 451 396 C386 398 337 364 339 327 C341 290 387 253 451 256 Z'/%3E%3Ctext x='430' y='330' font-family='Georgia' font-style='italic' font-size='14' fill='%232A7391' stroke='none' text-anchor='middle'%3E9%3C/text%3E%3Ctext x='560' y='250' font-family='Georgia' font-style='italic' font-size='13' fill='%232A7391' stroke='none'%3E18%3C/text%3E%3Ctext x='250' y='420' font-family='Georgia' font-style='italic' font-size='13' fill='%232A7391' stroke='none'%3E27%3C/text%3E%3Ctext x='640' y='430' font-family='Georgia' font-style='italic' font-size='13' fill='%232A7391' stroke='none'%3E44%3C/text%3E%3Ctext x='300' y='150' font-family='Georgia' font-style='italic' font-size='13' fill='%232A7391' stroke='none'%3E61%3C/text%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='%2312212D' opacity='0.05'%3E%3Ccircle cx='210' cy='210' r='168' fill='none' stroke='%2312212D' stroke-width='1.5'/%3E%3Ccircle cx='210' cy='210' r='128' fill='none' stroke='%2312212D' stroke-width='1'/%3E%3Cg%3E%3Cpath d='M210 30 L224 196 L210 210 L196 196 Z'/%3E%3Cpath d='M210 390 L224 224 L210 210 L196 224 Z'/%3E%3Cpath d='M30 210 L196 196 L210 210 L196 224 Z'/%3E%3Cpath d='M390 210 L224 196 L210 210 L224 224 Z'/%3E%3C/g%3E%3Cg transform='rotate(45 210 210)'%3E%3Cpath d='M210 82 L220 200 L210 210 L200 200 Z'/%3E%3Cpath d='M210 338 L220 220 L210 210 L200 220 Z'/%3E%3Cpath d='M82 210 L200 200 L210 210 L200 220 Z'/%3E%3Cpath d='M338 210 L220 200 L210 210 L220 220 Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat;
+  background-position:
+    left -180px bottom -140px,
+    right -60px top 40px;
+}
+
+/* Paper fibre — one quiet grain pass over everything. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 #root {
@@ -49,107 +83,292 @@ body::before {
   z-index: 1;
 }
 
-@layer components {
-  .card {
-    @apply relative rounded-2xl border bg-white/[0.045] shadow-xl shadow-black/30 backdrop-blur-md;
-    border-color: var(--edge);
+::selection {
+  background: var(--chart-teal);
+  color: var(--paper-bright);
+}
+
+:focus-visible {
+  outline: 2px dashed var(--chart-teal);
+  outline-offset: 2px;
+}
+
+/* Keyframes live here, not in the Tailwind config: the map's divIcon markers
+   reference `ping2` from inline styles, so the keyframes must always exist
+   even if no Tailwind utility uses them. */
+@keyframes ping2 {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
   }
-  /* Subtle top highlight so cards read as lit from above rather than flat. */
-  .card::after {
-    content: "";
-    position: absolute;
-    inset: 0 0 auto 0;
-    height: 1px;
-    border-radius: 1rem 1rem 0 0;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.14) 22%,
-      rgba(255, 255, 255, 0.14) 78%,
-      transparent
-    );
-    pointer-events: none;
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
   }
-  .card-flat {
-    @apply rounded-xl border bg-white/[0.03];
-    border-color: var(--edge);
+}
+@keyframes dashdrift {
+  to {
+    stroke-dashoffset: -48;
   }
-  .chip {
-    @apply rounded-full border px-3 py-1.5 text-xs font-medium text-ocean-100 transition;
-    border-color: var(--edge-strong);
-    background: rgba(31, 73, 125, 0.28);
+}
+@keyframes needlesway {
+  0%,
+  100% {
+    transform: rotate(-7deg);
   }
-  .chip:hover:not(:disabled) {
-    background: rgba(42, 95, 160, 0.45);
-    border-color: rgba(127, 178, 229, 0.6);
-    transform: translateY(-1px);
+  50% {
+    transform: rotate(6deg);
   }
-  .label {
-    @apply font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-ocean-300/75;
+}
+@keyframes inkblink {
+  0%,
+  100% {
+    opacity: 1;
   }
-  .seg {
-    @apply flex gap-0.5 rounded-full border p-0.5;
-    border-color: var(--edge);
-    background: rgba(255, 255, 255, 0.04);
-  }
-  .seg-btn {
-    @apply rounded-full px-3 py-1.5 text-[11px] font-semibold transition;
-  }
-  .seg-btn-on {
-    @apply bg-ocean-700 text-white shadow;
-  }
-  .seg-btn-off {
-    @apply text-ocean-300 hover:text-ocean-100;
+  50% {
+    opacity: 0.25;
   }
 }
 
-/* ---- Leaflet theming ---- */
+.compass-needle {
+  transform-origin: 50% 50%;
+  animation: needlesway 7s ease-in-out infinite;
+}
+
+@layer components {
+  /* ------------------------------------------------ panels */
+  .panel {
+    @apply relative rounded-[3px] border bg-paper-50;
+    border-color: var(--rule);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      0 1px 3px rgba(18, 33, 45, 0.1),
+      0 14px 30px -20px rgba(18, 33, 45, 0.35);
+  }
+  .panel-tint {
+    @apply relative rounded-[3px] border bg-paper-100;
+    border-color: var(--rule);
+  }
+  /* Double rule across the top — reserved for the sheet's lead panels. */
+  .rule-double {
+    border-top: 3px double var(--rule-strong);
+  }
+  .hd {
+    @apply flex items-baseline justify-between gap-3 border-b px-4 py-2.5;
+    border-color: var(--rule-faint);
+  }
+
+  .label {
+    @apply font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400;
+  }
+
+  /* ------------------------------------------------ controls */
+  .btn-ink {
+    @apply inline-flex items-center gap-2 rounded-[2px] bg-ink-900 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-paper-50 transition;
+  }
+  .btn-ink:hover:not(:disabled) {
+    @apply bg-ink-700;
+  }
+  .btn-ink:active {
+    transform: translateY(1px);
+  }
+  .btn-line {
+    @apply inline-flex items-center gap-2 rounded-[2px] border px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-ink-700 transition;
+    border-color: var(--rule-strong);
+    background: transparent;
+  }
+  .btn-line:hover:not(:disabled) {
+    @apply bg-ink-900 text-paper-50;
+    border-color: #12212d;
+  }
+  .btn-square {
+    @apply grid h-9 w-9 shrink-0 place-items-center rounded-[2px] border text-ink-700 transition;
+    border-color: var(--rule-strong);
+  }
+  .btn-square:hover:not(:disabled) {
+    @apply bg-ink-900 text-paper-50;
+    border-color: #12212d;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-[2px] border bg-paper-50 px-2.5 py-1.5 text-[12px] font-medium text-ink-700 transition;
+    border-color: var(--rule);
+  }
+  .chip:hover:not(:disabled) {
+    @apply bg-ink-900 text-paper-50;
+    border-color: #12212d;
+  }
+
+  .tab {
+    @apply -mb-px border-b-2 border-transparent px-1 pb-2.5 pt-1 font-mono text-[11.5px] font-bold uppercase tracking-[0.14em] text-ink-300 transition;
+  }
+  .tab:hover {
+    @apply text-ink-700;
+  }
+  .tab-on {
+    @apply border-ink-900 text-ink-900;
+  }
+
+  .field {
+    @apply w-full rounded-[2px] border px-3.5 py-2.5 text-[13.5px] text-ink-800 outline-none transition placeholder:text-ink-300;
+    border-color: var(--rule);
+    background: var(--paper-bright);
+  }
+  .field:focus {
+    border-color: var(--rule-strong);
+    box-shadow: 0 0 0 1px var(--rule-strong);
+    outline: none;
+  }
+
+  /* ------------------------------------------------ chart language */
+  /* Rubber-stamped verdicts — how officials mark a document. */
+  .stamp {
+    @apply inline-block rounded-[2px] border-2 px-2.5 py-1 font-display text-[12px] font-black uppercase;
+    letter-spacing: 0.18em;
+    border-color: currentColor;
+    box-shadow: inset 0 0 0 1px currentColor;
+    transform: rotate(-2deg);
+    text-shadow: 0 0 0.5px currentColor;
+  }
+
+  /* Hatched "danger area" fill, as drawn on charts. */
+  .hatch-danger {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgba(175, 35, 24, 0.1) 0 1.5px,
+      transparent 1.5px 8px
+    );
+  }
+
+  /* Chart soundings: the italic serif numerals used for depths. */
+  .sounding {
+    font-family: "Fraunces Variable", Georgia, serif;
+    font-style: italic;
+    font-weight: 600;
+    font-variation-settings: "SOFT" 40;
+  }
+
+  /* Sea-surface symbol, used as a section divider. */
+  .wave-rule {
+    height: 7px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='7'%3E%3Cpath d='M0 5 Q3.5 1 7 5 T14 5' fill='none' stroke='%2312212D' stroke-opacity='0.4' stroke-width='1'/%3E%3C/svg%3E")
+      repeat-x center;
+  }
+
+  /* The map is presented as a chart sheet: paper margin, tick marks,
+     double neatline. The inner Leaflet container is untouched. */
+  .chart-sheet {
+    @apply relative rounded-[3px] border bg-paper-50 p-[18px];
+    border-color: var(--rule);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      0 1px 3px rgba(18, 33, 45, 0.1),
+      0 14px 30px -20px rgba(18, 33, 45, 0.35);
+  }
+  .chart-sheet::before {
+    content: "";
+    position: absolute;
+    inset: 8px;
+    pointer-events: none;
+    z-index: 1;
+    background:
+      repeating-linear-gradient(90deg, var(--rule-strong) 0 1px, transparent 1px 26px)
+        top left / 100% 5px no-repeat,
+      repeating-linear-gradient(90deg, var(--rule-strong) 0 1px, transparent 1px 26px)
+        bottom left / 100% 5px no-repeat,
+      repeating-linear-gradient(0deg, var(--rule-strong) 0 1px, transparent 1px 26px)
+        top left / 5px 100% no-repeat,
+      repeating-linear-gradient(0deg, var(--rule-strong) 0 1px, transparent 1px 26px)
+        top right / 5px 100% no-repeat;
+  }
+  .chart-frame {
+    @apply relative overflow-hidden rounded-[2px] border;
+    border-color: var(--rule-strong);
+    z-index: 2;
+  }
+}
+
+/* ---- Leaflet: draft the map like the rest of the sheet ---- */
 .leaflet-container {
-  background: #0a1524;
+  background: #cfe0e6;
   font-family: inherit;
 }
+/* Warm the basemap toward the paper. */
+.leaflet-tile {
+  filter: sepia(0.22) saturate(0.82) brightness(1.02);
+}
 .leaflet-control-attribution {
-  background: rgba(8, 14, 26, 0.8) !important;
-  color: #7c8199 !important;
+  background: rgba(245, 238, 221, 0.85) !important;
+  color: #5d7386 !important;
   font-size: 9px !important;
+  font-family: "Spline Sans Mono Variable", Consolas, monospace;
 }
 .leaflet-control-attribution a {
-  color: #7fb2e5 !important;
+  color: #1e5f7a !important;
 }
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background: #13223c;
-  color: #e8eef7;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  background: #fbf7ed;
+  color: #263b4d;
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  box-shadow: 0 10px 26px rgba(18, 33, 45, 0.28);
 }
 .leaflet-popup-content {
-  margin: 12px 14px;
+  margin: 11px 13px;
   line-height: 1.5;
   font-size: 12px;
 }
+.leaflet-popup-content b {
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-size: 13px;
+}
+.leaflet-bar {
+  border: 1px solid var(--rule-strong) !important;
+  border-radius: 2px !important;
+  box-shadow: 0 2px 6px rgba(18, 33, 45, 0.18) !important;
+}
 .leaflet-bar a {
-  background: #13223c !important;
-  color: #cfe0f5 !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: #fbf7ed !important;
+  color: #263b4d !important;
+  border-color: var(--rule) !important;
 }
 .leaflet-bar a:hover {
-  background: #1f497d !important;
+  background: #12212d !important;
+  color: #fbf7ed !important;
+}
+
+/* Restricted zones: true chart hatching (patterns defined in App's <defs>). */
+path.zone-hatch-critical {
+  fill: url(#hatch-critical);
+  fill-opacity: 1;
+}
+path.zone-hatch-warning {
+  fill: url(#hatch-warning);
+  fill-opacity: 1;
+}
+path.zone-hatch-info {
+  fill: url(#hatch-info);
+  fill-opacity: 1;
+}
+/* The recommended route quietly runs — dashes drift like a plotted course. */
+path.route-live {
+  animation: dashdrift 1.8s linear infinite;
 }
 
 /* ---- scrollbars ---- */
 ::-webkit-scrollbar {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(127, 178, 229, 0.22);
+  background: rgba(18, 33, 45, 0.3);
   border-radius: 999px;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(127, 178, 229, 0.38);
+  background: rgba(18, 33, 45, 0.5);
   background-clip: content-box;
 }
 ::-webkit-scrollbar-track {
@@ -167,7 +386,8 @@ body::before {
   }
   /* Entrance animations use fill-mode:both, which would otherwise leave
      elements stuck at opacity 0 when animation is suppressed. */
-  .animate-rise {
+  .animate-rise,
+  .animate-stampIn {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

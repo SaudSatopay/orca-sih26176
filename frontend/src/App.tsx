@@ -5,11 +5,21 @@ import AuthorityPanel from "./components/AuthorityPanel";
 import ChatPanel from "./components/ChatPanel";
 import ConditionsStrip from "./components/ConditionsStrip";
 import FishingPanel from "./components/FishingPanel";
+import {
+  ChartDefs,
+  CompassMark,
+  PlayGlyph,
+  SpeakerGlyph,
+  SpeakerOffGlyph,
+  StopGlyph,
+  WarnGlyph,
+} from "./components/glyphs";
 import GuidedTour, { TOUR } from "./components/GuidedTour";
 import LocationPicker, { PORTS, type PickedLocation } from "./components/LocationPicker";
 import MarineMap from "./components/MarineMap";
 import PFZList from "./components/PFZList";
 import RiskCard from "./components/RiskCard";
+import { RISK_COLOR } from "./components/RiskDial";
 import RiskTimeline from "./components/RiskTimeline";
 import type {
   ChatMessage,
@@ -81,7 +91,13 @@ export default function App() {
         source: "default",
       });
 
-    if (navigator.geolocation) {
+    // ?at=lat,lon pins the starting position (demos, judge-tap re-creation);
+    // it must win over geolocation, so GPS is skipped entirely when present.
+    const params = new URLSearchParams(window.location.search);
+    const at = (params.get("at") ?? "").split(",").map(Number);
+    if (at.length === 2 && at.every(Number.isFinite)) {
+      setPlace({ latitude: at[0], longitude: at[1], label: "Selected point", source: "map" });
+    } else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) =>
           setPlace({
@@ -97,7 +113,8 @@ export default function App() {
       fallback();
     }
 
-    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam === "home" || tabParam === "ask" || tabParam === "authority") setTab(tabParam);
     const wanted = params.get("demo");
     if (wanted) {
       const s = SCENARIOS.find((x) => x.id === wanted || x.n === wanted);
@@ -261,75 +278,89 @@ export default function App() {
 
   return (
     <div className="mx-auto flex min-h-full max-w-[1580px] flex-col gap-4 p-4 lg:p-6">
-      {/* ---------------- header ---------------- */}
-      <header className="card flex flex-wrap items-center gap-x-5 gap-y-3 px-5 py-4">
-        <div className="flex items-center gap-3.5">
-          <div className="relative grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-ocean-900 via-ocean-700 to-teal-700 text-xl shadow-lg shadow-ocean-950/60">
-            🐋
-            <span className="pointer-events-none absolute -inset-1 rounded-2xl border border-ocean-300/25 animate-ping2" />
+      <ChartDefs />
+
+      {/* ---------------- title block, drafted like a chart's cartouche ---------------- */}
+      <header className="panel rule-double">
+        <div className="flex flex-wrap items-stretch">
+          {/* identity */}
+          <div className="flex items-center gap-4 py-3.5 pl-5 pr-6">
+            <CompassMark size={46} className="shrink-0 text-ink-900" />
+            <div>
+              <h1 className="font-display text-[30px] font-black leading-none tracking-tight text-ink-900">
+                ORCA
+              </h1>
+              <p className="mt-1 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-400">
+                Marine EcOsystem Reasoning · Collaborative Agents
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-[19px] font-extrabold leading-none tracking-tight text-white">
-              ORCA
-            </h1>
-            <p className="mt-1.5 text-[11px] leading-none text-ocean-300">
-              Marine EcOsystem Reasoning with Collaborative Agents
-            </p>
-          </div>
-        </div>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5 font-mono text-[10px] text-ocean-300">
-            SIH26176
-          </span>
+          {/* title-block cells */}
+          <div className="ml-auto flex flex-wrap items-stretch">
+            <div className="hidden flex-col justify-center border-l px-5 py-3 sm:flex" style={{ borderColor: "var(--rule-faint)" }}>
+              <span className="label">Chart №</span>
+              <span className="mt-1 font-mono text-[13px] font-bold text-ink-800">SIH26176</span>
+            </div>
 
-          <button
-            onClick={toggleMode}
-            disabled={switching}
-            title="Switch between cached demo data and live public providers"
-            className={`rounded-full px-3 py-1.5 font-mono text-[10px] font-bold transition disabled:opacity-50 ${
-              mode === "LIVE"
-                ? "bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30"
-                : "bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
-            }`}
-          >
-            {switching ? "…" : `${mode} DATA`} <span className="opacity-55">⇄</span>
-          </button>
-
-          <button
-            onClick={() => (tourOn ? setTourOn(false) : startTour())}
-            title="Play the automatic walkthrough of every feature"
-            className={`rounded-full px-3.5 py-1.5 text-[11px] font-bold transition ${
-              tourOn
-                ? "bg-teal-500/25 text-teal-100 hover:bg-teal-500/35"
-                : "bg-gradient-to-r from-ocean-700 to-teal-700 text-white hover:brightness-110"
-            }`}
-          >
-            {tourOn ? "■ Stop tour" : "▶ Tour"}
-          </button>
-
-          <button
-            onClick={() => setSpeak((v) => !v)}
-            title="Speak answers aloud"
-            className={`grid h-8 w-8 place-items-center rounded-full text-sm transition ${
-              speak ? "bg-ocean-700 text-white" : "bg-white/5 text-ocean-300 hover:text-ocean-100"
-            }`}
-          >
-            {speak ? "🔊" : "🔇"}
-          </button>
-
-          <div className="seg">
-            {(["home", "ask", "authority"] as Tab[]).map((x) => (
-              <button
-                key={x}
-                onClick={() => setTab(x)}
-                className={`seg-btn ${tab === x ? "seg-btn-on" : "seg-btn-off"}`}
+            <button
+              onClick={toggleMode}
+              disabled={switching}
+              title="Switch between cached demo data and live public providers"
+              className="group flex flex-col justify-center border-l px-5 py-3 text-left transition hover:bg-paper-150 disabled:opacity-50"
+              style={{ borderColor: "var(--rule-faint)" }}
+            >
+              <span className="label">Data edition</span>
+              <span
+                className={`mt-1 font-mono text-[13px] font-bold ${
+                  mode === "LIVE" ? "text-risk-low" : "text-risk-high"
+                }`}
               >
-                {tabLabels[x]}
+                {switching ? "…" : mode}
+                <span className="ml-1.5 text-ink-300 transition group-hover:text-ink-700">⇄</span>
+              </span>
+            </button>
+
+            <button
+              onClick={() => setSpeak((v) => !v)}
+              title="Speak answers aloud"
+              className="flex flex-col justify-center border-l px-5 py-3 text-left transition hover:bg-paper-150"
+              style={{ borderColor: "var(--rule-faint)" }}
+            >
+              <span className="label">Voice</span>
+              <span className="mt-1 flex items-center gap-1.5 font-mono text-[13px] font-bold text-ink-800">
+                {speak ? <SpeakerGlyph /> : <SpeakerOffGlyph className="text-ink-300" />}
+                {speak ? "ON" : "OFF"}
+              </span>
+            </button>
+
+            <div className="flex items-center border-l px-4" style={{ borderColor: "var(--rule-faint)" }}>
+              <button onClick={() => (tourOn ? setTourOn(false) : startTour())} className="btn-ink">
+                {tourOn ? <StopGlyph size={11} /> : <PlayGlyph size={11} />}
+                {tourOn ? "Stop tour" : "Guided tour"}
               </button>
-            ))}
+            </div>
           </div>
         </div>
+
+        {/* folio tabs */}
+        <nav
+          className="flex items-end gap-6 border-t px-5"
+          style={{ borderColor: "var(--rule-faint)" }}
+        >
+          {(["home", "ask", "authority"] as Tab[]).map((x) => (
+            <button
+              key={x}
+              onClick={() => setTab(x)}
+              className={`tab mt-2 ${tab === x ? "tab-on" : ""}`}
+            >
+              {tabLabels[x]}
+            </button>
+          ))}
+          <span className="label ml-auto hidden pb-2.5 !tracking-[0.12em] text-ink-300 md:block">
+            Soundings in metres · WGS 84
+          </span>
+        </nav>
       </header>
 
       {tourOn && (
@@ -344,9 +375,12 @@ export default function App() {
       )}
 
       {error && (
-        <div className="card border-red-400/30 bg-red-500/10 px-4 py-2.5 text-[12px] text-red-100">
-          {error} — start the backend with{" "}
-          <code className="font-mono">uvicorn app.main:app --port 8000</code>
+        <div className="panel hatch-danger flex items-center gap-3 border-signal/60 px-4 py-2.5 text-[12.5px] text-risk-extreme">
+          <WarnGlyph size={15} className="shrink-0" />
+          <span>
+            {error} — start the backend with{" "}
+            <code className="font-mono font-bold">uvicorn app.main:app --port 8000</code>
+          </span>
         </div>
       )}
 
@@ -370,12 +404,13 @@ export default function App() {
             />
 
             {outlook && (
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div className="panel grid grid-cols-2 sm:grid-cols-4">
                 {[
                   {
                     k: language === "mr" ? "सुरक्षा" : language === "hi" ? "सुरक्षा" : "Safety",
                     v: `${outlook.safety.score}`,
                     s: outlook.safety.category,
+                    color: RISK_COLOR[outlook.safety.category],
                   },
                   {
                     k: language === "mr" ? "लाटा" : language === "hi" ? "लहरें" : "Waves",
@@ -392,12 +427,19 @@ export default function App() {
                     v: `${outlook.areas.length}`,
                     s: `in ${outlook.radius_km} km`,
                   },
-                ].map((x) => (
-                  <div key={x.k} className="card-flat px-3 py-2.5">
+                ].map((x, i) => (
+                  <div
+                    key={x.k}
+                    className={`px-4 py-3 ${i > 0 ? "border-l" : ""}`}
+                    style={{ borderColor: "var(--rule-faint)" }}
+                  >
                     <div className="label truncate">{x.k}</div>
-                    <div className="mt-0.5 font-mono text-[19px] font-extrabold tabular-nums text-ocean-100">
+                    <div
+                      className="mt-1 font-mono text-[20px] font-bold tabular-nums leading-none text-ink-900"
+                      style={x.color ? { color: x.color } : undefined}
+                    >
                       {x.v}
-                      <span className="ml-1 text-[10px] font-semibold opacity-65">{x.s}</span>
+                      <span className="ml-1.5 text-[10px] font-semibold opacity-60">{x.s}</span>
                     </div>
                   </div>
                 ))}
@@ -405,9 +447,9 @@ export default function App() {
             )}
           </div>
 
-          <div className="space-y-4 lg:h-[calc(100vh-215px)] lg:overflow-y-auto lg:pr-1">
+          <div className="space-y-4 lg:h-[calc(100vh-235px)] lg:overflow-y-auto lg:pr-1">
             {loadingOutlook && !outlook && (
-              <div className="card p-6 text-center text-sm text-ocean-300">
+              <div className="panel p-6 text-center text-sm italic text-ink-400">
                 {language === "mr"
                   ? "तुमच्या ठिकाणाची माहिती घेत आहे…"
                   : language === "hi"
@@ -430,7 +472,7 @@ export default function App() {
       {tab === "ask" && (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="label mr-1">Demo</span>
+            <span className="label mr-1">Rehearsed scenarios</span>
             {SCENARIOS.map((s) => (
               <button
                 key={s.id}
@@ -439,15 +481,17 @@ export default function App() {
                 title={s.ask}
                 className="chip disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <span className="mr-1.5 font-mono text-[10px] text-ocean-300">{s.n}</span>
+                <span className="grid w-[18px] shrink-0 place-items-center rounded-full bg-ink-900 font-display text-[10px] font-bold leading-none text-paper-50" style={{ height: 18 }}>
+                  {s.n}
+                </span>
                 <span className="font-semibold">{s.label}</span>
-                <span className="ml-1.5 text-[10px] opacity-55">{s.hint}</span>
+                <span className="font-mono text-[10px] uppercase tracking-wide opacity-60">{s.hint}</span>
               </button>
             ))}
           </div>
 
           <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(350px,1fr)_1.6fr]">
-            <div className="min-h-[540px] lg:h-[calc(100vh-260px)]">
+            <div className="min-h-[540px] lg:h-[calc(100vh-280px)]">
               <ChatPanel
                 messages={messages}
                 busy={busy}
@@ -458,7 +502,7 @@ export default function App() {
               />
             </div>
 
-            <div className="space-y-4 lg:h-[calc(100vh-260px)] lg:overflow-y-auto lg:pr-1">
+            <div className="space-y-4 lg:h-[calc(100vh-280px)] lg:overflow-y-auto lg:pr-1">
               {latest && <ConditionsStrip res={latest} language={latest.language} />}
 
               <MarineMap
@@ -483,52 +527,73 @@ export default function App() {
               )}
 
               {latest && latest.alerts.length > 0 && (
-                <div className="card border-risk-extreme/40 bg-risk-extreme/10 p-4">
-                  <div className="label mb-2 text-red-200/80">Official marine warnings</div>
-                  {latest.alerts.map((a, i) => (
-                    <div key={i} className="mb-2.5 last:mb-0">
-                      <div className="text-[13px] font-bold text-red-100">{a.headline}</div>
-                      <div className="mt-0.5 text-[11px] leading-relaxed text-red-200/80">
-                        {a.detail}
+                <div className="panel hatch-danger overflow-hidden border-risk-extreme/60">
+                  <div className="hd border-risk-extreme/25">
+                    <span className="label flex items-center gap-2 !text-risk-extreme">
+                      <WarnGlyph size={13} /> Official marine warnings
+                    </span>
+                  </div>
+                  <div className="px-4 py-3.5">
+                    {latest.alerts.map((a, i) => (
+                      <div key={i} className="mb-3 last:mb-0">
+                        <div className="font-display text-[15px] font-bold leading-snug text-risk-extreme">
+                          {a.headline}
+                        </div>
+                        <div className="mt-1 text-[12px] leading-relaxed text-ink-700">
+                          {a.detail}
+                        </div>
+                        <div className="mt-1 font-mono text-[10px] uppercase tracking-wide text-ink-400">
+                          {a.source} · {a.severity}
+                          {a.valid_till ? ` · valid till ${a.valid_till}` : ""}
+                        </div>
                       </div>
-                      <div className="mt-1 font-mono text-[10px] text-red-200/60">
-                        {a.source} · {a.severity}
-                        {a.valid_till ? ` · valid till ${a.valid_till}` : ""}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
 
               {latest && <PFZList zones={latest.pfz} language={latest.language} />}
 
               {latest && latest.routes.length > 0 && (
-                <div className="card p-4">
-                  <div className="label mb-2.5">Route options</div>
-                  <div className="space-y-2">
+                <div className="panel overflow-hidden">
+                  <div className="hd">
+                    <span className="label">Plotted courses</span>
+                  </div>
+                  <div className="space-y-2 px-4 py-3.5">
                     {latest.routes.map((r) => (
                       <div
                         key={r.name}
-                        className={`rounded-xl border px-3 py-2.5 ${
-                          r.recommended
-                            ? "border-emerald-400/40 bg-emerald-400/10"
-                            : "border-white/10 bg-white/[0.03]"
+                        className={`rounded-[2px] border px-3.5 py-3 ${
+                          r.recommended ? "border-risk-low/70 bg-risk-low/[0.06]" : "bg-paper-100"
                         }`}
+                        style={r.recommended ? undefined : { borderColor: "var(--rule)" }}
                       >
                         <div className="flex items-baseline justify-between gap-3">
-                          <span className="text-[13px] font-bold text-ocean-100">
+                          <span className="flex items-center gap-2.5 font-display text-[14.5px] font-bold text-ink-900">
+                            {/* course symbology, drawn as plotted */}
+                            <svg width="26" height="8" aria-hidden>
+                              <line
+                                x1="1"
+                                y1="4"
+                                x2="25"
+                                y2="4"
+                                stroke={r.recommended ? "#1D7A50" : "#5D7386"}
+                                strokeWidth="2"
+                                strokeDasharray={r.recommended ? "7 4" : "2 4"}
+                              />
+                            </svg>
                             {r.name}
                             {r.recommended && (
-                              <span className="ml-2 rounded-full bg-emerald-400/20 px-2 py-0.5 text-[10px] font-bold text-emerald-200">
-                                RECOMMENDED
+                              <span className="stamp !px-1.5 !py-0.5 !text-[9px] text-risk-low">
+                                Recommended
                               </span>
                             )}
                           </span>
-                          <span className="shrink-0 font-mono text-[11px] tabular-nums text-ocean-300">
+                          <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-ink-500">
                             {r.distance_km} km · {Math.round(r.eta_minutes)} min
                           </span>
                         </div>
-                        <div className="mt-1 text-[11px] leading-relaxed text-ocean-300/85">
+                        <div className="mt-1 pl-[36px] text-[11.5px] leading-relaxed text-ink-500">
                           {r.notes}
                         </div>
                       </div>
@@ -540,7 +605,7 @@ export default function App() {
               {latest && <AgentTracePanel trace={latest.trace} elapsed={latest.elapsed_ms} />}
 
               {latest && (
-                <p className="px-1 pb-2 text-[11px] leading-relaxed text-ocean-300/60">
+                <p className="px-1 pb-2 font-mono text-[10.5px] leading-relaxed text-ink-400">
                   {latest.disclaimer}
                 </p>
               )}

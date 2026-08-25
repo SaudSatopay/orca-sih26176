@@ -32,54 +32,62 @@ export default function PFZList({
   const t = L[language] ?? L.en;
 
   return (
-    <div className="card p-4">
-      <div className="label mb-2.5">{t.title}</div>
-      <div className="space-y-2">
+    <div className="panel overflow-hidden">
+      <div className="hd">
+        <span className="label">{t.title}</span>
+      </div>
+      <div className="space-y-2 px-4 py-3.5">
         {zones.map((z) => {
           const best = z.rank === 1;
+          const ring = best ? "#1D7A50" : "#2A7391";
           return (
             <div
               key={z.rank}
-              className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 ${
-                best
-                  ? "border-emerald-400/40 bg-emerald-400/10"
-                  : "border-white/10 bg-white/[0.03]"
+              className={`flex items-center gap-3 rounded-[2px] border px-3 py-2.5 ${
+                best ? "border-risk-low/60 bg-risk-low/[0.05]" : "bg-paper-100"
               }`}
+              style={best ? undefined : { borderColor: "var(--rule)" }}
             >
+              {/* buoy badge — same symbology as the chart */}
               <div
-                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[13px] font-extrabold text-white ${
-                  best ? "bg-risk-low" : "bg-ocean-500"
-                }`}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-full border-[3px] bg-paper-50 font-display text-[14px] font-extrabold text-ink-900"
+                style={{ borderColor: ring }}
               >
                 {z.rank}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-[13px] font-bold tabular-nums text-ocean-100">
+                  <span className="font-mono text-[13px] font-bold tabular-nums text-ink-900">
                     {z.distance_km} km
                   </span>
-                  <span className="text-[11px] text-ocean-300">{z.bearing}</span>
+                  <span className="text-[11px] text-ink-500">{z.bearing}</span>
                 </div>
-                <div className="mt-0.5 truncate font-mono text-[10.5px] text-ocean-300/85">
+                <div className="mt-0.5 truncate font-mono text-[10.5px] text-ink-400">
                   SST {z.sst_c ?? "—"}°C · Chl {z.chlorophyll_mg_m3 ?? "—"} mg/m³
                   {z.wave_height_m != null ? ` · ${z.wave_height_m} m` : ""}
                 </div>
               </div>
               <div className="shrink-0 text-right">
                 <div
-                  className={`font-mono text-[13px] font-bold tabular-nums ${
-                    best ? "text-emerald-300" : "text-ocean-300"
-                  }`}
+                  className="sounding text-[17px] tabular-nums"
+                  style={{ color: best ? "#1D7A50" : "#2A7391" }}
                 >
                   {Math.round(z.confidence * 100)}%
                 </div>
-                <div className="text-[9.5px] text-ocean-300/70">{t.conf}</div>
+                <div className="font-mono text-[8.5px] uppercase tracking-wide text-ink-400">
+                  {t.conf}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
-      <p className="mt-2.5 text-[10.5px] leading-relaxed text-ocean-300/65">{t.note}</p>
+      <p
+        className="border-t px-4 py-2.5 text-[10.5px] italic leading-relaxed text-ink-400"
+        style={{ borderColor: "var(--rule-faint)" }}
+      >
+        {t.note}
+      </p>
     </div>
   );
 }

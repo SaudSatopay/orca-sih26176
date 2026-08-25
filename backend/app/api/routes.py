@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from ..agents import ocean_agent, route_agent, weather_agent
 from ..config import RISK, SOURCE_LABELS, get_data_mode, set_data_mode
+from ..data import live_client
 from ..data.demo_store import PORT_SCENARIO, SCENARIOS, now_ist
 from ..data.geo import nearest_port
 from ..schemas import Location
@@ -48,6 +49,8 @@ def switch_mode(req: ModeRequest) -> dict:
         mode = set_data_mode(req.mode)
     except ValueError as exc:
         return {"ok": False, "error": str(exc), "data_mode": get_data_mode()}
+    # A fresh toggle should mean fresh data, not ten minutes of remembered series.
+    live_client.clear_cache()
     return {
         "ok": True,
         "data_mode": mode,

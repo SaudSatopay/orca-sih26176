@@ -9,7 +9,7 @@ from fastapi import APIRouter, Query
 from ..agents import (cyclone_agent, gis_agent, ocean_agent, pfz_agent,
                       risk_agent, weather_agent)
 from ..data.demo_store import IST, now_ist
-from ..data.geo import nearest_port
+from ..data.geo import is_on_land, nearest_port
 from ..schemas import Location
 
 router = APIRouter(prefix="/api", tags=["forecast"])
@@ -78,7 +78,9 @@ def position(lat: float = Query(...), lon: float = Query(...)) -> dict:
     zones = data.get("zones_nearby", [])
     nearest = zones[0] if zones else None
 
-    if data.get("inside_restricted_zone"):
+    if is_on_land(lat, lon):
+        status, headline = "warning", "That position is on land — drop the boat on the water"
+    elif data.get("inside_restricted_zone"):
         status, headline = "critical", f"Inside {data.get('nearest_zone_name')}"
     elif nearest and nearest["distance_km"] <= 2.5:
         status, headline = "critical", f"{nearest['name']} is {nearest['distance_km']} km away"

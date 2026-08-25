@@ -173,6 +173,93 @@ def distance_from_shore_km(lat: float, lon: float) -> float:
 
 
 # --------------------------------------------------------------------------
+# Landmass layer — so nothing marine is ever placed on land
+# --------------------------------------------------------------------------
+# A deliberately SIMPLIFIED coastline (tens of vertices, ±10-20 km in the
+# river deltas), traced clockwise and closed far inland so every interior
+# point tests as land. That is plenty to keep a synthetic fishing ground out
+# of a wheat field: candidates sit 25-100 km offshore, an order of magnitude
+# beyond the polygon's error. Production ORCA uses the OSM/GSHHG coastline.
+_MAINLAND_INDIA: List[Coord] = [
+    (23.90, 68.10),                                       # Sir Creek
+    (23.00, 68.45), (22.85, 69.30), (22.95, 70.15),       # Kutch shore
+    (22.55, 70.35),                                       # head of Gulf of Kutch
+    (22.47, 69.60), (22.25, 68.97),                       # Saurashtra north shore
+    (22.20, 68.95), (21.64, 69.61), (20.90, 70.37),       # Dwarka, Porbandar, Veraval
+    (20.70, 70.98), (21.08, 71.80),                       # Diu, Mahuva
+    (21.40, 72.05), (21.77, 72.20), (22.20, 72.50),       # west shore, Gulf of Khambhat
+    (22.30, 72.60),                                       # head of Gulf of Khambhat
+    (21.90, 72.70), (21.60, 72.65), (21.10, 72.65),       # east shore (Narmada, Surat)
+    (20.90, 72.75), (20.40, 72.83),                       # Daman
+    (19.90, 72.75), (19.30, 72.78), (18.92, 72.80),       # Konkan, Mumbai
+    (17.99, 73.01), (16.99, 73.27), (15.99, 73.46),       # Raigad, Ratnagiri, Malvan
+    (15.49, 73.80), (14.80, 74.10), (13.35, 74.70),       # Goa, Karwar, Udupi
+    (12.85, 74.83), (11.25, 75.77), (10.55, 76.03),       # Mangalore, Kozhikode
+    (9.93, 76.24), (9.00, 76.52), (8.29, 77.05),          # Kochi, Kollam, Vizhinjam
+    (8.07, 77.55),                                        # Kanyakumari
+    (8.75, 78.15), (9.28, 79.20),                         # Tuticorin, Rameswaram base
+    (9.85, 79.05), (10.29, 79.86),                        # Palk Bay, Point Calimere
+    (10.77, 79.85), (11.75, 79.77), (12.62, 80.19),       # Nagapattinam, Cuddalore
+    (13.08, 80.30), (13.70, 80.23), (14.60, 80.15),       # Chennai, Sriharikota, Nellore
+    (15.90, 80.85), (16.00, 81.15),                       # Krishna delta
+    (16.60, 82.30), (17.69, 83.30), (18.30, 84.10),       # Godavari delta, Vizag
+    (19.30, 84.90), (19.80, 85.85), (20.26, 86.75),       # Gopalpur, Puri, Paradip
+    (20.80, 87.05), (21.63, 87.55), (21.65, 88.20),       # Dhamra, Digha, Sagar Island
+    (21.60, 89.05),                                       # Sundarbans / Bangladesh border
+    (27.00, 89.00), (30.00, 78.00), (28.00, 70.00),       # inland closure — all land
+    (24.50, 68.20),
+]
+
+_ANDAMAN: List[Coord] = [
+    (13.70, 92.55), (13.70, 93.00), (10.40, 92.85), (10.40, 92.35),
+]
+
+_SRI_LANKA: List[Coord] = [
+    (9.83, 80.22), (8.50, 81.35), (6.90, 81.85), (5.95, 80.55),
+    (6.80, 79.85), (8.05, 79.70),
+]
+
+LANDMASS: List[List[Coord]] = [_MAINLAND_INDIA, _ANDAMAN, _SRI_LANKA]
+
+
+def is_on_land(lat: float, lon: float) -> bool:
+    """True when the point falls inside the (simplified) landmass."""
+    return any(point_in_polygon((lat, lon), poly) for poly in LANDMASS)
+
+
+def open_water_run(origin: Coord, bearing: float,
+                   max_km: float = 90.0, step_km: float = 15.0) -> int:
+    """How many `step_km` hops along `bearing` stay at sea before hitting land."""
+    n = 0
+    d = step_km
+    while d <= max_km:
+        p = destination(origin, bearing, d)
+        if is_on_land(p[0], p[1]):
+            break
+        n += 1
+        d += step_km
+    return n
+
+
+def seaward_bearing(lat: float, lon: float, prior: float) -> float:
+    """The compass direction with the most open water from this point.
+
+    `prior` (the nearest port's shore_bearing) breaks ties, so the rehearsed
+    ports keep their exact layouts while an arbitrary point inside a gulf gets
+    a fan that actually points down the gulf.
+    """
+    best_bearing, best_key = prior, (-1, 0.0)
+    for k in range(16):
+        b = k * 22.5
+        run = open_water_run((lat, lon), b)
+        diff = abs(b - prior) % 360
+        key = (run, -(min(diff, 360 - diff)))
+        if key > best_key:
+            best_key, best_bearing = key, b
+    return best_bearing if best_key[0] > 0 else prior
+
+
+# --------------------------------------------------------------------------
 # Geofence layers (ILLUSTRATIVE — see module docstring)
 # --------------------------------------------------------------------------
 RESTRICTED_ZONES: List[Dict] = [

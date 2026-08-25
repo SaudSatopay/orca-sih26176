@@ -12,29 +12,7 @@ function findEvidence(res: ChatResponse, label: string): string | null {
   return row ? row.value : null;
 }
 
-function Tile({
-  label,
-  value,
-  accent = false,
-}: {
-  label: string;
-  value: string | null;
-  accent?: boolean;
-}) {
-  return (
-    <div
-      className={`min-w-0 rounded-xl border px-3 py-2.5 ${
-        accent ? "border-ocean-500/40 bg-ocean-500/10" : "border-white/10 bg-white/[0.03]"
-      }`}
-    >
-      <div className="label truncate">{label}</div>
-      <div className="mt-0.5 truncate font-mono text-[15px] font-bold tabular-nums text-ocean-100">
-        {value ?? "—"}
-      </div>
-    </div>
-  );
-}
-
+/** One instrument bank: six readings behind hairline dividers, like a bridge console. */
 export default function ConditionsStrip({
   res,
   language = "en",
@@ -53,9 +31,20 @@ export default function ConditionsStrip({
   ];
 
   return (
-    <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
-      {tiles.map((tile) => (
-        <Tile key={tile.label} {...tile} />
+    <div className="panel grid grid-cols-3 sm:grid-cols-6">
+      {tiles.map((tile, i) => (
+        <div
+          key={tile.label}
+          className={`min-w-0 px-3 py-2.5 ${i > 0 ? "border-l" : ""} ${
+            tile.accent ? "bg-chart-100/40" : ""
+          }`}
+          style={{ borderColor: "var(--rule-faint)" }}
+        >
+          <div className="label truncate !text-[9px]">{tile.label}</div>
+          <div className="mt-1 truncate font-mono text-[14.5px] font-bold tabular-nums leading-none text-ink-900">
+            {tile.value ?? "—"}
+          </div>
+        </div>
       ))}
     </div>
   );
