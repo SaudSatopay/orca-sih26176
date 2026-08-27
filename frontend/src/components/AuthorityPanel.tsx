@@ -3,6 +3,28 @@ import * as api from "../api";
 import type { AuthorityDashboard } from "../types";
 import { RISK_COLOR } from "./RiskDial";
 
+/** The board as a CSV file — the format an administration actually circulates. */
+function exportCsv(data: AuthorityDashboard) {
+  const q = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const rows = [
+    ["Landing centre", "State", "Risk score", "Category", "Official warning",
+     "Wave (m)", "Wind (km/h)", "Active warning"].join(","),
+    ...data.locations.map((r) =>
+      [q(r.name), q(r.state), r.risk_score, r.risk_category,
+       r.official_warning ? "YES" : "", r.wave_height_m ?? "",
+       r.wind_speed_kmh ?? "", q(r.headline)].join(","),
+    ),
+    "",
+    q(`Generated ${data.generated_at} IST by ORCA (SIH26176). Demo / simulated data is labelled — this sheet is decision support, not an official advisory.`),
+  ].join("\r\n");
+  const url = URL.createObjectURL(new Blob([rows], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `orca-coastal-risk-board-${data.generated_at.slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 /**
  * The district-administration view: every monitored landing centre, ranked by
  * risk. Same engine, same evidence — one screen that shows ORCA scales beyond
@@ -61,8 +83,18 @@ export default function AuthorityPanel() {
       <div className="panel rule-double overflow-hidden">
         <div className="hd">
           <span className="label">Coastal risk board</span>
-          <span className="font-mono text-[10px] tabular-nums text-ink-400">
-            {data.generated_at.slice(0, 16).replace("T", " ")} IST · refreshes every 30 s
+          <span className="flex items-center gap-3">
+            <span className="font-mono text-[10px] tabular-nums text-ink-400">
+              {data.generated_at.slice(0, 16).replace("T", " ")} IST · refreshes every 30 s
+            </span>
+            {/* The day's advisory board as a file the administration can circulate. */}
+            <button
+              onClick={() => exportCsv(data)}
+              className="btn-line !px-2.5 !py-1 !text-[9.5px]"
+              title="Download the board as a CSV advisory sheet"
+            >
+              Export CSV
+            </button>
           </span>
         </div>
         <div className="overflow-x-auto">

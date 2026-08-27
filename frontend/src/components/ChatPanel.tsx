@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChatMessage, Language } from "../types";
-import { BoatGlyph, CourseArrow, MicGlyph, StopGlyph } from "./glyphs";
+import { BoatGlyph, CourseArrow, MicGlyph, SchoolGlyph, StopGlyph } from "./glyphs";
 
 const PLACEHOLDER: Record<Language, string> = {
   en: "Ask ORCA — can I go fishing tomorrow at 6 AM?",
@@ -116,7 +116,10 @@ export default function ChatPanel({
             className="flex flex-col items-center gap-2.5 border border-dashed px-4 py-7 text-center text-[13px] text-ink-500"
             style={{ borderColor: "var(--rule-strong)" }}
           >
-            <BoatGlyph size={26} className="text-ink-300" />
+            <span className="flex items-end gap-3">
+              <BoatGlyph size={26} className="text-ink-300" />
+              <SchoolGlyph size={30} className="swim text-chart-300" />
+            </span>
             <div>
               Ask about safety, fishing zones, routes or warnings.
               <br />
@@ -204,7 +207,7 @@ export default function ChatPanel({
           <button
             onClick={toggleMic}
             title="Speak"
-            className={`grid h-10 w-10 shrink-0 place-items-center rounded-[2px] border transition ${
+            className={`grid h-10 w-10 shrink-0 place-items-center rounded-[2px] border transition hover:-translate-y-px ${
               listening
                 ? "border-risk-extreme bg-risk-extreme text-paper-50"
                 : "border-ink-900 bg-paper-50 text-ink-900 hover:bg-ink-900 hover:text-paper-50"
@@ -218,9 +221,9 @@ export default function ChatPanel({
           onClick={() => submit(text)}
           disabled={busy || !text.trim()}
           title="Send"
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-[2px] bg-ink-900 text-paper-50 transition hover:bg-ink-700 disabled:opacity-35"
+          className="group grid h-10 w-10 shrink-0 place-items-center rounded-[2px] bg-ink-900 text-paper-50 transition hover:-translate-y-px hover:bg-ink-700 disabled:opacity-35"
         >
-          <CourseArrow size={17} />
+          <CourseArrow size={17} className="transition-transform group-hover:translate-x-0.5" />
         </button>
       </div>
     </div>

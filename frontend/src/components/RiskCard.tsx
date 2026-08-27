@@ -135,9 +135,9 @@ export default function RiskCard({
                   +{f.contribution.toFixed(1)}
                 </span>
               </div>
-              <div className="mt-1.5 h-[3px] bg-ink-900/10">
+              <div className="mt-1.5 h-[3px] overflow-hidden bg-ink-900/10">
                 <div
-                  className="h-full transition-all duration-700"
+                  className="grow-x h-full transition-all duration-700"
                   style={{ width: `${(f.contribution / max) * 100}%`, background: color }}
                 />
               </div>

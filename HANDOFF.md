@@ -70,12 +70,36 @@ details filled, app mockup on slide 2. Considered final.
 - `data/demo_store.py` — cached scenarios keyed by *hour of day* (so "tomorrow 6 AM"
   always resolves to the rehearsed sea state) with day-to-day drift for forecasts.
 
-**Frontend** — three tabs:
-- **Today** (default): GPS auto-location, harbour picker, tap-map, 100 km radius,
-  ranked fishing grounds, plain-language advice, trip plan, 3-day outlook.
+**Frontend** — a landing page plus three tabs:
+- **Landing (front door, default)**: chart-styled hero with plotted-course art,
+  live coastline stats (centres/warnings from `/api/authority/dashboard`),
+  three feature cards, the four-phase "How ORCA decides" strip, honesty footer.
+  Every deep link (`?tab`, `?demo`, `?tour`, `?at`) skips it; clicking the ORCA
+  wordmark in the app header returns to it.
+- **Today**: GPS auto-location, harbour picker, tap-map, 100 km radius,
+  ranked fishing grounds — each with the five model-factor mini-bars and an
+  indicative **likely-species** line (bangda/tarli/surmai…, from SST/chl bands
+  in `services/fishing.py::likely_species`, labelled indicative, additive only:
+  probabilities untouched) — plain-language advice, trip plan, 3-day outlook.
 - **Ask ORCA**: multilingual chat, voice in/out, risk card, 24-h risk timeline,
   agent-crew panel, route options.
-- **Authority**: every landing centre scored, auto-refreshing.
+- **Authority**: every landing centre scored, auto-refreshing, with one-click
+  CSV export of the board.
+- **System (`?tab=system`, added 27 Aug 2026)**: the engine room — provider
+  cards with pulsing status, the series-cache story (what live data we pull and
+  what we do with it), the agent pipeline with signals travelling connectors,
+  the safety floors stamped in red, and a **live feed** polling
+  `GET /api/forecast` for one port every 7 s (cycling the PORTS gazetteer,
+  newest-first log with source/mode/latency provenance). Component:
+  `SystemPanel.tsx`; the guided tour visits it (now 17 steps).
+- **Fish everywhere (same date)**: `FishGlyph`/`SchoolGlyph` in `glyphs.tsx`,
+  a `.fish-drift` fixed layer of schools crossing upstream of the swell on every
+  view, fish in the landing hero water, panel-header schools, species-line fish,
+  chat empty state. All decorative, transform-only (`swim`, `schoolrun`).
+- **README** was rebuilt as the public face (badges, screenshot gallery from
+  `docs/*.png`, mermaid architecture, the live-data pipeline explained). The
+  `docs/` screenshots are committed — regenerate with the headless-Edge
+  `--force-prefers-reduced-motion` trick after visual changes.
 - **Guided tour**: 17 auto-advancing narrated steps — also the demo fallback.
 
 **Design identity (redesigned 24 Aug 2026)** — a "living nautical chart":
@@ -90,7 +114,9 @@ watermarks; marine-ink foreground; hairline rules; 2–3 px corner radii.
   `.label`, `.btn-ink`, `.btn-line`, `.btn-square`, `.chip`, `.tab`, `.field`,
   `.stamp` (rotated rubber-stamp verdicts), `.hatch-danger`, `.sounding`,
   `.chart-sheet`/`.chart-frame` (the map's tick-marked neatline).
-- The map: CARTO **voyager** tiles (sepia-filtered to match paper), SVG
+- The map: **OSM standard** tiles (sepia-filtered to match paper — do NOT
+  switch back to CARTO: their anonymous raster tiles started stamping
+  "API KEY REQUIRED" watermarks mid-rehearsal), SVG
   renderer (NOT canvas — required for the pattern fills), restricted zones use
   real SVG hatch patterns from `<ChartDefs/>` in App via classes
   `zone-hatch-{critical|warning|info}`, recommended route animates its dashes
@@ -99,6 +125,22 @@ watermarks; marine-ink foreground; hairline rules; 2–3 px corner radii.
 - All icons are inline SVGs in `components/glyphs.tsx` — **no emoji anywhere**
   (OS-dependent rendering). The ORCA mark is a compass rose whose needle is an
   orca fin.
+- **Sea layer + motion doctrine (added 27 Aug 2026):** every screen stands in
+  water — a blue wash rises from the foot of the body background and a
+  `.sea-drift` element (three translucent swell layers drifting at different
+  speeds) sits fixed behind all content. Motion is everywhere but obeys two
+  rules: (1) decorative loops (buoy `bob` with staggered delays, boat `roll`,
+  `wavecrawl` waterlines, `dashdrift` courses, compass sway) are transform-only
+  and infinite; (2) anything that REVEALS content either uses keyframes with
+  **no fill-mode** (`.grow-x` bars — if animations never run the bar is simply
+  full) or state+transition with an rAF + timeout fail-safe AND a
+  `prefers-reduced-motion` check (`Reveal`/`useCountUp` in `Landing.tsx` start
+  at the end state for reduced-motion users). Never animate opacity with
+  `fill-mode: both`. Hover grammar: cards `.lift`, rows lift + buoy badge
+  `.badge-ping` ripple + sounding scales, buttons rise 1px and arrows nudge,
+  tab underlines draw from the left (teal preview on inactive tabs).
+  Screenshot tip: add `--force-prefers-reduced-motion` to headless Edge to
+  capture finished end-states.
 
 **Verified demo numbers (Mumbai):** area 1 = 80% at 31 km · best time 2–7 PM ·
 stay ~3–4 h · trip ~8 h · 3-day outlook 82/84/79%.
@@ -198,7 +240,9 @@ Not started, roughly in order of value:
 
 ## 8. Pitch script that maps to the current build
 
-1. Open the app — *"it already knows where he is, and it has already read the sea."*
+1. Open on the landing page — *"ten agents read the sea, one safe explainable
+   decision"* — then click **Open ORCA**: *"it already knows where he is, and
+   it has already read the sea."*
 2. Point at the plain-language panel — *"no jargon: do not enter the red area between
    2 and 6 PM, areas 1, 2, 3 are your best chances, stay about three hours."*
 3. Ask in Marathi (Ask ORCA tab, scenario 2) — Marathi in, Marathi out, 70/100 HIGH.

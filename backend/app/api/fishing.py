@@ -67,6 +67,8 @@ def _zone_payload(loc: Location, zones: List[Dict], ambient_sst: Optional[float]
         z["probability"] = result["probability"]
         z["rating"] = fishing.rating(result["probability"])
         z["factors"] = result["factors"]
+        z["likely_species"] = fishing.likely_species(
+            z.get("sst_c"), z.get("chlorophyll_mg_m3"), z["distance_km"])
         z["confidence"] = round(result["probability"] / 100.0, 2)
         z["value_score"] = fishing.value_score(result["probability"], z["distance_km"])
         z["rationale"] = (

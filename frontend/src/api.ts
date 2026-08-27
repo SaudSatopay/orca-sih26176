@@ -89,6 +89,42 @@ export function fishingOutlook(
   return json<FishingOutlook>(`${BASE}/fishing?${p}`);
 }
 
+export interface Measurement {
+  value: number | null;
+  unit: string;
+  label: string;
+  provenance: {
+    source: string;
+    timestamp: string;
+    mode: string;
+    confidence: number | null;
+    note?: string | null;
+  };
+}
+
+export interface AgentSnapshot {
+  agent: string;
+  ok: boolean;
+  data: Record<string, unknown>;
+  measurements: Record<string, Measurement>;
+  unavailable: string[];
+  source: string;
+  timestamp: string;
+  confidence: number | null;
+  mode: string;
+  latency_ms: number;
+}
+
+/** One raw pull of the sea at a position — drives the System page's live feed. */
+export function forecast(lat: number, lon: number) {
+  return json<{
+    location: { name: string; latitude: number; longitude: number; state?: string | null };
+    valid_for: string;
+    weather: AgentSnapshot;
+    ocean: AgentSnapshot;
+  }>(`${BASE}/forecast?lat=${lat}&lon=${lon}`);
+}
+
 export function setMode(mode: "LIVE" | "DEMO") {
   return json<{ ok: boolean; data_mode: string; note: string }>(`${BASE}/config/mode`, {
     method: "POST",

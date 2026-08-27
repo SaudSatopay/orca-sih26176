@@ -115,9 +115,9 @@ export default function AgentTracePanel({
                       </span>
                     </div>
                     {t.latency_ms > 0 && (
-                      <div className="mt-1 h-[2px] bg-ink-900/[0.07]">
+                      <div className="mt-1 h-[2px] overflow-hidden bg-ink-900/[0.07]">
                         <div
-                          className="h-full bg-chart-500/70 transition-all duration-500"
+                          className="grow-x h-full bg-chart-500/70 transition-all duration-500"
                           style={{ width: `${(t.latency_ms / maxLatency) * 100}%` }}
                         />
                       </div>

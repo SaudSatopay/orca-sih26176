@@ -179,6 +179,50 @@ export function CheckGlyph({ size = 13, className = "" }: G) {
   );
 }
 
+/** A fish in ink — side profile, swimming left. */
+export function FishGlyph({ size = 16, className = "" }: G) {
+  return (
+    <svg
+      width={size}
+      height={size * 0.55}
+      viewBox="0 0 22 12"
+      fill="none"
+      className={className}
+      aria-hidden
+    >
+      <path
+        d="M1.5 6 C4.5 1.8 10 1.2 14 4.6 L20.5 1.5 C19.3 3 18.7 4.5 18.7 6 C18.7 7.5 19.3 9 20.5 10.5 L14 7.4 C10 10.8 4.5 10.2 1.5 6 Z"
+        fill="currentColor"
+      />
+      <circle cx="5" cy="5.3" r="0.9" fill="#F5EEDD" />
+    </svg>
+  );
+}
+
+/** Three fish travelling together — the school. */
+export function SchoolGlyph({ size = 34, className = "" }: G) {
+  return (
+    <svg
+      width={size}
+      height={size * 0.62}
+      viewBox="0 0 44 27"
+      fill="currentColor"
+      className={className}
+      aria-hidden
+    >
+      <g opacity="0.9">
+        <path d="M1 6.5 C3.2 3.5 7 3.1 9.8 5.5 L14.2 3.4 C13.4 4.4 13 5.4 13 6.5 C13 7.6 13.4 8.6 14.2 9.6 L9.8 7.5 C7 9.9 3.2 9.5 1 6.5 Z" />
+      </g>
+      <g opacity="0.65">
+        <path d="M18 13.5 C20.2 10.5 24 10.1 26.8 12.5 L31.2 10.4 C30.4 11.4 30 12.4 30 13.5 C30 14.6 30.4 15.6 31.2 16.6 L26.8 14.5 C24 16.9 20.2 16.5 18 13.5 Z" />
+      </g>
+      <g opacity="0.45">
+        <path d="M6 20.5 C8.2 17.5 12 17.1 14.8 19.5 L19.2 17.4 C18.4 18.4 18 19.4 18 20.5 C18 21.6 18.4 22.6 19.2 23.6 L14.8 21.5 C12 23.9 8.2 23.5 6 20.5 Z" />
+      </g>
+    </svg>
+  );
+}
+
 /** Small fishing boat in side profile, for hints and empty states. */
 export function BoatGlyph({ size = 16, className = "" }: G) {
   return (

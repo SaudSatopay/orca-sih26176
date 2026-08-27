@@ -96,26 +96,15 @@ export default function MarineMap({
 
     L.control.zoom({ position: "topleft" }).addTo(map);
 
-    // Warm light basemap to match the paper; OSM standard as the fallback.
-    const light = L.tileLayer(
-      "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-      {
-        maxZoom: 19,
-        subdomains: "abcd",
-        attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
-      },
-    );
-    let fellBack = false;
-    light.on("tileerror", () => {
-      if (fellBack) return;
-      fellBack = true;
-      map.removeLayer(light);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        maxZoom: 19,
-        attribution: "&copy; OpenStreetMap contributors",
-      }).addTo(map);
-    });
-    light.addTo(map);
+    // OSM standard tiles — keyless and never watermarked. CARTO's free
+    // basemaps started stamping "API KEY REQUIRED" over anonymous raster
+    // tiles mid-demo-rehearsal; a basemap that can silently start demanding
+    // a key is not acceptable on stage. The sepia tile filter in index.css
+    // warms OSM's palette to match the paper.
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
 
     mapRef.current = map;
     layerRef.current = L.layerGroup().addTo(map);
@@ -161,6 +150,7 @@ export default function MarineMap({
         fillColor: "#2A7391",
         fillOpacity: 0.03,
         interactive: false,
+        className: "radius-drift",
       })
         .bindTooltip(`${radiusKm} km search area`, { permanent: false, direction: "top" })
         .addTo(group);
@@ -215,10 +205,11 @@ export default function MarineMap({
             className: "",
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2],
-            html: `<div style="position:relative;width:${size}px;height:${size}px">
+            html: `<div class="bob" style="position:relative;width:${size}px;height:${size}px;
+                        animation-delay:${((a.rank * 7) % 10) / 3}s">
                      ${focused ? `<div style="position:absolute;inset:-8px;border-radius:50%;
                         border:2px solid ${color};animation:ping2 1.6s cubic-bezier(0,0,.2,1) infinite"></div>` : ""}
-                     <div style="position:absolute;inset:0;border-radius:50%;background:#FBF7ED;
+                     <div class="buoy" style="position:absolute;inset:0;border-radius:50%;background:#FBF7ED;
                        border:${best ? 4 : 3.5}px solid ${color};display:flex;flex-direction:column;
                        align-items:center;justify-content:center;line-height:1;gap:1px;
                        box-shadow:0 3px 10px rgba(18,33,45,.4);color:#12212D">
@@ -232,6 +223,7 @@ export default function MarineMap({
             `<b>Area ${a.rank}</b> — ${a.probability}% chance of fish<br/>
              ${Math.round(a.distance_km)} km ${a.bearing}<br/>
              SST ${a.sst_c ?? "—"} °C · chlorophyll ${a.chlorophyll_mg_m3 ?? "—"} mg/m³<br/>
+             ${a.likely_species?.length ? `Likely: ${a.likely_species.join(", ")}<br/>` : ""}
              <span style="font-size:10px;opacity:.65">A likelihood from the data — never a guarantee of fish.</span>`,
           )
           .addTo(group);
@@ -247,10 +239,12 @@ export default function MarineMap({
             className: "",
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2],
-            html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#FBF7ED;
-                     border:${best ? 4 : 3}px solid ${color};display:grid;place-items:center;
-                     color:#12212D;font:${best ? "800 16px" : "700 13px"} ${SERIF};
-                     box-shadow:0 3px 10px rgba(18,33,45,.4)">${z.rank}</div>`,
+            html: `<div class="bob" style="width:${size}px;height:${size}px;animation-delay:${((z.rank * 7) % 10) / 3}s">
+                     <div class="buoy" style="width:100%;height:100%;border-radius:50%;background:#FBF7ED;
+                       border:${best ? 4 : 3}px solid ${color};display:grid;place-items:center;
+                       color:#12212D;font:${best ? "800 16px" : "700 13px"} ${SERIF};
+                       box-shadow:0 3px 10px rgba(18,33,45,.4)">${z.rank}</div>
+                   </div>`,
           }),
         })
           .bindPopup(
@@ -275,11 +269,11 @@ export default function MarineMap({
           iconAnchor: [17, 17],
           // Inline SVG rather than an emoji: emoji glyphs vary by OS and can
           // fail to render entirely on a projector/kiosk machine.
-          html: `<div style="position:relative;width:34px;height:34px;cursor:grab">
+          html: `<div class="roll" style="position:relative;width:34px;height:34px;cursor:grab">
                    <div style="position:absolute;inset:-9px;border-radius:50%;
                      border:2px solid rgba(42,115,145,.6);
                      animation:ping2 2s cubic-bezier(0,0,.2,1) infinite"></div>
-                   <div style="position:absolute;inset:0;border-radius:50%;background:#12212D;
+                   <div class="buoy" style="position:absolute;inset:0;border-radius:50%;background:#12212D;
                      border:2.5px solid #FBF7ED;box-shadow:0 3px 10px rgba(18,33,45,.5);
                      display:grid;place-items:center">
                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none"

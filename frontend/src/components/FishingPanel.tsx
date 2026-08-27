@@ -1,5 +1,5 @@
 import type { CatchRating, FishingOutlook, Language } from "../types";
-import { WarnGlyph } from "./glyphs";
+import { FishGlyph, SchoolGlyph, WarnGlyph } from "./glyphs";
 
 /** Rating colours tuned for chart paper — inky enough to read as drafted. */
 export const RATING_COLOR: Record<CatchRating, string> = {
@@ -39,6 +39,8 @@ const T: Record<Language, Record<string, string>> = {
     dayAfter: "Day after",
     bestAt: "best around",
     notWorth: "Not enough safe time today for this trip.",
+    likely: "Likely",
+    likelyNote: "indicative, from SST and chlorophyll bands — never a promise",
   },
   hi: {
     advice: "आपको क्या करना चाहिए",
@@ -63,6 +65,8 @@ const T: Record<Language, Record<string, string>> = {
     dayAfter: "परसों",
     bestAt: "सबसे अच्छा समय",
     notWorth: "आज इतना सुरक्षित समय नहीं है।",
+    likely: "संभावित",
+    likelyNote: "तापमान और क्लोरोफिल से अनुमान — मछली की गारंटी नहीं",
   },
   mr: {
     advice: "तुम्ही काय करावे",
@@ -87,8 +91,19 @@ const T: Record<Language, Record<string, string>> = {
     dayAfter: "परवा",
     bestAt: "सर्वोत्तम वेळ",
     notWorth: "आज पुरेसा सुरक्षित वेळ नाही.",
+    likely: "शक्यता",
+    likelyNote: "तापमान व क्लोरोफिलवरून अंदाज — माशांची हमी नाही",
   },
 };
+
+/** The five documented model factors, in reading order, with tooltip labels. */
+const FACTOR_ORDER: { key: string; label: string }[] = [
+  { key: "chlorophyll", label: "Chlorophyll" },
+  { key: "sst", label: "SST band" },
+  { key: "front", label: "Thermal front" },
+  { key: "sea_state", label: "Sea state" },
+  { key: "time_of_day", label: "Time of day" },
+];
 
 function clock12(h: number): string {
   const hh = h % 24;
@@ -145,7 +160,10 @@ export default function FishingPanel({
       {top.length > 0 && (
         <div className="panel overflow-hidden">
           <div className="hd">
-            <span className="label">{t.areas}</span>
+            <span className="label flex items-center gap-2">
+              {t.areas}
+              <SchoolGlyph size={26} className="swim text-chart-500" />
+            </span>
             <span className="font-mono text-[10px] tabular-nums text-ink-400">
               {t.within} {data.radius_km} km
             </span>
@@ -157,15 +175,19 @@ export default function FishingPanel({
                 <button
                   key={a.id}
                   onClick={() => onSelectArea?.(a.rank)}
-                  className="flex w-full items-center gap-3.5 rounded-[2px] border bg-paper-100 px-3 py-3 text-left transition hover:border-ink-700 hover:bg-paper-150"
+                  className="group flex w-full items-center gap-3.5 rounded-[2px] border bg-paper-100 px-3 py-3 text-left transition-all duration-200 hover:-translate-y-[2px] hover:border-ink-700 hover:bg-paper-150 hover:shadow-md"
                   style={{ borderColor: "var(--rule)" }}
                 >
-                  {/* buoy badge — identical symbology to the map markers */}
-                  <div
-                    className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-[3.5px] bg-paper-50 font-display text-[17px] font-extrabold text-ink-900 shadow-sm"
-                    style={{ borderColor: RATING_COLOR[a.rating] }}
-                  >
-                    {a.rank}
+                  {/* buoy badge — identical symbology to the map markers,
+                      and it ripples back when the row is hovered */}
+                  <div className="relative shrink-0" style={{ color: RATING_COLOR[a.rating] }}>
+                    <span className="badge-ping" />
+                    <div
+                      className="grid h-11 w-11 place-items-center rounded-full border-[3.5px] bg-paper-50 font-display text-[17px] font-extrabold text-ink-900 shadow-sm"
+                      style={{ borderColor: RATING_COLOR[a.rating] }}
+                    >
+                      {a.rank}
+                    </div>
                   </div>
 
                   <div className="min-w-0 flex-1">
@@ -182,19 +204,53 @@ export default function FishingPanel({
                     <div className="mt-0.5 text-[11.5px] text-ink-500">
                       {words[a.rating]} {t.chance}
                     </div>
+                    {/* the five model factors behind this number — nothing is a black box */}
+                    <div className="mt-1.5 flex items-center gap-1">
+                      {FACTOR_ORDER.map((f) => {
+                        const v = a.factors?.[f.key];
+                        if (v == null) return null;
+                        return (
+                          <span
+                            key={f.key}
+                            title={`${f.label}: ${Math.round(v * 100)}%`}
+                            className="inline-block h-[4px] w-[24px] overflow-hidden bg-ink-900/15"
+                          >
+                            <span
+                              className="grow-x block h-full"
+                              style={{
+                                width: `${Math.round(v * 100)}%`,
+                                background: RATING_COLOR[a.rating],
+                                opacity: 0.85,
+                              }}
+                            />
+                          </span>
+                        );
+                      })}
+                    </div>
+                    {(a.likely_species?.length ?? 0) > 0 && (
+                      <div
+                        className="mt-1 flex items-center gap-1.5 truncate font-mono text-[10px] text-chart-700"
+                        title={`${t.likely}: ${a.likely_species!.join(" · ")} — ${t.likelyNote}`}
+                      >
+                        <FishGlyph size={13} className="swim shrink-0" />
+                        <span className="truncate">
+                          {t.likely}: {a.likely_species!.map((s) => s.split(" (")[0]).join(" · ")}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="shrink-0 text-right">
                     <div
-                      className="sounding text-[24px] leading-none tabular-nums"
+                      className="sounding text-[24px] leading-none tabular-nums transition-transform duration-300 group-hover:scale-110"
                       style={{ color: RATING_COLOR[a.rating] }}
                     >
                       {a.probability}
                       <span className="text-[13px]">%</span>
                     </div>
-                    <div className="ml-auto mt-1.5 h-[3px] w-16 bg-ink-900/10">
+                    <div className="ml-auto mt-1.5 h-[3px] w-16 overflow-hidden bg-ink-900/10">
                       <div
-                        className="h-full"
+                        className="grow-x h-full"
                         style={{
                           width: `${a.probability}%`,
                           background: RATING_COLOR[a.rating],
@@ -205,6 +261,10 @@ export default function FishingPanel({
                 </button>
               ))}
             </div>
+
+            <p className="mt-2 font-mono text-[8.5px] uppercase tracking-[0.14em] text-ink-300">
+              Bars: chlorophyll · SST band · front · sea state · time of day
+            </p>
 
             {data.best_window && (
               <div className="mt-3 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-3.5 py-2.5">
@@ -318,7 +378,7 @@ export default function FishingPanel({
             {data.forecast.map((f, i) => (
               <div
                 key={f.day_offset}
-                className={`px-3 py-3.5 text-center ${i > 0 ? "border-l" : ""} ${
+                className={`px-3 py-3.5 text-center transition-colors hover:bg-chart-100/60 ${i > 0 ? "border-l" : ""} ${
                   f.day_offset === 0 ? "bg-chart-100/40" : ""
                 }`}
                 style={{ borderColor: "var(--rule-faint)" }}

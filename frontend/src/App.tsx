@@ -15,11 +15,13 @@ import {
   WarnGlyph,
 } from "./components/glyphs";
 import GuidedTour, { TOUR } from "./components/GuidedTour";
+import Landing from "./components/Landing";
 import LocationPicker, { PORTS, type PickedLocation } from "./components/LocationPicker";
 import MarineMap from "./components/MarineMap";
 import PFZList from "./components/PFZList";
 import RiskCard from "./components/RiskCard";
 import { RISK_COLOR } from "./components/RiskDial";
+import SystemPanel from "./components/SystemPanel";
 import RiskTimeline from "./components/RiskTimeline";
 import type {
   ChatMessage,
@@ -34,7 +36,9 @@ const SESSION = "demo";
 const RADIUS_KM = 100;
 const DEFAULT_PORT = PORTS[0]; // Mumbai — used only if location is unavailable
 
-type Tab = "home" | "ask" | "authority";
+type AppTab = "home" | "ask" | "authority" | "system";
+/** "landing" is the front door; every deep link (?tab, ?demo, ?tour, ?at) skips it. */
+type Tab = AppTab | "landing";
 
 const SCENARIOS: { id: string; n: string; label: string; ask: string; hint: string }[] = [
   { id: "safe", n: "1", label: "Safe", ask: "Is it safe to go fishing tomorrow morning near Goa?", hint: "Goa · LOW" },
@@ -44,14 +48,14 @@ const SCENARIOS: { id: string; n: string; label: string; ask: string; hint: stri
   { id: "route", n: "5", label: "Safe route", ask: "Give me the safest route to the nearest fishing zone near Mumbai", hint: "Mumbai · geofence" },
 ];
 
-const TAB_LABEL: Record<Language, Record<Tab, string>> = {
-  en: { home: "Today", ask: "Ask ORCA", authority: "Authority" },
-  hi: { home: "आज", ask: "ORCA से पूछें", authority: "प्रशासन" },
-  mr: { home: "आज", ask: "ORCA ला विचारा", authority: "प्रशासन" },
+const TAB_LABEL: Record<Language, Record<AppTab, string>> = {
+  en: { home: "Today", ask: "Ask ORCA", authority: "Authority", system: "System" },
+  hi: { home: "आज", ask: "ORCA से पूछें", authority: "प्रशासन", system: "प्रणाली" },
+  mr: { home: "आज", ask: "ORCA ला विचारा", authority: "प्रशासन", system: "प्रणाली" },
 };
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>("home");
+  const [tab, setTab] = useState<Tab>("landing");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [latest, setLatest] = useState<ChatResponse | null>(null);
   const [busy, setBusy] = useState(false);
@@ -97,6 +101,7 @@ export default function App() {
     const at = (params.get("at") ?? "").split(",").map(Number);
     if (at.length === 2 && at.every(Number.isFinite)) {
       setPlace({ latitude: at[0], longitude: at[1], label: "Selected point", source: "map" });
+      setTab("home");
     } else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) =>
@@ -114,7 +119,8 @@ export default function App() {
     }
 
     const tabParam = params.get("tab");
-    if (tabParam === "home" || tabParam === "ask" || tabParam === "authority") setTab(tabParam);
+    if (tabParam === "home" || tabParam === "ask" || tabParam === "authority" || tabParam === "system")
+      setTab(tabParam);
     const wanted = params.get("demo");
     if (wanted) {
       const s = SCENARIOS.find((x) => x.id === wanted || x.n === wanted);
@@ -276,25 +282,40 @@ export default function App() {
       }
     : null;
 
+  if (tab === "landing") {
+    return (
+      <>
+        <ChartDefs />
+        <Landing mode={mode} onEnter={setTab} onTour={startTour} onScenario={runScenario} />
+      </>
+    );
+  }
+
   return (
     <div className="mx-auto flex min-h-full max-w-[1580px] flex-col gap-4 p-4 lg:p-6">
       <ChartDefs />
+      <div className="sea-drift" aria-hidden />
+      <div className="fish-drift" aria-hidden />
 
       {/* ---------------- title block, drafted like a chart's cartouche ---------------- */}
       <header className="panel rule-double">
         <div className="flex flex-wrap items-stretch">
-          {/* identity */}
-          <div className="flex items-center gap-4 py-3.5 pl-5 pr-6">
+          {/* identity — clicking it returns to the front page */}
+          <button
+            onClick={() => setTab("landing")}
+            title="Back to the front page"
+            className="flex items-center gap-4 py-3.5 pl-5 pr-6 text-left"
+          >
             <CompassMark size={46} className="shrink-0 text-ink-900" />
             <div>
               <h1 className="font-display text-[30px] font-black leading-none tracking-tight text-ink-900">
                 ORCA
               </h1>
-              <p className="mt-1 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-ink-400">
+              <p className="mt-1 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-chart-600">
                 Marine EcOsystem Reasoning · Collaborative Agents
               </p>
             </div>
-          </div>
+          </button>
 
           {/* title-block cells */}
           <div className="ml-auto flex flex-wrap items-stretch">
@@ -348,7 +369,7 @@ export default function App() {
           className="flex items-end gap-6 border-t px-5"
           style={{ borderColor: "var(--rule-faint)" }}
         >
-          {(["home", "ask", "authority"] as Tab[]).map((x) => (
+          {(["home", "ask", "authority", "system"] as AppTab[]).map((x) => (
             <button
               key={x}
               onClick={() => setTab(x)}
@@ -357,7 +378,7 @@ export default function App() {
               {tabLabels[x]}
             </button>
           ))}
-          <span className="label ml-auto hidden pb-2.5 !tracking-[0.12em] text-ink-300 md:block">
+          <span className="label ml-auto hidden pb-2.5 !tracking-[0.12em] !text-chart-500 md:block">
             Soundings in metres · WGS 84
           </span>
         </nav>
@@ -430,12 +451,14 @@ export default function App() {
                 ].map((x, i) => (
                   <div
                     key={x.k}
-                    className={`px-4 py-3 ${i > 0 ? "border-l" : ""}`}
+                    className={`group px-4 py-3 transition-colors hover:bg-chart-100/40 ${i > 0 ? "border-l" : ""}`}
                     style={{ borderColor: "var(--rule-faint)" }}
                   >
                     <div className="label truncate">{x.k}</div>
                     <div
-                      className="mt-1 font-mono text-[20px] font-bold tabular-nums leading-none text-ink-900"
+                      className={`mt-1 font-mono text-[20px] font-bold tabular-nums leading-none text-ink-900 ${
+                        x.color ? "" : "transition-colors group-hover:text-chart-600"
+                      }`}
                       style={x.color ? { color: x.color } : undefined}
                     >
                       {x.v}
@@ -615,6 +638,8 @@ export default function App() {
       )}
 
       {tab === "authority" && <AuthorityPanel />}
+
+      {tab === "system" && <SystemPanel mode={mode} />}
     </div>
   );
 }

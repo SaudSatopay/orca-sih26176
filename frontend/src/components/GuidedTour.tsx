@@ -7,7 +7,7 @@ export interface TourStep {
   /** Question to run through the full agent pipeline for this step. */
   ask?: string;
   /** Switch view before narrating. */
-  tab?: "home" | "ask" | "authority";
+  tab?: "home" | "ask" | "authority" | "system";
   /** How long to dwell after the action, in ms. */
   dwell: number;
   /** Highlighted feature name shown as a chip. */
@@ -115,6 +115,13 @@ export const TOUR: TourStep[] = [
     say: "The agent panel shows what actually ran: weather, ocean, fishing zones, alerts and GIS all fan out concurrently, then the risk engine waits for every one of them.",
     dwell: 9000,
     feature: "Agent crew",
+  },
+  {
+    title: "The engine room",
+    say: "The system view shows the whole machine running: live providers feeding a 72-hour series cache, ten agents fanning out, the safety floors no model can undo — and the coast being read live, port by port.",
+    tab: "system" as const,
+    dwell: 11000,
+    feature: "Architecture · live feed",
   },
   {
     title: "It scales past one fisherman",

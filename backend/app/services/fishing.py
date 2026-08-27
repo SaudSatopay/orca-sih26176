@@ -113,6 +113,43 @@ def probability(*, chlorophyll: Optional[float], sst: Optional[float],
     }
 
 
+# --- indicative species mix ----------------------------------------------
+# Coastal target species concentrate in documented SST/chlorophyll bands —
+# the same reasoning INCOIS applies, species-resolved. This is an INDICATIVE
+# heuristic (and labelled so in the UI): it narrows expectation, it does not
+# promise a species. Local names first — that is what a fisher calls them.
+SPECIES_BANDS: List[Dict] = [
+    {"name": "Bangda (Indian mackerel)", "sst": (26.0, 29.0), "chl_min": 0.5, "dist": (5, 85)},
+    {"name": "Tarli (oil sardine)",      "sst": (26.5, 28.5), "chl_min": 0.9, "dist": (5, 70)},
+    {"name": "Paplet (silver pomfret)",  "sst": (26.0, 29.5), "chl_min": 0.4, "dist": (5, 50)},
+    {"name": "Surmai (seer fish)",       "sst": (27.0, 30.0), "chl_min": 0.2, "dist": (30, 100)},
+    {"name": "Bombil (Bombay duck)",     "sst": (27.0, 30.5), "chl_min": 0.6, "dist": (5, 45)},
+]
+
+
+def likely_species(sst: Optional[float], chlorophyll: Optional[float],
+                   distance_km: float, limit: int = 3) -> List[str]:
+    """Up to `limit` species this water most resembles, best fit first."""
+    scored: List[Tuple[float, str]] = []
+    for s in SPECIES_BANDS:
+        lo, hi = s["sst"]
+        if sst is None:
+            sst_fit = 0.5
+        elif lo <= sst <= hi:
+            sst_fit = 1.0
+        else:
+            drift = (lo - sst) if sst < lo else (sst - hi)
+            sst_fit = max(0.0, 1.0 - drift / 1.5)
+        chl_fit = 0.5 if chlorophyll is None else min(1.0, chlorophyll / s["chl_min"])
+        d_lo, d_hi = s["dist"]
+        dist_fit = 1.0 if d_lo <= distance_km <= d_hi else 0.4
+        fit = sst_fit * 0.55 + chl_fit * 0.30 + dist_fit * 0.15
+        if fit >= 0.60:
+            scored.append((fit, s["name"]))
+    scored.sort(reverse=True)
+    return [name for _, name in scored[:limit]]
+
+
 def value_score(probability_pct: int, distance_km: float) -> float:
     """What the ground is actually worth *to this fisher*, from here.
 

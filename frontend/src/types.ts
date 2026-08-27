@@ -207,6 +207,8 @@ export interface FishingArea {
   confidence: number;
   rationale: string;
   factors: Record<string, number>;
+  /** Indicative species mix from SST/chlorophyll bands — never a promise. */
+  likely_species?: string[];
   /** Best balance of odds against the run out — the one we route to. */
   recommended?: boolean;
 }
