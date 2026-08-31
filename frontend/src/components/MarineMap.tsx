@@ -6,6 +6,7 @@ import type {
   GeofenceAlert,
   Language,
   Location,
+  MarineAlert,
   PFZZone,
   PositionCheck,
   RouteOption,
@@ -25,6 +26,39 @@ const HINT: Record<Language, string> = {
   en: "Drag the boat to check any position",
   hi: "किसी भी स्थान की जाँच के लिए नाव खींचें",
   mr: "कोणतेही ठिकाण तपासण्यासाठी होडी ओढा",
+};
+
+const LEGEND: Record<Language, Record<string, string>> = {
+  en: {
+    symbols: "Symbols",
+    veryGood: "Very good chance",
+    some: "Some chance",
+    noEntry: "Do not enter",
+    course: "Safest course",
+    storm: "Cyclone / warning area",
+    marginL: "Indian coastal waters · scale varies",
+    marginR: "Illustrative boundaries — not for navigation",
+  },
+  hi: {
+    symbols: "संकेत",
+    veryGood: "बहुत अच्छी संभावना",
+    some: "कुछ संभावना",
+    noEntry: "प्रवेश न करें",
+    course: "सबसे सुरक्षित मार्ग",
+    storm: "चक्रवात / चेतावनी क्षेत्र",
+    marginL: "भारतीय तटीय जल · पैमाना बदलता है",
+    marginR: "सांकेतिक सीमाएँ — नौवहन के लिए नहीं",
+  },
+  mr: {
+    symbols: "खुणा",
+    veryGood: "खूप चांगली शक्यता",
+    some: "थोडी शक्यता",
+    noEntry: "प्रवेश करू नका",
+    course: "सर्वात सुरक्षित मार्ग",
+    storm: "चक्रीवादळ / इशारा क्षेत्र",
+    marginL: "भारतीय किनारी पाणी · प्रमाण बदलते",
+    marginR: "सांकेतिक सीमा — नौकानयनासाठी नाही",
+  },
 };
 
 const STATUS_STYLE: Record<PositionCheck["status"], string> = {
@@ -51,6 +85,7 @@ export default function MarineMap({
   radiusKm,
   routes,
   geofence,
+  alerts = [],
   language = "en",
   onPickLocation,
   focusRank,
@@ -63,6 +98,8 @@ export default function MarineMap({
   radiusKm?: number;
   routes: RouteOption[];
   geofence: GeofenceAlert[];
+  /** Official warnings; those carrying `storm` geometry are drawn on the chart. */
+  alerts?: MarineAlert[];
   language?: Language;
   /** Tap anywhere on the water to move the fisher's position. */
   onPickLocation?: (lat: number, lon: number) => void;
@@ -171,6 +208,84 @@ export default function MarineMap({
           `<b>${z.properties.name}</b><br/><span style="opacity:.75">${z.properties.zone_type.replace(/_/g, " ")}</span><br/><span style="font-size:10px;opacity:.6">${z.properties.note}</span>`,
         )
         .addTo(group);
+    });
+
+    // official warnings with geometry — the storm is DRAWN, not just recited
+    alerts.forEach((al) => {
+      const s = al.storm;
+      if (!s) return;
+      const isCyclone = al.type === "cyclone_warning";
+
+      // warning area, hatched like every danger area on this chart
+      L.circle([s.latitude, s.longitude], {
+        radius: s.radius_km * 1000,
+        color: "#AF2318",
+        weight: 2,
+        opacity: 0.9,
+        dashArray: "10 6",
+        className: "zone-hatch-critical",
+        interactive: false,
+      }).addTo(group);
+
+      // past + forecast track with timestamped position dots
+      const track = s.track ?? [];
+      if (track.length > 1) {
+        const line = track.map((p) => [p.latitude, p.longitude] as [number, number]);
+        L.polyline(line, {
+          color: "#AF2318",
+          weight: 2.5,
+          opacity: 0.85,
+          dashArray: "3 7",
+          className: "route-live",
+        }).addTo(group);
+        track.forEach((p) => {
+          L.marker([p.latitude, p.longitude], {
+            icon: L.divIcon({
+              className: "",
+              iconSize: [11, 11],
+              iconAnchor: [5.5, 5.5],
+              html: `<div style="width:11px;height:11px;border-radius:50%;background:#FBF7ED;
+                       border:2.5px solid #AF2318;box-shadow:0 1px 4px rgba(18,33,45,.4)"></div>`,
+            }),
+          })
+            .bindTooltip(p.label, { direction: "top", offset: [0, -6] })
+            .addTo(group);
+          bounds.push([p.latitude, p.longitude]);
+        });
+      }
+
+      // the storm itself — the meteorological symbol, turning
+      if (isCyclone) {
+        L.marker([s.latitude, s.longitude], {
+          zIndexOffset: 800,
+          icon: L.divIcon({
+            className: "",
+            iconSize: [56, 56],
+            iconAnchor: [28, 28],
+            html: `<div class="storm-spin" style="width:56px;height:56px;
+                        filter:drop-shadow(0 0 3px rgba(245,238,221,.95)) drop-shadow(0 2px 6px rgba(18,33,45,.35))">
+                     <svg viewBox="0 0 56 56" width="56" height="56" fill="none">
+                       <path d="M28 5 A 23 23 0 0 1 51 28" stroke="#AF2318" stroke-width="6" stroke-linecap="round"/>
+                       <path d="M28 51 A 23 23 0 0 1 5 28" stroke="#AF2318" stroke-width="6" stroke-linecap="round"/>
+                       <circle cx="28" cy="28" r="10.5" fill="#AF2318"/>
+                       <circle cx="28" cy="28" r="4" fill="#FBF7ED"/>
+                     </svg>
+                   </div>`,
+          }),
+        })
+          .bindTooltip(al.headline, {
+            permanent: true,
+            direction: "top",
+            offset: [0, -32],
+            className: "storm-label",
+          })
+          .bindPopup(
+            `<b>${al.headline}</b><br/>${al.detail}<br/>
+             <span style="font-size:10px;opacity:.65">${al.source} · illustrative storm geometry — Demo / simulated</span>`,
+          )
+          .addTo(group);
+      }
+      bounds.push([s.latitude, s.longitude]);
     });
 
     // plotted courses (under the pins)
@@ -306,7 +421,7 @@ export default function MarineMap({
 
     if (bounds.length > 1) map.fitBounds(L.latLngBounds(bounds).pad(0.22), { animate: true });
     else if (origin) map.setView([origin.latitude, origin.longitude], 10, { animate: true });
-  }, [origin, zones, pfz, areas, routes, radiusKm, focusRank]);
+  }, [origin, zones, pfz, areas, routes, radiusKm, focusRank, alerts]);
 
   // Fly to a ground when the user taps its card in the list.
   useEffect(() => {
@@ -347,11 +462,11 @@ export default function MarineMap({
         {/* symbols legend, as a chart's key */}
         <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-[2px] border border-ink-700/50 bg-paper-50/95 px-3 pb-2 pt-1.5 shadow-md">
           <div className="mb-1 font-mono text-[8.5px] font-bold uppercase tracking-[0.16em] text-ink-400">
-            Symbols
+            {(LEGEND[language] ?? LEGEND.en).symbols}
           </div>
           {[
-            ["#1D7A50", "Very good chance"],
-            ["#B08000", "Some chance"],
+            ["#1D7A50", (LEGEND[language] ?? LEGEND.en).veryGood],
+            ["#B08000", (LEGEND[language] ?? LEGEND.en).some],
           ].map(([c, label]) => (
             <div key={label} className="flex items-center gap-2 py-[1.5px] text-[10.5px] font-medium text-ink-700">
               <span
@@ -365,14 +480,24 @@ export default function MarineMap({
             <svg width="10" height="10" aria-hidden>
               <rect x="0.5" y="0.5" width="9" height="9" fill="url(#hatch-critical)" stroke="#AF2318" strokeWidth="1" />
             </svg>
-            Do not enter
+            {(LEGEND[language] ?? LEGEND.en).noEntry}
           </div>
           <div className="flex items-center gap-2 py-[1.5px] text-[10.5px] font-medium text-ink-700">
             <svg width="12" height="6" aria-hidden>
               <line x1="0" y1="3" x2="12" y2="3" stroke="#1D7A50" strokeWidth="2" strokeDasharray="4 2.5" />
             </svg>
-            Safest course
+            {(LEGEND[language] ?? LEGEND.en).course}
           </div>
+          {alerts.some((a) => a.storm) && (
+            <div className="flex items-center gap-2 py-[1.5px] text-[10.5px] font-medium text-ink-700">
+              <svg width="11" height="11" viewBox="0 0 56 56" fill="none" aria-hidden>
+                <path d="M28 5 A 23 23 0 0 1 51 28" stroke="#AF2318" strokeWidth="9" strokeLinecap="round" />
+                <path d="M28 51 A 23 23 0 0 1 5 28" stroke="#AF2318" strokeWidth="9" strokeLinecap="round" />
+                <circle cx="28" cy="28" r="12" fill="#AF2318" />
+              </svg>
+              {(LEGEND[language] ?? LEGEND.en).storm}
+            </div>
+          )}
         </div>
 
         {/* drag hint */}
@@ -398,10 +523,10 @@ export default function MarineMap({
       {/* sheet margin note */}
       <div className="mt-[7px] flex items-baseline justify-between">
         <span className="font-mono text-[8.5px] font-semibold uppercase tracking-[0.18em] text-ink-400">
-          Indian coastal waters · scale varies
+          {(LEGEND[language] ?? LEGEND.en).marginL}
         </span>
         <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-300">
-          Illustrative boundaries — not for navigation
+          {(LEGEND[language] ?? LEGEND.en).marginR}
         </span>
       </div>
     </div>

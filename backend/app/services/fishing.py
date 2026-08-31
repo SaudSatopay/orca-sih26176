@@ -241,6 +241,43 @@ def recommend_duration(*, probability_pct: int, distance_km: float,
     }
 
 
+# --- trip economics -------------------------------------------------------
+# Planning estimates for a TYPICAL small motorised FRP boat, with every
+# assumption stated (and repeated in the UI). Deliberately conservative:
+# an inflated profit figure that doesn't materialise costs a fisher trust;
+# a conservative one he beats builds it.
+FUEL_PRICE_INR_PER_L = 100.0   # coastal pump price, petrol/kerosene mix
+FUEL_L_PER_KM = 0.45           # ~9.9 HP outboard, loaded FRP boat
+TYPICAL_CATCH_KG = 80.0        # good-day haul for that boat class
+MIXED_CATCH_INR_PER_KG = 140.0  # conservative landing-centre mixed price
+
+
+def trip_economics(*, probability_pct: int, distance_km: float) -> Dict:
+    """Fuel, catch band, revenue and profit for the recommended trip.
+
+    A PLANNING ESTIMATE, never a promise — the assumptions ride along so the
+    arithmetic can be checked by anyone.
+    """
+    fuel_l = round(distance_km * 2 * FUEL_L_PER_KM)
+    fuel_cost = int(round(fuel_l * FUEL_PRICE_INR_PER_L / 10) * 10)
+    p = max(0.0, min(1.0, probability_pct / 100.0))
+    catch_lo = int(round(TYPICAL_CATCH_KG * p * 0.70 / 5) * 5)
+    catch_hi = int(round(TYPICAL_CATCH_KG * p * 1.15 / 5) * 5)
+    revenue = int(round(((catch_lo + catch_hi) / 2) * MIXED_CATCH_INR_PER_KG / 10) * 10)
+    return {
+        "fuel_litres": fuel_l,
+        "fuel_cost_inr": fuel_cost,
+        "catch_kg_low": catch_lo,
+        "catch_kg_high": catch_hi,
+        "revenue_inr": revenue,
+        "profit_inr": revenue - fuel_cost,
+        "assumptions": (
+            f"Typical motorised FRP boat · {FUEL_L_PER_KM} L/km · "
+            f"₹{FUEL_PRICE_INR_PER_L:.0f}/L · mixed catch ₹{MIXED_CATCH_INR_PER_KG:.0f}/kg"
+        ),
+    }
+
+
 def day_label(offset: int) -> str:
     return {0: "today", 1: "tomorrow", 2: "day after tomorrow"}.get(offset, f"day +{offset}")
 

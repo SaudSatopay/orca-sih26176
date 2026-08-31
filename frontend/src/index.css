@@ -656,6 +656,34 @@ path.route-live {
 path.radius-drift {
   animation: dashdrift 7s linear infinite reverse;
 }
+/* The storm turns. Slow, relentless, transform-only. */
+@keyframes stormspin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.storm-spin {
+  animation: stormspin 5s linear infinite;
+  transform-origin: center;
+}
+/* The storm's chart annotation. */
+.leaflet-tooltip.storm-label {
+  background: #fbf7ed;
+  color: #af2318;
+  border: 1.5px solid #af2318;
+  border-radius: 2px;
+  font-family: "Spline Sans Mono Variable", Consolas, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  box-shadow: 0 3px 8px rgba(18, 33, 45, 0.3);
+}
+.leaflet-tooltip-top.storm-label::before {
+  border-top-color: #af2318;
+}
+
 /* Everything moored on the chart rides the swell (never the Leaflet-positioned
    root element — Leaflet owns that transform; only inner wrappers animate). */
 .leaflet-marker-icon .bob {

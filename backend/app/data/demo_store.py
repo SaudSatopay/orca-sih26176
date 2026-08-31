@@ -67,6 +67,8 @@ SCENARIOS: Dict[str, Dict] = {
                 "detail": "Squally weather with wind speed reaching 35-45 kmph very likely "
                           "over the north Maharashtra coast.",
                 "source": "IMD",
+                # The squall belt off the north Maharashtra coast — circle only.
+                "storm": {"latitude": 19.40, "longitude": 72.20, "radius_km": 110, "track": []},
             }
         ],
     },
@@ -110,6 +112,20 @@ SCENARIOS: Dict[str, Dict] = {
                 "detail": "Sea condition phenomenal. Fishermen are advised NOT to venture into "
                           "the sea and to return to coast immediately.",
                 "source": "IMD",
+                # Synthetic storm geometry so the chart can DRAW the warning,
+                # not just recite it: centre, warning radius, and a track with
+                # past (solid history) and forecast positions. Illustrative —
+                # carried to the UI with the same simulated-data labelling.
+                "storm": {
+                    "latitude": 19.55, "longitude": 87.65, "radius_km": 180,
+                    "track": [
+                        {"latitude": 17.80, "longitude": 89.30, "label": "-24 h"},
+                        {"latitude": 18.80, "longitude": 88.40, "label": "-12 h"},
+                        {"latitude": 19.55, "longitude": 87.65, "label": "now"},
+                        {"latitude": 20.30, "longitude": 86.90, "label": "+12 h"},
+                        {"latitude": 20.95, "longitude": 86.15, "label": "+24 h"},
+                    ],
+                },
             },
             {
                 "type": "high_wave_alert",
@@ -161,6 +177,8 @@ SCENARIOS: Dict[str, Dict] = {
                 "headline": "Fishermen warning — squally weather over the north Bay of Bengal",
                 "detail": "Wind speed reaching 45-55 kmph. Fishermen advised not to venture out.",
                 "source": "IMD",
+                # A warning belt, not a storm — circle only, no track.
+                "storm": {"latitude": 21.00, "longitude": 88.60, "radius_km": 130, "track": []},
             }
         ],
     },

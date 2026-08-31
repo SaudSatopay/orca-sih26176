@@ -55,16 +55,22 @@ _DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 if _DIST.is_dir():
     app.mount("/assets", StaticFiles(directory=_DIST / "assets"), name="assets")
 
+    # index.html must NEVER be cached: a browser tab holding yesterday's HTML
+    # keeps loading yesterday's JS bundle, and the demo quietly runs old code
+    # (this actually happened — a feature "missing" on stage was a stale tab).
+    # The hashed /assets files stay cacheable; only the entry document is not.
+    _NO_STORE = {"Cache-Control": "no-store, must-revalidate"}
+
     @app.get("/")
     def index() -> FileResponse:
-        return FileResponse(_DIST / "index.html")
+        return FileResponse(_DIST / "index.html", headers=_NO_STORE)
 
     @app.get("/{full_path:path}")
     def spa(full_path: str) -> FileResponse:
         candidate = _DIST / full_path
         if candidate.is_file():
             return FileResponse(candidate)
-        return FileResponse(_DIST / "index.html")
+        return FileResponse(_DIST / "index.html", headers=_NO_STORE)
 else:
     @app.get("/")
     def root() -> dict:

@@ -139,6 +139,7 @@ def fishing_outlook(
 
     # ---- route + how long to stay ---------------------------------------
     duration = None
+    economics = None
     routes: List[Dict] = []
     top_zone = next((z for z in zones if z.get("recommended")), top_zone)
     if top_zone:
@@ -155,6 +156,16 @@ def fishing_outlook(
                 distance_km=top_zone["distance_km"],
                 travel_minutes=int(recommended.get("eta_minutes", 90)),
                 safe_window_hours=_safe_window_hours(loc, now),
+            )
+            # "Return before HH:MM, because..." — the end of the safe window
+            # as a clock time a fisher can hold in his head, with the reason.
+            back_by = now + timedelta(hours=duration["safe_window_hours"])
+            duration["return_by"] = back_by.strftime("%H:%M")
+            after = demo_store.conditions(loc.name, back_by + timedelta(hours=1))
+            duration["return_reason_wave_m"] = round(after["wave"], 1)
+            economics = fishing.trip_economics(
+                probability_pct=top_zone["probability"],
+                distance_km=top_zone["distance_km"],
             )
 
     # ---- two-day outlook -------------------------------------------------
@@ -246,6 +257,7 @@ def fishing_outlook(
         "best_window": {"from_hour": best_window[0], "to_hour": best_window[1]} if best_window else None,
         "hourly_ranking": [{"hour": h, "probability": p} for h, p in sorted(ranked_hours)],
         "duration": duration,
+        "economics": economics,
         "routes": routes,
         "avoid": closed,
         "forecast": forecast,

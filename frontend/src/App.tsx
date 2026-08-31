@@ -40,18 +40,70 @@ type AppTab = "home" | "ask" | "authority" | "system";
 /** "landing" is the front door; every deep link (?tab, ?demo, ?tour, ?at) skips it. */
 type Tab = AppTab | "landing";
 
-const SCENARIOS: { id: string; n: string; label: string; ask: string; hint: string }[] = [
-  { id: "safe", n: "1", label: "Safe", ask: "Is it safe to go fishing tomorrow morning near Goa?", hint: "Goa · LOW" },
-  { id: "danger", n: "2", label: "Rough", ask: "मी उद्या सकाळी ६ वाजता मुंबईजवळ मासेमारीला जाऊ शकतो का?", hint: "Mumbai · मराठी" },
-  { id: "cyclone", n: "3", label: "Cyclone", ask: "Is there a cyclone near Paradip? Can I go fishing?", hint: "Paradip · EXTREME" },
-  { id: "pfz", n: "4", label: "Fishing zones", ask: "कोच्चि के पास मछली पकड़ने का क्षेत्र कहाँ है?", hint: "Kochi · हिंदी" },
-  { id: "route", n: "5", label: "Safe route", ask: "Give me the safest route to the nearest fishing zone near Mumbai", hint: "Mumbai · geofence" },
+const SCENARIOS: {
+  id: string;
+  n: string;
+  label: Record<Language, string>;
+  ask: string;
+  hint: string;
+}[] = [
+  { id: "safe", n: "1", label: { en: "Safe", hi: "सुरक्षित", mr: "सुरक्षित" }, ask: "Is it safe to go fishing tomorrow morning near Goa?", hint: "Goa · LOW" },
+  { id: "danger", n: "2", label: { en: "Rough", hi: "ख़राब मौसम", mr: "खराब हवामान" }, ask: "मी उद्या सकाळी ६ वाजता मुंबईजवळ मासेमारीला जाऊ शकतो का?", hint: "Mumbai · मराठी" },
+  { id: "cyclone", n: "3", label: { en: "Cyclone", hi: "चक्रवात", mr: "चक्रीवादळ" }, ask: "Is there a cyclone near Paradip? Can I go fishing?", hint: "Paradip · EXTREME" },
+  { id: "pfz", n: "4", label: { en: "Fishing zones", hi: "मत्स्य क्षेत्र", mr: "मासेमारी क्षेत्रे" }, ask: "कोच्चि के पास मछली पकड़ने का क्षेत्र कहाँ है?", hint: "Kochi · हिंदी" },
+  { id: "route", n: "5", label: { en: "Safe route", hi: "सुरक्षित मार्ग", mr: "सुरक्षित मार्ग" }, ask: "Give me the safest route to the nearest fishing zone near Mumbai", hint: "Mumbai · geofence" },
 ];
 
 const TAB_LABEL: Record<Language, Record<AppTab, string>> = {
   en: { home: "Today", ask: "Ask ORCA", authority: "Authority", system: "System" },
   hi: { home: "आज", ask: "ORCA से पूछें", authority: "प्रशासन", system: "प्रणाली" },
   mr: { home: "आज", ask: "ORCA ला विचारा", authority: "प्रशासन", system: "प्रणाली" },
+};
+
+/** The app chrome, in the fisher's language. */
+const UI: Record<Language, Record<string, string>> = {
+  en: {
+    chartNo: "Chart №",
+    dataEdition: "Data edition",
+    voice: "Voice",
+    lang: "Language",
+    tour: "Guided tour",
+    stopTour: "Stop tour",
+    marginalia: "Soundings in metres · WGS 84",
+    scenarios: "Rehearsed scenarios",
+    courses: "Plotted courses",
+    recommended: "Recommended",
+    warnings: "Official marine warnings",
+    validTill: "valid till",
+  },
+  hi: {
+    chartNo: "चार्ट क्र.",
+    dataEdition: "डेटा संस्करण",
+    voice: "आवाज़",
+    lang: "भाषा",
+    tour: "गाइडेड टूर",
+    stopTour: "टूर रोकें",
+    marginalia: "गहराई मीटर में · WGS 84",
+    scenarios: "तैयार परिदृश्य",
+    courses: "आँके गए मार्ग",
+    recommended: "सुझाया गया",
+    warnings: "आधिकारिक समुद्री चेतावनियाँ",
+    validTill: "मान्य",
+  },
+  mr: {
+    chartNo: "तक्ता क्र.",
+    dataEdition: "डेटा आवृत्ती",
+    voice: "आवाज",
+    lang: "भाषा",
+    tour: "गाइडेड टूर",
+    stopTour: "टूर थांबवा",
+    marginalia: "खोली मीटरमध्ये · WGS 84",
+    scenarios: "तयार परिस्थिती",
+    courses: "आखलेले मार्ग",
+    recommended: "सुचवलेला",
+    warnings: "अधिकृत सागरी इशारे",
+    validTill: "पर्यंत",
+  },
 };
 
 export default function App() {
@@ -121,6 +173,8 @@ export default function App() {
     const tabParam = params.get("tab");
     if (tabParam === "home" || tabParam === "ask" || tabParam === "authority" || tabParam === "system")
       setTab(tabParam);
+    const langParam = params.get("lang");
+    if (langParam === "en" || langParam === "hi" || langParam === "mr") setLangChoice(langParam);
     const wanted = params.get("demo");
     if (wanted) {
       const s = SCENARIOS.find((x) => x.id === wanted || x.n === wanted);
@@ -272,6 +326,7 @@ export default function App() {
 
   const suggestions = useMemo(() => latest?.suggestions ?? [], [latest]);
   const tabLabels = TAB_LABEL[language] ?? TAB_LABEL.en;
+  const ui = UI[language] ?? UI.en;
 
   const homeOrigin: Location | null = place
     ? {
@@ -286,7 +341,14 @@ export default function App() {
     return (
       <>
         <ChartDefs />
-        <Landing mode={mode} onEnter={setTab} onTour={startTour} onScenario={runScenario} />
+        <Landing
+          mode={mode}
+          language={language}
+          onLanguage={setLangChoice}
+          onEnter={setTab}
+          onTour={startTour}
+          onScenario={runScenario}
+        />
       </>
     );
   }
@@ -320,7 +382,7 @@ export default function App() {
           {/* title-block cells */}
           <div className="ml-auto flex flex-wrap items-stretch">
             <div className="hidden flex-col justify-center border-l px-5 py-3 sm:flex" style={{ borderColor: "var(--rule-faint)" }}>
-              <span className="label">Chart №</span>
+              <span className="label">{ui.chartNo}</span>
               <span className="mt-1 font-mono text-[13px] font-bold text-ink-800">SIH26176</span>
             </div>
 
@@ -331,7 +393,7 @@ export default function App() {
               className="group flex flex-col justify-center border-l px-5 py-3 text-left transition hover:bg-paper-150 disabled:opacity-50"
               style={{ borderColor: "var(--rule-faint)" }}
             >
-              <span className="label">Data edition</span>
+              <span className="label">{ui.dataEdition}</span>
               <span
                 className={`mt-1 font-mono text-[13px] font-bold ${
                   mode === "LIVE" ? "text-risk-low" : "text-risk-high"
@@ -348,17 +410,40 @@ export default function App() {
               className="flex flex-col justify-center border-l px-5 py-3 text-left transition hover:bg-paper-150"
               style={{ borderColor: "var(--rule-faint)" }}
             >
-              <span className="label">Voice</span>
+              <span className="label">{ui.voice}</span>
               <span className="mt-1 flex items-center gap-1.5 font-mono text-[13px] font-bold text-ink-800">
                 {speak ? <SpeakerGlyph /> : <SpeakerOffGlyph className="text-ink-300" />}
                 {speak ? "ON" : "OFF"}
               </span>
             </button>
 
+            <div
+              className="flex flex-col justify-center border-l px-4 py-3"
+              style={{ borderColor: "var(--rule-faint)" }}
+            >
+              <span className="label">{ui.lang}</span>
+              <span className="mt-1 flex gap-1">
+                {(["en", "hi", "mr"] as Language[]).map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => setLangChoice(l)}
+                    className={`rounded-[2px] border px-1.5 py-0.5 font-mono text-[10.5px] font-bold transition ${
+                      language === l
+                        ? "border-ink-900 bg-ink-900 text-paper-50"
+                        : "text-ink-400 hover:text-ink-800"
+                    }`}
+                    style={language === l ? undefined : { borderColor: "var(--rule)" }}
+                  >
+                    {l === "en" ? "EN" : l === "hi" ? "हिं" : "मरा"}
+                  </button>
+                ))}
+              </span>
+            </div>
+
             <div className="flex items-center border-l px-4" style={{ borderColor: "var(--rule-faint)" }}>
               <button onClick={() => (tourOn ? setTourOn(false) : startTour())} className="btn-ink">
                 {tourOn ? <StopGlyph size={11} /> : <PlayGlyph size={11} />}
-                {tourOn ? "Stop tour" : "Guided tour"}
+                {tourOn ? ui.stopTour : ui.tour}
               </button>
             </div>
           </div>
@@ -379,7 +464,7 @@ export default function App() {
             </button>
           ))}
           <span className="label ml-auto hidden pb-2.5 !tracking-[0.12em] !text-chart-500 md:block">
-            Soundings in metres · WGS 84
+            {ui.marginalia}
           </span>
         </nav>
       </header>
@@ -387,6 +472,7 @@ export default function App() {
       {tourOn && (
         <GuidedTour
           step={tourStep}
+          language={language}
           paused={tourPaused}
           onPause={() => setTourPaused((p) => !p)}
           onNext={() => gotoStep(tourStep + 1)}
@@ -495,7 +581,7 @@ export default function App() {
       {tab === "ask" && (
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="label mr-1">Rehearsed scenarios</span>
+            <span className="label mr-1">{ui.scenarios}</span>
             {SCENARIOS.map((s) => (
               <button
                 key={s.id}
@@ -507,7 +593,7 @@ export default function App() {
                 <span className="grid w-[18px] shrink-0 place-items-center rounded-full bg-ink-900 font-display text-[10px] font-bold leading-none text-paper-50" style={{ height: 18 }}>
                   {s.n}
                 </span>
-                <span className="font-semibold">{s.label}</span>
+                <span className="font-semibold">{s.label[language] ?? s.label.en}</span>
                 <span className="font-mono text-[10px] uppercase tracking-wide opacity-60">{s.hint}</span>
               </button>
             ))}
@@ -534,6 +620,7 @@ export default function App() {
                 pfz={latest?.pfz ?? []}
                 routes={latest?.routes ?? []}
                 geofence={latest?.geofence ?? []}
+                alerts={latest?.alerts ?? []}
                 language={language}
               />
 
@@ -553,7 +640,7 @@ export default function App() {
                 <div className="panel hatch-danger overflow-hidden border-risk-extreme/60">
                   <div className="hd border-risk-extreme/25">
                     <span className="label flex items-center gap-2 !text-risk-extreme">
-                      <WarnGlyph size={13} /> Official marine warnings
+                      <WarnGlyph size={13} /> {ui.warnings}
                     </span>
                   </div>
                   <div className="px-4 py-3.5">
@@ -567,7 +654,7 @@ export default function App() {
                         </div>
                         <div className="mt-1 font-mono text-[10px] uppercase tracking-wide text-ink-400">
                           {a.source} · {a.severity}
-                          {a.valid_till ? ` · valid till ${a.valid_till}` : ""}
+                          {a.valid_till ? ` · ${ui.validTill} ${a.valid_till}` : ""}
                         </div>
                       </div>
                     ))}
@@ -580,7 +667,7 @@ export default function App() {
               {latest && latest.routes.length > 0 && (
                 <div className="panel overflow-hidden">
                   <div className="hd">
-                    <span className="label">Plotted courses</span>
+                    <span className="label">{ui.courses}</span>
                   </div>
                   <div className="space-y-2 px-4 py-3.5">
                     {latest.routes.map((r) => (
@@ -608,7 +695,7 @@ export default function App() {
                             {r.name}
                             {r.recommended && (
                               <span className="stamp !px-1.5 !py-0.5 !text-[9px] text-risk-low">
-                                Recommended
+                                {ui.recommended}
                               </span>
                             )}
                           </span>
@@ -625,7 +712,9 @@ export default function App() {
                 </div>
               )}
 
-              {latest && <AgentTracePanel trace={latest.trace} elapsed={latest.elapsed_ms} />}
+              {latest && (
+                <AgentTracePanel trace={latest.trace} elapsed={latest.elapsed_ms} language={latest.language} />
+              )}
 
               {latest && (
                 <p className="px-1 pb-2 font-mono text-[10.5px] leading-relaxed text-ink-400">
@@ -637,9 +726,9 @@ export default function App() {
         </>
       )}
 
-      {tab === "authority" && <AuthorityPanel />}
+      {tab === "authority" && <AuthorityPanel language={language} />}
 
-      {tab === "system" && <SystemPanel mode={mode} />}
+      {tab === "system" && <SystemPanel mode={mode} language={language} />}
     </div>
   );
 }

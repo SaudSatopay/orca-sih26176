@@ -1,6 +1,187 @@
 import { useEffect, useState, type ReactNode } from "react";
 import * as api from "../api";
-import { CompassMark, CourseArrow, FishGlyph, PlayGlyph, SchoolGlyph } from "./glyphs";
+import type { Language } from "../types";
+import { CompassMark, CourseArrow, FishGlyph, PlayGlyph } from "./glyphs";
+
+/** Every word on the front door, in the fisher's three languages. */
+const L10N: Record<
+  Language,
+  {
+    tag1: string;
+    tag2a: string;
+    tag2b: string;
+    tag2c: string;
+    sub: string;
+    ctaTour: string;
+    ctaOpen: string;
+    ctaTry: string;
+    openOrca: string;
+    openWord: string;
+    watchLive: string;
+    pipelineTitle: string;
+    stats: string[];
+    cards: { kicker: string; title: string; lines: string[] }[];
+    phases: { t: string; n: string }[];
+    footer: string;
+  }
+> = {
+  en: {
+    tag1: "Ten agents read the sea.",
+    tag2a: "One safe, ",
+    tag2b: "explainable",
+    tag2c: " decision.",
+    sub: "Marine EcOsystem Reasoning with Collaborative Agents — India's marine data turned into plain words a fisher can act on, in his own language, with every number carrying its source.",
+    ctaTour: "Watch the guided tour",
+    ctaOpen: "Open the app",
+    ctaTry: "Try: cyclone near Paradip →",
+    openOrca: "Open ORCA",
+    openWord: "Open",
+    watchLive: "watch it run live →",
+    pipelineTitle: "How ORCA decides",
+    stats: ["Agents in the crew", "Landing centres", "Official warnings", "Languages", "Data edition"],
+    cards: [
+      {
+        kicker: "Today's plan",
+        title: "Where the fish are",
+        lines: [
+          "Opens knowing where you are — reads 100 km of sea unprompted",
+          "Every ground scored for chance of fish, with the why behind it",
+          "Trip plan: when to go, how long to stay, what it should earn",
+        ],
+      },
+      {
+        kicker: "Ask ORCA",
+        title: "Your language, spoken or typed",
+        lines: [
+          "English · हिंदी · मराठी — detected, never configured",
+          "A 0–100 risk verdict where every point is attributed",
+          "Official warnings override the model. Always.",
+        ],
+      },
+      {
+        kicker: "Authority",
+        title: "The district view",
+        lines: [
+          "Every landing centre on the coast, scored by the same engine",
+          "The administration sees the same evidence the fisher sees",
+          "One-click CSV export for the day's advisory board",
+        ],
+      },
+    ],
+    phases: [
+      { t: "Understand", n: "parse the question, any language" },
+      { t: "Gather", n: "five specialists fan out concurrently" },
+      { t: "Decide", n: "weighted model + safety floors that only raise" },
+      { t: "Explain", n: "plain words, with sources, spoken back" },
+    ],
+    footer:
+      "Demo / simulated data is always labelled · ORCA is decision support — never a replacement for an official advisory",
+  },
+  hi: {
+    tag1: "दस एजेंट समुद्र पढ़ते हैं।",
+    tag2a: "एक सुरक्षित, ",
+    tag2b: "समझाने योग्य",
+    tag2c: " फ़ैसला।",
+    sub: "भारत का समुद्री डेटा, मछुआरे की अपनी भाषा में, सीधे काम आने वाले शब्दों में — और हर आँकड़े के साथ उसका स्रोत।",
+    ctaTour: "गाइडेड टूर देखें",
+    ctaOpen: "ऐप खोलें",
+    ctaTry: "देखें: पारादीप के पास चक्रवात →",
+    openOrca: "ORCA खोलें",
+    openWord: "खोलें",
+    watchLive: "इसे चलते हुए देखें →",
+    pipelineTitle: "ORCA फ़ैसला कैसे करता है",
+    stats: ["टीम के एजेंट", "लैंडिंग सेंटर", "आधिकारिक चेतावनियाँ", "भाषाएँ", "डेटा संस्करण"],
+    cards: [
+      {
+        kicker: "आज की योजना",
+        title: "मछली कहाँ है",
+        lines: [
+          "खुलते ही आपकी जगह जानता है — 100 किमी समुद्र ख़ुद पढ़ता है",
+          "हर इलाक़े को मछली की संभावना पर अंक, कारण के साथ",
+          "यात्रा योजना: कब जाएँ, कितना रुकें, कितना मिलेगा",
+        ],
+      },
+      {
+        kicker: "ORCA से पूछें",
+        title: "आपकी भाषा, बोलकर या लिखकर",
+        lines: [
+          "English · हिंदी · मराठी — ख़ुद पहचानता है, कोई सेटिंग नहीं",
+          "0–100 का जोखिम, हर अंक के हिसाब के साथ",
+          "आधिकारिक चेतावनी मॉडल से हमेशा ऊपर।",
+        ],
+      },
+      {
+        kicker: "प्रशासन",
+        title: "ज़िले का नज़ारा",
+        lines: [
+          "तट का हर लैंडिंग सेंटर, उसी इंजन से आँका हुआ",
+          "प्रशासन वही प्रमाण देखता है जो मछुआरा देखता है",
+          "दिन के बोर्ड का एक-क्लिक CSV निर्यात",
+        ],
+      },
+    ],
+    phases: [
+      { t: "समझो", n: "सवाल परखो, किसी भी भाषा में" },
+      { t: "जुटाओ", n: "पाँच विशेषज्ञ एक साथ निकलते हैं" },
+      { t: "तय करो", n: "भारित मॉडल + नियम जो सिर्फ़ जोखिम बढ़ाते हैं" },
+      { t: "समझाओ", n: "सीधी भाषा, स्रोतों के साथ, बोलकर भी" },
+    ],
+    footer:
+      "नक़ली/डेमो डेटा पर हमेशा लेबल · ORCA निर्णय-सहायक है — आधिकारिक सलाह का विकल्प कभी नहीं",
+  },
+  mr: {
+    tag1: "दहा एजंट समुद्र वाचतात.",
+    tag2a: "एक सुरक्षित, ",
+    tag2b: "स्पष्टीकरणासह",
+    tag2c: " निर्णय.",
+    sub: "भारताचा सागरी डेटा, मच्छीमाराच्या स्वतःच्या भाषेत, थेट कामी येणाऱ्या शब्दांत — आणि प्रत्येक आकड्यासोबत त्याचा स्रोत.",
+    ctaTour: "गाइडेड टूर पाहा",
+    ctaOpen: "अ‍ॅप उघडा",
+    ctaTry: "पाहा: पारादीपजवळ चक्रीवादळ →",
+    openOrca: "ORCA उघडा",
+    openWord: "उघडा",
+    watchLive: "हे चालताना पाहा →",
+    pipelineTitle: "ORCA निर्णय कसा घेते",
+    stats: ["टीममधील एजंट", "लँडिंग सेंटर", "अधिकृत इशारे", "भाषा", "डेटा आवृत्ती"],
+    cards: [
+      {
+        kicker: "आजची योजना",
+        title: "मासे कुठे आहेत",
+        lines: [
+          "उघडताच तुमचे ठिकाण ओळखते — १०० किमी समुद्र स्वतः वाचते",
+          "प्रत्येक जागेला माशांच्या शक्यतेवर गुण, कारणासह",
+          "फेरीची योजना: कधी जायचे, किती थांबायचे, किती मिळेल",
+        ],
+      },
+      {
+        kicker: "ORCA ला विचारा",
+        title: "तुमची भाषा, बोलून किंवा लिहून",
+        lines: [
+          "English · हिंदी · मराठी — स्वतः ओळखते, सेटिंग नाही",
+          "0–100 धोका, प्रत्येक गुणाच्या हिशेबासह",
+          "अधिकृत इशारा मॉडेलच्या नेहमी वर.",
+        ],
+      },
+      {
+        kicker: "प्रशासन",
+        title: "जिल्ह्याचे दृश्य",
+        lines: [
+          "किनाऱ्यावरील प्रत्येक लँडिंग सेंटर, त्याच इंजिनने तपासलेले",
+          "प्रशासनाला तेच पुरावे दिसतात जे मच्छीमाराला दिसतात",
+          "दिवसाच्या बोर्डाचे एक-क्लिक CSV निर्यात",
+        ],
+      },
+    ],
+    phases: [
+      { t: "समजून घ्या", n: "प्रश्न पारखा, कोणत्याही भाषेत" },
+      { t: "गोळा करा", n: "पाच तज्ज्ञ एकाच वेळी निघतात" },
+      { t: "ठरवा", n: "भारित मॉडेल + फक्त धोका वाढवणारे नियम" },
+      { t: "समजावा", n: "सोपी भाषा, स्रोतांसह, बोलूनही" },
+    ],
+    footer:
+      "नमुना/डेमो डेटावर नेहमी लेबल · ORCA निर्णय-सहाय्यक आहे — अधिकृत सल्ल्याचा पर्याय कधीही नाही",
+  },
+};
 
 /** Honour the OS "reduce motion" setting — those users get the finished page. */
 function prefersStill(): boolean {
@@ -88,15 +269,20 @@ function useCountUp(target: number | null, ms = 1000): string {
  */
 export default function Landing({
   mode,
+  language = "en",
+  onLanguage,
   onEnter,
   onTour,
   onScenario,
 }: {
   mode: string;
+  language?: Language;
+  onLanguage: (lang: Language) => void;
   onEnter: (tab: "home" | "ask" | "authority" | "system") => void;
   onTour: () => void;
   onScenario: (ask: string) => void;
 }) {
+  const t = L10N[language] ?? L10N.en;
   const [centres, setCentres] = useState<number | null>(null);
   const [warnings, setWarnings] = useState<number | null>(null);
 
@@ -120,59 +306,14 @@ export default function Landing({
   const warningsN = useCountUp(warnings, 1300);
   const langsN = useCountUp(3, 800);
 
-  const cards: {
-    kicker: string;
-    icon?: boolean;
-    title: string;
-    lines: string[];
-    tab: "home" | "ask" | "authority";
-  }[] = [
-    {
-      kicker: "Today's plan",
-      icon: true,
-      title: "Where the fish are",
-      lines: [
-        "Opens knowing where you are — reads 100 km of sea unprompted",
-        "Every ground scored for chance of fish, with the why behind it",
-        "Trip plan: when to go, how long to stay, the next two days",
-      ],
-      tab: "home",
-    },
-    {
-      kicker: "Ask ORCA",
-      title: "Your language, spoken or typed",
-      lines: [
-        "English · हिंदी · मराठी — detected, never configured",
-        "A 0–100 risk verdict where every point is attributed",
-        "Official warnings override the model. Always.",
-      ],
-      tab: "ask",
-    },
-    {
-      kicker: "Authority",
-      title: "The district view",
-      lines: [
-        "Every landing centre on the coast, scored by the same engine",
-        "The administration sees the same evidence the fisher sees",
-        "One-click CSV export for the day's advisory board",
-      ],
-      tab: "authority",
-    },
-  ];
-
-  const phases = [
-    { t: "Understand", n: "parse the question, any language" },
-    { t: "Gather", n: "five specialists fan out concurrently" },
-    { t: "Decide", n: "weighted model + safety floors that only raise" },
-    { t: "Explain", n: "plain words, with sources, spoken back" },
-  ];
+  const cardTabs: ("home" | "ask" | "authority")[] = ["home", "ask", "authority"];
 
   const stats = [
-    { k: "Agents in the crew", v: agentsN },
-    { k: "Landing centres", v: centresN },
-    { k: "Official warnings", v: warningsN, warn: (warnings ?? 0) > 0 },
-    { k: "Languages", v: langsN },
-    { k: "Data edition", v: mode },
+    { k: t.stats[0], v: agentsN },
+    { k: t.stats[1], v: centresN },
+    { k: t.stats[2], v: warningsN, warn: (warnings ?? 0) > 0 },
+    { k: t.stats[3], v: langsN },
+    { k: t.stats[4], v: mode },
   ];
 
   return (
@@ -187,8 +328,24 @@ export default function Landing({
           <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-chart-600">
             SIH26176 · ISRO · Smart India Hackathon 2026
           </span>
-          <button onClick={() => onEnter("home")} className="btn-ink group ml-auto">
-            Open ORCA{" "}
+          <span className="ml-auto flex gap-1">
+            {(["en", "hi", "mr"] as Language[]).map((l) => (
+              <button
+                key={l}
+                onClick={() => onLanguage(l)}
+                className={`rounded-[2px] border px-2 py-1 font-mono text-[11px] font-bold transition ${
+                  language === l
+                    ? "border-ink-900 bg-ink-900 text-paper-50"
+                    : "text-ink-400 hover:text-ink-800"
+                }`}
+                style={language === l ? undefined : { borderColor: "var(--rule)" }}
+              >
+                {l === "en" ? "EN" : l === "hi" ? "हिं" : "मरा"}
+              </button>
+            ))}
+          </span>
+          <button onClick={() => onEnter("home")} className="btn-ink group">
+            {t.openOrca}{" "}
             <CourseArrow size={13} className="transition-transform group-hover:translate-x-1" />
           </button>
         </div>
@@ -205,30 +362,28 @@ export default function Landing({
           </Reveal>
           <Reveal delay={200}>
             <p className="mt-5 max-w-[520px] font-display text-[26px] font-semibold leading-snug text-ink-800">
-              Ten agents read the sea.
+              {t.tag1}
               <br />
-              One safe, <span className="text-chart-600">explainable</span> decision.
+              {t.tag2a}
+              <span className="text-chart-600">{t.tag2b}</span>
+              {t.tag2c}
             </p>
-            <p className="mt-4 max-w-[500px] text-[14px] leading-relaxed text-ink-500">
-              Marine EcOsystem Reasoning with Collaborative Agents — India's marine
-              data turned into plain words a fisher can act on, in his own
-              language, with every number carrying its source.
-            </p>
+            <p className="mt-4 max-w-[500px] text-[14px] leading-relaxed text-ink-500">{t.sub}</p>
           </Reveal>
 
           <Reveal delay={330}>
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <button onClick={onTour} className="btn-ink !px-5 !py-2.5">
-                <PlayGlyph size={11} /> Watch the guided tour
+                <PlayGlyph size={11} /> {t.ctaTour}
               </button>
               <button onClick={() => onEnter("home")} className="btn-line !px-5 !py-2.5">
-                Open the app
+                {t.ctaOpen}
               </button>
               <button
                 onClick={() => onScenario("Is there a cyclone near Paradip? Can I go fishing?")}
                 className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-chart-600 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
               >
-                Try: cyclone near Paradip →
+                {t.ctaTry}
               </button>
             </div>
           </Reveal>
@@ -367,13 +522,13 @@ export default function Landing({
 
       {/* feature cards */}
       <div className="mt-5 grid gap-4 md:grid-cols-3">
-        {cards.map((c, i) => (
-          <Reveal key={c.kicker} delay={520 + i * 110}>
+        {t.cards.map((c, i) => (
+          <Reveal key={cardTabs[i]} delay={520 + i * 110}>
             <div className="panel rule-double lift group flex h-full flex-col">
               <div className="hd">
                 <span className="label flex items-center gap-2 transition-colors group-hover:!text-chart-600">
                   {c.kicker}
-                  {c.icon && <FishGlyph size={15} className="swim text-chart-500" />}
+                  {i === 0 && <FishGlyph size={15} className="swim text-chart-500" />}
                 </span>
               </div>
               <div className="flex-1 px-4 py-4">
@@ -390,8 +545,8 @@ export default function Landing({
                 </ul>
               </div>
               <div className="border-t px-4 py-3" style={{ borderColor: "var(--rule-faint)" }}>
-                <button onClick={() => onEnter(c.tab)} className="btn-line group/open w-full justify-center">
-                  Open{" "}
+                <button onClick={() => onEnter(cardTabs[i])} className="btn-line group/open w-full justify-center">
+                  {t.openWord}{" "}
                   <CourseArrow size={12} className="transition-transform group-hover/open:translate-x-1" />
                 </button>
               </div>
@@ -404,16 +559,16 @@ export default function Landing({
       <Reveal delay={880}>
         <div className="panel mt-5 overflow-hidden">
           <div className="hd">
-            <span className="label">How ORCA decides</span>
+            <span className="label">{t.pipelineTitle}</span>
             <button
               onClick={() => onEnter("system")}
               className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-chart-600 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
             >
-              watch it run live →
+              {t.watchLive}
             </button>
           </div>
           <div className="grid sm:grid-cols-4">
-            {phases.map((p, i) => (
+            {t.phases.map((p, i) => (
               <div
                 key={p.t}
                 className={`group relative px-4 py-3.5 transition-colors hover:bg-chart-100/40 ${i > 0 ? "sm:border-l" : ""}`}
@@ -442,8 +597,7 @@ export default function Landing({
       <Reveal delay={980}>
         <div className="mt-8 flex flex-wrap items-baseline justify-between gap-2 pb-4">
           <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-400">
-            Demo / simulated data is always labelled · ORCA is decision support — never a
-            replacement for an official advisory
+            {t.footer}
           </span>
           <a
             href="https://github.com/SaudSatopay/orca-sih26176"

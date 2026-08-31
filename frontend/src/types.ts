@@ -113,6 +113,13 @@ export interface MarineAlert {
   source: string;
   valid_till?: string;
   location?: string;
+  /** Illustrative warning geometry so the chart can draw the alert. */
+  storm?: {
+    latitude: number;
+    longitude: number;
+    radius_km: number;
+    track?: { latitude: number; longitude: number; label: string }[];
+  };
 }
 
 export interface ChatResponse {
@@ -246,6 +253,20 @@ export interface TripDuration {
   safe_window_hours: number;
   limited_by_weather: boolean;
   feasible: boolean;
+  /** "Return before HH:MM" — the end of the safe-weather window. */
+  return_by?: string;
+  return_reason_wave_m?: number | null;
+}
+
+/** Planning estimates for the recommended trip — assumptions ride along. */
+export interface TripEconomics {
+  fuel_litres: number;
+  fuel_cost_inr: number;
+  catch_kg_low: number;
+  catch_kg_high: number;
+  revenue_inr: number;
+  profit_inr: number;
+  assumptions: string;
 }
 
 export interface FishingOutlook {
@@ -272,6 +293,7 @@ export interface FishingOutlook {
   best_window: { from_hour: number; to_hour: number } | null;
   hourly_ranking: { hour: number; probability: number }[];
   duration: TripDuration | null;
+  economics: TripEconomics | null;
   routes: RouteOption[];
   avoid: AvoidZone[];
   forecast: ForecastDay[];

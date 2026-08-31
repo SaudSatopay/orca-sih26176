@@ -47,7 +47,30 @@ Then open <http://127.0.0.1:8000>. Single process serves API *and* the built UI.
 `cd backend; python smoke_test.py` runs all five demo scenarios headless.
 
 Deep links: `/?tour=1` (guided walkthrough), `/?demo=safe|danger|cyclone|pfz|route`,
-`/?tab=home|ask|authority`, `/?at=lat,lon` (pin the Today-tab position, skips GPS).
+`/?tab=home|ask|authority|system`, `/?at=lat,lon` (pin the Today-tab position,
+skips GPS), `/?lang=en|hi|mr` (force the UI language).
+
+**Whole-app i18n (31 Aug 2026):** EVERY page is now trilingual — landing,
+System/engine room, Authority, agent crew, guided-tour narration (17 steps ×3),
+map legend/margins, header cells, scenario chips, route/warning cards. Pattern:
+per-component `T`/`L10N` records keyed by `Language`; global switcher lives in
+the header title block and on the landing (sets `langChoice`, same state the
+chat toggle uses). Keep new UI strings in all three languages; Hindi/Marathi
+postpositions go AFTER the number ("100 km च्या आत", not "च्या आत 100 km").
+
+**Trip economics + return-by (same date, inspired by a rival team's app):**
+`services/fishing.py::trip_economics` — fuel L/₹, catch band, revenue, profit
+for the recommended ground, with the assumption string riding along (typical
+FRP boat, 0.45 L/km, ₹100/L, ₹140/kg — deliberately conservative, always
+labelled "planning estimate"). `/api/fishing` also stamps
+`duration.return_by` ("HH:MM", end of safe window) + `return_reason_wave_m`.
+Today tab renders a red "Be back before HH:MM — waves reach X m" band and a
+four-tile economics panel.
+
+**Stale-bundle guard:** `main.py` now serves `index.html` with
+`Cache-Control: no-store` — a browser tab from before a rebuild was silently
+running old JS on stage (the "missing cyclone" report). Hashed /assets stay
+cacheable. If a feature "disappears", hard-refresh first.
 
 ---
 
@@ -190,6 +213,7 @@ These are deliberate. Do not "simplify" them away.
 | `RUN-ORCA.bat` printed ECHO help text | A batch `echo` line must never start with `/?`. Use full URLs. |
 | **LIVE mode looked broken** — Today tab hung ~10 s, risk timeline ~32 s, and values kept falling back to demo | `live_client` made a fresh HTTPS call per agent per hour per port (timeline = 48 sequential requests, safe-window scan = 28, authority board = 20 every 30 s poll) even though ONE Open-Meteo response already contains 3 days of hourly data. The burst also got the IP throttled → silent demo fallbacks. Fixed with a TTL cache of the full hourly series per (provider, ~km-rounded position) in `data/live_client.py` (10 min for hits, 60 s for failures so offline live-mode fails fast, cleared on mode toggle). After: fishing 1.4 s cold, timeline 0.02 s warm, authority 0.01 s repeat. **Don't add per-hour fetching back.** |
 
+| **Cyclone verdict said EXTREME but the map showed a calm coast** | Alerts were text-only: no geometry from the backend, no warning layer on the map. Demo-store alerts now carry an illustrative `storm` object (centre, `radius_km`, timestamped `track`) which flows through the cyclone agent untouched (`ChatResponse.alerts` is `List[Dict]`); `MarineMap` gained an `alerts` prop that draws a hatched warning circle, the dashed past/forecast track with labelled position dots, a **spinning meteorological storm symbol** (`.storm-spin`, transform-only) and a permanent chart annotation (`.storm-label`). Squall warnings (Mumbai, Digha) get a circle only — the spiral is reserved for `type == "cyclone_warning"`. Storm geometry is labelled illustrative/simulated in the popup, and renders in LIVE mode too (warnings have no live provider — they come from the demo store either way). |
 | **Fishing grounds rendered on land** (tap near Bhavnagar → markers inland across Saurashtra) | Candidates were fanned around the nearest port's hard-coded `shore_bearing` (Veraval's 200° is wrong from inside the Gulf of Khambhat) and nothing anywhere tested land vs sea. Fix in `geo.py`: a simplified pure-Python landmass polygon set (mainland + Andaman + Sri Lanka, ±10-20 km in deltas, honesty-noted) with `is_on_land()` and `seaward_bearing()` (picks the compass direction with the most open water, tie-broken toward the port prior so rehearsed layouts don't move). `pfz_zones` now fans around that axis and slides any on-land candidate along its distance arc into water or drops it. Distance is preserved, and probability/ranking never used bearing, so all rehearsed numbers are unchanged (verified). The boat-drag position check also says "That position is on land" now. |
 
 Also know: in LIVE mode the **ocean agent always reports `degraded` (amber)** —

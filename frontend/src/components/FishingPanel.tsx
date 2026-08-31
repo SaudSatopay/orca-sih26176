@@ -41,6 +41,15 @@ const T: Record<Language, Record<string, string>> = {
     notWorth: "Not enough safe time today for this trip.",
     likely: "Likely",
     likelyNote: "indicative, from SST and chlorophyll bands — never a promise",
+    returnBy: "Be back before",
+    returnWhy: "waves reach about",
+    econ: "What the trip is worth",
+    fuel: "Fuel",
+    catch: "Expected catch",
+    revenue: "Revenue",
+    profit: "Profit estimate",
+    econNote: "Planning estimate — never a promise.",
+    barsCaption: "Bars: chlorophyll · SST band · front · sea state · time of day",
   },
   hi: {
     advice: "आपको क्या करना चाहिए",
@@ -67,6 +76,15 @@ const T: Record<Language, Record<string, string>> = {
     notWorth: "आज इतना सुरक्षित समय नहीं है।",
     likely: "संभावित",
     likelyNote: "तापमान और क्लोरोफिल से अनुमान — मछली की गारंटी नहीं",
+    returnBy: "इससे पहले लौट आएँ",
+    returnWhy: "लहरें लगभग इतनी हो जाएँगी",
+    econ: "यात्रा से कितना मिलेगा",
+    fuel: "ईंधन",
+    catch: "अनुमानित मछली",
+    revenue: "आमदनी",
+    profit: "अनुमानित मुनाफ़ा",
+    econNote: "योजना के लिए अनुमान — कोई वादा नहीं।",
+    barsCaption: "पट्टियाँ: क्लोरोफिल · तापमान · फ्रंट · समुद्र · समय",
   },
   mr: {
     advice: "तुम्ही काय करावे",
@@ -93,6 +111,15 @@ const T: Record<Language, Record<string, string>> = {
     notWorth: "आज पुरेसा सुरक्षित वेळ नाही.",
     likely: "शक्यता",
     likelyNote: "तापमान व क्लोरोफिलवरून अंदाज — माशांची हमी नाही",
+    returnBy: "या वेळेआधी परत या",
+    returnWhy: "लाटा सुमारे इतक्या होतील",
+    econ: "फेरीतून किती मिळेल",
+    fuel: "इंधन",
+    catch: "अपेक्षित मासे",
+    revenue: "उत्पन्न",
+    profit: "अंदाजे नफा",
+    econNote: "नियोजनासाठी अंदाज — हमी नाही.",
+    barsCaption: "पट्ट्या: क्लोरोफिल · तापमान · फ्रंट · समुद्र · वेळ",
   },
 };
 
@@ -165,7 +192,9 @@ export default function FishingPanel({
               <SchoolGlyph size={26} className="swim text-chart-500" />
             </span>
             <span className="font-mono text-[10px] tabular-nums text-ink-400">
-              {t.within} {data.radius_km} km
+              {language === "en"
+                ? `${t.within} ${data.radius_km} km`
+                : `${data.radius_km} km ${t.within}`}
             </span>
           </div>
 
@@ -263,7 +292,7 @@ export default function FishingPanel({
             </div>
 
             <p className="mt-2 font-mono text-[8.5px] uppercase tracking-[0.14em] text-ink-300">
-              Bars: chlorophyll · SST band · front · sea state · time of day
+              {t.barsCaption}
             </p>
 
             {data.best_window && (
@@ -314,6 +343,22 @@ export default function FishingPanel({
                   </div>
                 ))}
               </div>
+              {data.duration.return_by && (
+                <div
+                  className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 border-t bg-risk-extreme/[0.05] px-4 py-2.5"
+                  style={{ borderColor: "var(--rule-faint)" }}
+                >
+                  <span className="label !text-risk-extreme">{t.returnBy}</span>
+                  <span className="font-display text-[19px] font-black leading-none text-risk-extreme">
+                    {data.duration.return_by}
+                  </span>
+                  {data.duration.return_reason_wave_m != null && (
+                    <span className="font-mono text-[10.5px] text-ink-500">
+                      — {t.returnWhy} {data.duration.return_reason_wave_m} m
+                    </span>
+                  )}
+                </div>
+              )}
               {data.duration.limited_by_weather && (
                 <p
                   className="flex items-center gap-2 border-t px-4 py-2.5 text-[12px] font-medium text-risk-high"
@@ -331,6 +376,65 @@ export default function FishingPanel({
           ) : (
             <p className="px-4 py-3.5 text-[13px] font-medium text-risk-high">{t.notWorth}</p>
           )}
+        </div>
+      )}
+
+      {/* ---------- what the trip is worth: honest economics ---------- */}
+      {data.economics && data.duration?.feasible && (
+        <div className="panel overflow-hidden">
+          <div className="hd">
+            <span className="label">{t.econ}</span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-ink-400">
+              {t.econNote}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4">
+            {[
+              {
+                k: t.fuel,
+                v: `₹${data.economics.fuel_cost_inr.toLocaleString("en-IN")}`,
+                s: `${data.economics.fuel_litres} L`,
+              },
+              {
+                k: t.catch,
+                v: `${data.economics.catch_kg_low}–${data.economics.catch_kg_high}`,
+                s: "kg",
+              },
+              {
+                k: t.revenue,
+                v: `₹${data.economics.revenue_inr.toLocaleString("en-IN")}`,
+                s: "",
+              },
+              {
+                k: t.profit,
+                v: `₹${data.economics.profit_inr.toLocaleString("en-IN")}`,
+                s: "",
+                hero: true,
+              },
+            ].map((x, i) => (
+              <div
+                key={x.k}
+                className={`px-4 py-3 ${i > 0 ? "border-l" : ""} ${x.hero ? "bg-risk-low/[0.07]" : ""}`}
+                style={{ borderColor: "var(--rule-faint)" }}
+              >
+                <div className="label truncate !text-[9px]">{x.k}</div>
+                <div
+                  className={`mt-1 font-mono text-[18px] font-bold tabular-nums leading-none ${
+                    x.hero ? "text-risk-low" : "text-ink-900"
+                  }`}
+                >
+                  {x.v}
+                  {x.s && <span className="ml-1 text-[10px] font-semibold opacity-60">{x.s}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p
+            className="border-t px-4 py-2 font-mono text-[9px] uppercase tracking-[0.08em] text-ink-400"
+            style={{ borderColor: "var(--rule-faint)" }}
+          >
+            {data.economics.assumptions}
+          </p>
         </div>
       )}
 

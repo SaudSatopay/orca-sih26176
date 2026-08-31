@@ -1,7 +1,58 @@
 import { useEffect, useState } from "react";
 import * as api from "../api";
-import type { AuthorityDashboard } from "../types";
+import type { AuthorityDashboard, Language } from "../types";
 import { RISK_COLOR } from "./RiskDial";
+
+const T: Record<Language, Record<string, string>> = {
+  en: {
+    centres: "Landing centres",
+    extreme: "Extreme risk",
+    high: "High risk",
+    warnings: "Official warnings",
+    board: "Coastal risk board",
+    refresh: "refreshes every 30 s",
+    export: "Export CSV",
+    hCentre: "Landing centre",
+    hState: "State",
+    hRisk: "Risk",
+    hWave: "Wave",
+    hWind: "Wind",
+    hWarning: "Active warning",
+    loading: "Loading coastline…",
+  },
+  hi: {
+    centres: "लैंडिंग सेंटर",
+    extreme: "अत्यधिक जोखिम",
+    high: "उच्च जोखिम",
+    warnings: "आधिकारिक चेतावनियाँ",
+    board: "तटीय जोखिम बोर्ड",
+    refresh: "हर 30 सेकंड में ताज़ा",
+    export: "CSV निर्यात",
+    hCentre: "लैंडिंग सेंटर",
+    hState: "राज्य",
+    hRisk: "जोखिम",
+    hWave: "लहर",
+    hWind: "हवा",
+    hWarning: "सक्रिय चेतावनी",
+    loading: "तटरेखा लोड हो रही है…",
+  },
+  mr: {
+    centres: "लँडिंग सेंटर",
+    extreme: "अत्यंत धोका",
+    high: "जास्त धोका",
+    warnings: "अधिकृत इशारे",
+    board: "किनारी धोका फलक",
+    refresh: "दर ३० सेकंदांनी ताजे",
+    export: "CSV निर्यात",
+    hCentre: "लँडिंग सेंटर",
+    hState: "राज्य",
+    hRisk: "धोका",
+    hWave: "लाट",
+    hWind: "वारा",
+    hWarning: "सक्रिय इशारा",
+    loading: "किनारपट्टी लोड होत आहे…",
+  },
+};
 
 /** The board as a CSV file — the format an administration actually circulates. */
 function exportCsv(data: AuthorityDashboard) {
@@ -30,7 +81,8 @@ function exportCsv(data: AuthorityDashboard) {
  * risk. Same engine, same evidence — one screen that shows ORCA scales beyond
  * a single fisher to the people who issue the warnings.
  */
-export default function AuthorityPanel() {
+export default function AuthorityPanel({ language = "en" }: { language?: Language }) {
+  const t = T[language] ?? T.en;
   const [data, setData] = useState<AuthorityDashboard | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,13 +103,13 @@ export default function AuthorityPanel() {
 
   if (error)
     return <div className="panel p-6 text-sm text-risk-extreme">Failed to load: {error}</div>;
-  if (!data) return <div className="panel p-6 text-sm italic text-ink-400">Loading coastline…</div>;
+  if (!data) return <div className="panel p-6 text-sm italic text-ink-400">{t.loading}</div>;
 
   const tiles = [
-    { key: "monitored", label: "Landing centres", color: "#1E5F7A" },
-    { key: "extreme", label: "Extreme risk", color: RISK_COLOR.EXTREME },
-    { key: "high", label: "High risk", color: RISK_COLOR.HIGH },
-    { key: "official_warnings", label: "Official warnings", color: "#A17000" },
+    { key: "monitored", label: t.centres, color: "#1E5F7A" },
+    { key: "extreme", label: t.extreme, color: RISK_COLOR.EXTREME },
+    { key: "high", label: t.high, color: RISK_COLOR.HIGH },
+    { key: "official_warnings", label: t.warnings, color: "#A17000" },
   ];
 
   return (
@@ -82,10 +134,10 @@ export default function AuthorityPanel() {
 
       <div className="panel rule-double overflow-hidden">
         <div className="hd">
-          <span className="label">Coastal risk board</span>
+          <span className="label">{t.board}</span>
           <span className="flex items-center gap-3">
             <span className="font-mono text-[10px] tabular-nums text-ink-400">
-              {data.generated_at.slice(0, 16).replace("T", " ")} IST · refreshes every 30 s
+              {data.generated_at.slice(0, 16).replace("T", " ")} IST · {t.refresh}
             </span>
             {/* The day's advisory board as a file the administration can circulate. */}
             <button
@@ -93,7 +145,7 @@ export default function AuthorityPanel() {
               className="btn-line !px-2.5 !py-1 !text-[9.5px]"
               title="Download the board as a CSV advisory sheet"
             >
-              Export CSV
+              {t.export}
             </button>
           </span>
         </div>
@@ -101,7 +153,7 @@ export default function AuthorityPanel() {
           <table className="w-full min-w-[640px] text-left text-[12.5px]">
             <thead>
               <tr className="border-b" style={{ borderColor: "var(--rule-strong)" }}>
-                {["Landing centre", "State", "Risk", "Wave", "Wind", "Active warning"].map((h, i) => (
+                {[t.hCentre, t.hState, t.hRisk, t.hWave, t.hWind, t.hWarning].map((h, i) => (
                   <th
                     key={h}
                     className={`py-2.5 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-ink-400 ${
