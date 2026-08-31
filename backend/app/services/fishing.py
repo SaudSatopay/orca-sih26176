@@ -22,6 +22,7 @@ repeated in every user-facing string.
 """
 from __future__ import annotations
 
+import math
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Sequence, Tuple
 
@@ -120,16 +121,53 @@ def probability(*, chlorophyll: Optional[float], sst: Optional[float],
 # promise a species. Local names first — that is what a fisher calls them.
 SPECIES_BANDS: List[Dict] = [
     {"name": "Bangda (Indian mackerel)", "sst": (26.0, 29.0), "chl_min": 0.5, "dist": (5, 85)},
-    {"name": "Tarli (oil sardine)",      "sst": (26.5, 28.5), "chl_min": 0.9, "dist": (5, 70)},
+    {"name": "Tarli (oil sardine)",      "sst": (26.0, 29.5), "chl_min": 0.9, "dist": (5, 70)},
     {"name": "Paplet (silver pomfret)",  "sst": (26.0, 29.5), "chl_min": 0.4, "dist": (5, 50)},
     {"name": "Surmai (seer fish)",       "sst": (27.0, 30.0), "chl_min": 0.2, "dist": (30, 100)},
     {"name": "Bombil (Bombay duck)",     "sst": (27.0, 30.5), "chl_min": 0.6, "dist": (5, 45)},
+    {"name": "Hilsa (ilish)",            "sst": (26.0, 30.5), "chl_min": 0.6, "dist": (5, 60)},
 ]
+
+# Regional prevalence from REAL occurrence records — an OBIS snapshot
+# (api.obis.org, queried 31 Aug 2026; raw counts below). OBIS/Map of Life
+# aggregate open ocean-biodiversity records; neither offers a keyless JSON
+# API suited to a stage demo, so ORCA bundles the snapshot: the demo stays
+# offline, the source is named, and the numbers are checkable.
+# Regions: NW Gujarat-Maharashtra · SW Goa-Kerala · SE TN-Andhra ·
+# NE Odisha-Bengal.
+SPECIES_OCCURRENCE: Dict[str, Dict[str, int]] = {
+    "Bangda (Indian mackerel)": {"NW": 19, "SW": 87, "SE": 42, "NE": 8},
+    "Tarli (oil sardine)":      {"NW": 11, "SW": 113, "SE": 37, "NE": 1},
+    "Paplet (silver pomfret)":  {"NW": 24, "SW": 12, "SE": 19, "NE": 17},
+    "Surmai (seer fish)":       {"NW": 9,  "SW": 24, "SE": 25, "NE": 4},
+    "Bombil (Bombay duck)":     {"NW": 34, "SW": 1,  "SE": 14, "NE": 121},
+    "Hilsa (ilish)":            {"NW": 17, "SW": 6,  "SE": 9,  "NE": 32},
+}
+
+
+def _coastal_region(lat: float, lon: float) -> str:
+    """Which occurrence region a point belongs to. Coarse on purpose."""
+    if lon >= 85.0 and lat >= 17.0:
+        return "NE"
+    if lon >= 77.5:
+        return "SE"
+    return "NW" if lat >= 15.0 else "SW"
 
 
 def likely_species(sst: Optional[float], chlorophyll: Optional[float],
-                   distance_km: float, limit: int = 3) -> List[str]:
-    """Up to `limit` species this water most resembles, best fit first."""
+                   distance_km: float, lat: Optional[float] = None,
+                   lon: Optional[float] = None, limit: int = 3) -> List[str]:
+    """Up to `limit` species this water most resembles, best fit first.
+
+    Physics bands (SST/chlorophyll/distance) say what the water suits;
+    the OBIS occurrence snapshot says what is actually recorded on this
+    stretch of coast. The product of the two is the honest answer.
+    """
+    region = _coastal_region(lat, lon) if lat is not None and lon is not None else None
+    region_max = 1
+    if region:
+        region_max = max(v.get(region, 0) for v in SPECIES_OCCURRENCE.values()) or 1
+
     scored: List[Tuple[float, str]] = []
     for s in SPECIES_BANDS:
         lo, hi = s["sst"]
@@ -144,7 +182,10 @@ def likely_species(sst: Optional[float], chlorophyll: Optional[float],
         d_lo, d_hi = s["dist"]
         dist_fit = 1.0 if d_lo <= distance_km <= d_hi else 0.4
         fit = sst_fit * 0.55 + chl_fit * 0.30 + dist_fit * 0.15
-        if fit >= 0.60:
+        if region:
+            prevalence = SPECIES_OCCURRENCE.get(s["name"], {}).get(region, 0) / region_max
+            fit *= 0.15 + 0.85 * math.sqrt(prevalence)
+        if fit >= 0.40:
             scored.append((fit, s["name"]))
     scored.sort(reverse=True)
     return [name for _, name in scored[:limit]]

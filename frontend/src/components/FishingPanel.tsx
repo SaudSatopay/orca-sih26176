@@ -40,7 +40,8 @@ const T: Record<Language, Record<string, string>> = {
     bestAt: "best around",
     notWorth: "Not enough safe time today for this trip.",
     likely: "Likely",
-    likelyNote: "indicative, from SST and chlorophyll bands — never a promise",
+    likelyNote:
+      "indicative — SST/chlorophyll bands × regional occurrence records (OBIS / Map of Life). Never a promise",
     returnBy: "Be back before",
     returnWhy: "waves reach about",
     econ: "What the trip is worth",
@@ -75,7 +76,8 @@ const T: Record<Language, Record<string, string>> = {
     bestAt: "सबसे अच्छा समय",
     notWorth: "आज इतना सुरक्षित समय नहीं है।",
     likely: "संभावित",
-    likelyNote: "तापमान और क्लोरोफिल से अनुमान — मछली की गारंटी नहीं",
+    likelyNote:
+      "तापमान-क्लोरोफिल + क्षेत्रीय उपस्थिति रिकॉर्ड (OBIS) से अनुमान — मछली की गारंटी नहीं",
     returnBy: "इससे पहले लौट आएँ",
     returnWhy: "लहरें लगभग इतनी हो जाएँगी",
     econ: "यात्रा से कितना मिलेगा",
@@ -110,7 +112,8 @@ const T: Record<Language, Record<string, string>> = {
     bestAt: "सर्वोत्तम वेळ",
     notWorth: "आज पुरेसा सुरक्षित वेळ नाही.",
     likely: "शक्यता",
-    likelyNote: "तापमान व क्लोरोफिलवरून अंदाज — माशांची हमी नाही",
+    likelyNote:
+      "तापमान-क्लोरोफिल + प्रादेशिक उपस्थिती नोंदी (OBIS) वरून अंदाज — माशांची हमी नाही",
     returnBy: "या वेळेआधी परत या",
     returnWhy: "लाटा सुमारे इतक्या होतील",
     econ: "फेरीतून किती मिळेल",

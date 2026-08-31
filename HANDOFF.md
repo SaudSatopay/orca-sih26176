@@ -67,6 +67,44 @@ labelled "planning estimate"). `/api/fishing` also stamps
 Today tab renders a red "Be back before HH:MM — waves reach X m" band and a
 four-tile economics panel.
 
+**Sea in motion (31 Aug 2026, nullschool-style):** `GET /api/field?bbox&nx&ny`
+returns a regular grid of wind u/v, surface-current u/v and SST, land-masked
+via `is_on_land`. LIVE = ONE multi-location Open-Meteo Marine call (their
+`current=` params include `ocean_current_velocity/direction` — currents ARE
+available live, contrary to the older ocean-agent comment) + one Forecast
+call, cached 10 min per rounded bbox (`field.clear_cache()` runs on mode
+toggle — forgetting that left a stale fallback stuck once). DEMO = smooth
+synthetic field from rehearsed conditions, labelled. Frontend:
+`FlowLayer.ts` — two canvases in the overlay pane (SST shade repainted on
+move; ~1000 particles advected with fading trails, ink-teal→green→amber by
+speed). Wind FROM-convention, current TO-convention → u/v on the server.
+Controls: "Sea in motion — Wind/Current/Off" chips on the map (localized),
+SST cool→warm strip in the legend. Sampling is a **weighted average over
+whichever bilinear corners have sea data** (threshold w<0.25 → null) on a
+13×10 grid — requiring all four corners produced saw-tooth field edges
+kilometres offshore, cut along coarse grid cells. The lenient sampler alone
+then let trails run ONTO land, so the response also carries a **fine 44×32
+land/sea mask** (pure-Python `is_on_land`, ~free) and the client clips
+particles, spawns and the SST shade against `seaAt()` bilinear over that
+mask — vectors from the coarse grid, coastline from the fine one. Keep the
+two resolutions separate; neither substitute works alone. Pure decoration by doctrine: pauses in
+hidden tabs (rAF), draws 250 static streaks under reduced motion, fails
+silent. The in-app browser pane is a HIDDEN tab — rAF never ticks there, so
+verify flow via headless virtual-time screenshots, not the pane.
+
+**Species occurrence from OBIS / Map of Life (31 Aug 2026):** mapoflife.ai is
+a brochure site and api.mol.org is 403 — but **api.obis.org is open and
+keyless** (the ocean-biodiversity backbone MOL aggregates). ORCA bundles a
+dated snapshot of occurrence counts for the six target species × four
+coastal regions (`fishing.py::SPECIES_OCCURRENCE`, raw counts in the
+comment, query script pattern in the commit). `likely_species` multiplies
+the physics-band fit by `0.15 + 0.85·√(prevalence)` for the point's region
+(`_coastal_region`) — that is why tarli headlines Kochi, bombil Mumbai and
+hilsa (added as the sixth species) Bengal. Provenance surfaces in the
+species tooltip, the `method` string and a fifth System-page provider card
+("BUNDLED SNAPSHOT"). To refresh the snapshot later, re-run the OBIS count
+queries and update the table + date.
+
 **Stale-bundle guard:** `main.py` now serves `index.html` with
 `Cache-Control: no-store` — a browser tab from before a rebuild was silently
 running old JS on stage (the "missing cyclone" report). Hashed /assets stay

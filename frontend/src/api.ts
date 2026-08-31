@@ -125,6 +125,45 @@ export function forecast(lat: number, lon: number) {
   }>(`${BASE}/forecast?lat=${lat}&lon=${lon}`);
 }
 
+export interface FlowField {
+  mode: string;
+  generated_at?: string;
+  nx: number;
+  ny: number;
+  lats: number[];
+  lons: number[];
+  points: {
+    sea: boolean;
+    wind_u: number;
+    wind_v: number;
+    cur_u: number | null;
+    cur_v: number | null;
+    sst: number | null;
+  }[];
+  /** Fine land/sea mask, row-major, "1" = sea. */
+  mask?: string;
+  mask_nx?: number;
+  mask_ny?: number;
+  note?: string;
+}
+
+/** The wind/current/SST grid for a map view — drives the flow animation. */
+export function flowField(
+  b: { minLat: number; maxLat: number; minLon: number; maxLon: number },
+  nx = 10,
+  ny = 8,
+): Promise<FlowField> {
+  const p = new URLSearchParams({
+    min_lat: b.minLat.toFixed(3),
+    max_lat: b.maxLat.toFixed(3),
+    min_lon: b.minLon.toFixed(3),
+    max_lon: b.maxLon.toFixed(3),
+    nx: String(nx),
+    ny: String(ny),
+  });
+  return json<FlowField>(`${BASE}/field?${p}`);
+}
+
 export function setMode(mode: "LIVE" | "DEMO") {
   return json<{ ok: boolean; data_mode: string; note: string }>(`${BASE}/config/mode`, {
     method: "POST",

@@ -51,6 +51,8 @@ def switch_mode(req: ModeRequest) -> dict:
         return {"ok": False, "error": str(exc), "data_mode": get_data_mode()}
     # A fresh toggle should mean fresh data, not ten minutes of remembered series.
     live_client.clear_cache()
+    from . import field as field_api
+    field_api.clear_cache()
     return {
         "ok": True,
         "data_mode": mode,

@@ -253,21 +253,24 @@ export default function SystemPanel({
 
   const providerText: Record<Language, { gives: string; note: string }[]> = {
     en: [
-      { gives: "wave height · wave period · sea-surface temperature", note: "keyless public API — verified working" },
+      { gives: "wave height · wave period · sea-surface temperature · currents", note: "keyless public API — verified working" },
       { gives: "wind · rain probability · visibility · air temperature", note: "keyless public API — verified working" },
       { gives: "PFZ advisories · marine warnings · satellite SST", note: "no open public JSON API — slots in behind the same interface" },
+      { gives: "species occurrence records, Indian coastal waters", note: "open biodiversity data, bundled as a dated snapshot — offline-safe" },
       { gives: "rehearsed sea states, keyed by hour of day", note: "every synthetic value is labelled simulated" },
     ],
     hi: [
-      { gives: "लहर की ऊँचाई · अवधि · समुद्री सतह तापमान", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
+      { gives: "लहर की ऊँचाई · अवधि · समुद्री सतह तापमान · धाराएँ", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
       { gives: "हवा · वर्षा संभावना · दृश्यता · तापमान", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
       { gives: "PFZ सलाह · समुद्री चेतावनियाँ · उपग्रह SST", note: "खुला JSON API नहीं — उसी इंटरफ़ेस के पीछे जुड़ते हैं" },
+      { gives: "प्रजातियों की उपस्थिति के रिकॉर्ड, भारतीय तटीय जल", note: "खुला जैवविविधता डेटा, दिनांकित स्नैपशॉट — ऑफ़लाइन-सुरक्षित" },
       { gives: "घंटे के हिसाब से तैयार समुद्री स्थितियाँ", note: "हर नक़ली मान पर 'सिम्युलेटेड' लेबल" },
     ],
     mr: [
-      { gives: "लाटेची उंची · कालावधी · समुद्र पृष्ठ तापमान", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
+      { gives: "लाटेची उंची · कालावधी · समुद्र पृष्ठ तापमान · प्रवाह", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
       { gives: "वारा · पावसाची शक्यता · दृश्यमानता · तापमान", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
       { gives: "PFZ सल्ले · सागरी इशारे · उपग्रह SST", note: "खुले JSON API नाही — त्याच इंटरफेसमागे जोडले जातात" },
+      { gives: "प्रजातींच्या उपस्थितीच्या नोंदी, भारतीय किनारी पाणी", note: "खुला जैवविविधता डेटा, दिनांकित स्नॅपशॉट — ऑफलाइन-सुरक्षित" },
       { gives: "तासागणिक तयार समुद्री स्थिती", note: "प्रत्येक नमुना मूल्यावर 'सिम्युलेटेड' लेबल" },
     ],
   };
@@ -277,7 +280,8 @@ export default function SystemPanel({
     { name: "Open-Meteo Marine", status: "LIVE", color: "#1D7A50", live: true, ...pText[0] },
     { name: "Open-Meteo Forecast", status: "LIVE", color: "#1D7A50", live: true, ...pText[1] },
     { name: "INCOIS · IMD · MOSDAC", status: "INTERFACE READY", color: "#A17000", live: false, ...pText[2] },
-    { name: "Demo store", status: "ALWAYS ON", color: "#42596D", live: false, ...pText[3] },
+    { name: "OBIS · Map of Life", status: "BUNDLED SNAPSHOT", color: "#1E5F7A", live: false, ...pText[3] },
+    { name: "Demo store", status: "ALWAYS ON", color: "#42596D", live: false, ...pText[4] },
   ];
 
   const crewText: Record<Language, { phase: string; agents: string[]; note: string }[]> = {
@@ -327,7 +331,7 @@ export default function SystemPanel({
         <div className="hd">
           <span className="label">{t.s1}</span>
         </div>
-        <div className="grid gap-3 px-4 py-4 lg:grid-cols-4">
+        <div className="grid gap-3 px-4 py-4 sm:grid-cols-2 lg:grid-cols-5">
           {providers.map((p) => (
             <div
               key={p.name}

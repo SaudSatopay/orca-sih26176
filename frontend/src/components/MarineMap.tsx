@@ -1,6 +1,7 @@
 import L from "leaflet";
 import { useEffect, useRef, useState } from "react";
 import * as api from "../api";
+import { FlowLayer, type FlowMode } from "./FlowLayer";
 import type {
   FishingArea,
   GeofenceAlert,
@@ -38,6 +39,13 @@ const LEGEND: Record<Language, Record<string, string>> = {
     storm: "Cyclone / warning area",
     marginL: "Indian coastal waters · scale varies",
     marginR: "Illustrative boundaries — not for navigation",
+    flow: "Sea in motion",
+    wind: "Wind",
+    current: "Current",
+    off: "Off",
+    sstCool: "cool",
+    sstWarm: "warm",
+    sstLabel: "Sea temperature",
   },
   hi: {
     symbols: "संकेत",
@@ -48,6 +56,13 @@ const LEGEND: Record<Language, Record<string, string>> = {
     storm: "चक्रवात / चेतावनी क्षेत्र",
     marginL: "भारतीय तटीय जल · पैमाना बदलता है",
     marginR: "सांकेतिक सीमाएँ — नौवहन के लिए नहीं",
+    flow: "बहता समुद्र",
+    wind: "हवा",
+    current: "धारा",
+    off: "बंद",
+    sstCool: "ठंडा",
+    sstWarm: "गर्म",
+    sstLabel: "समुद्री तापमान",
   },
   mr: {
     symbols: "खुणा",
@@ -58,6 +73,13 @@ const LEGEND: Record<Language, Record<string, string>> = {
     storm: "चक्रीवादळ / इशारा क्षेत्र",
     marginL: "भारतीय किनारी पाणी · प्रमाण बदलते",
     marginR: "सांकेतिक सीमा — नौकानयनासाठी नाही",
+    flow: "वाहता समुद्र",
+    wind: "वारा",
+    current: "प्रवाह",
+    off: "बंद",
+    sstCool: "थंड",
+    sstWarm: "उबदार",
+    sstLabel: "समुद्र तापमान",
   },
 };
 
@@ -109,6 +131,8 @@ export default function MarineMap({
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
   const boatRef = useRef<L.Marker | null>(null);
+  const flowRef = useRef<FlowLayer | null>(null);
+  const [flowMode, setFlowMode] = useState<FlowMode>("wind");
   const [probe, setProbe] = useState<PositionCheck | null>(null);
   const [dragging, setDragging] = useState(false);
   const mapHeight = areas.length ? 540 : 420;
@@ -145,12 +169,20 @@ export default function MarineMap({
 
     mapRef.current = map;
     layerRef.current = L.layerGroup().addTo(map);
+    flowRef.current = new FlowLayer(map);
+    flowRef.current.setMode("wind");
     setTimeout(() => map.invalidateSize(), 120);
     return () => {
+      flowRef.current?.destroy();
+      flowRef.current = null;
       map.remove();
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    flowRef.current?.setMode(flowMode);
+  }, [flowMode]);
 
   // Tap-to-choose-position. Registered separately so the handler always closes
   // over the latest callback rather than the one from first render.
@@ -459,6 +491,28 @@ export default function MarineMap({
           className="pointer-events-none absolute right-3 top-3 z-[500] text-ink-800 opacity-70"
         />
 
+        {/* the sea in motion — flow layer control */}
+        <div className="absolute left-3 top-[92px] z-[500] rounded-[2px] border border-ink-700/50 bg-paper-50/95 px-2 pb-2 pt-1.5 shadow-md">
+          <div className="mb-1 font-mono text-[8.5px] font-bold uppercase tracking-[0.16em] text-ink-400">
+            {(LEGEND[language] ?? LEGEND.en).flow}
+          </div>
+          <div className="flex gap-1">
+            {(["wind", "current", "off"] as FlowMode[]).map((m) => (
+              <button
+                key={m}
+                onClick={() => setFlowMode(m)}
+                className={`rounded-[2px] border px-1.5 py-0.5 font-mono text-[9.5px] font-bold transition ${
+                  flowMode === m
+                    ? "border-ink-900 bg-ink-900 text-paper-50"
+                    : "border-ink-700/30 text-ink-500 hover:text-ink-900"
+                }`}
+              >
+                {(LEGEND[language] ?? LEGEND.en)[m]}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* symbols legend, as a chart's key */}
         <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-[2px] border border-ink-700/50 bg-paper-50/95 px-3 pb-2 pt-1.5 shadow-md">
           <div className="mb-1 font-mono text-[8.5px] font-bold uppercase tracking-[0.16em] text-ink-400">
@@ -496,6 +550,23 @@ export default function MarineMap({
                 <circle cx="28" cy="28" r="12" fill="#AF2318" />
               </svg>
               {(LEGEND[language] ?? LEGEND.en).storm}
+            </div>
+          )}
+          {flowMode !== "off" && (
+            <div
+              className="mt-1 flex items-center gap-1.5 border-t pt-1 text-[9px] font-medium text-ink-500"
+              style={{ borderColor: "var(--rule-faint)" }}
+              title={(LEGEND[language] ?? LEGEND.en).sstLabel}
+            >
+              <span>{(LEGEND[language] ?? LEGEND.en).sstCool}</span>
+              <span
+                className="h-[5px] w-14 rounded-sm"
+                style={{
+                  background:
+                    "linear-gradient(90deg,#3E7A99,#2F8A7D,#7E9A4A,#B08532,#BF6A1F)",
+                }}
+              />
+              <span>{(LEGEND[language] ?? LEGEND.en).sstWarm}</span>
             </div>
           )}
         </div>

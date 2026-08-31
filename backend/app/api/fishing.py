@@ -68,7 +68,8 @@ def _zone_payload(loc: Location, zones: List[Dict], ambient_sst: Optional[float]
         z["rating"] = fishing.rating(result["probability"])
         z["factors"] = result["factors"]
         z["likely_species"] = fishing.likely_species(
-            z.get("sst_c"), z.get("chlorophyll_mg_m3"), z["distance_km"])
+            z.get("sst_c"), z.get("chlorophyll_mg_m3"), z["distance_km"],
+            lat=z["latitude"], lon=z["longitude"])
         z["confidence"] = round(result["probability"] / 100.0, 2)
         z["value_score"] = fishing.value_score(result["probability"], z["distance_km"])
         z["rationale"] = (
@@ -264,5 +265,7 @@ def fishing_outlook(
         "advice": advice,
         "mode": weather.mode,
         "method": ("Likelihood from chlorophyll, sea-surface temperature, thermal front "
-                   "strength, sea state and time of day. A likelihood, never a guarantee."),
+                   "strength, sea state and time of day. Species mix weighted by regional "
+                   "occurrence records (OBIS / Map of Life snapshot). "
+                   "A likelihood, never a guarantee."),
     }

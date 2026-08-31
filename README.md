@@ -147,7 +147,13 @@ A drafted nautical chart, alive: tick-marked neatline, compass rose, **hatched
 danger areas**, numbered **buoy markers that ride the swell**, the recommended
 course's dashes running, a **draggable vessel** that geofences any position live —
 drop it in a restricted area and ORCA objects immediately; drop it on land and
-ORCA tells you that too.
+ORCA tells you that too. And the **sea itself moves**: an
+earth.nullschool-style particle field animates the **wind or surface current**
+over the water (switchable, colour-coded by speed) above a **sea-temperature
+shade** — fed in LIVE mode by real Open-Meteo grids fetched in a single
+multi-point call, and in DEMO mode by a labelled synthetic field. Cyclone
+warnings are drawn too: hatched warning area, forecast track, a spinning storm
+symbol.
 
 ### Authority — the district view
 Every monitored landing centre ranked by the same engine, auto-refreshing every
@@ -289,6 +295,7 @@ field, so that one value comes from the demo store, and the agent admits it.)
 | INCOIS | PFZ advisories, ocean state | no open public JSON API — provider interface ready |
 | IMD | marine warnings, cyclone bulletins | no open public JSON API — provider interface ready |
 | ISRO MOSDAC | satellite SST / ocean colour | registration-gated — interface ready |
+| OBIS · Map of Life | species occurrence records, Indian coastal waters | open data, **bundled as a dated snapshot** so the demo runs offline |
 | OpenStreetMap | basemap, coastline reasoning | keyless standard tiles |
 
 > **The honest position** (we say this out loud, including to judges): INCOIS,
@@ -322,9 +329,12 @@ Two numbers come out of it, and they are deliberately different:
   better ground twice as far away is usually the wrong advice.
 
 On top of that, an **indicative species mix** (bangda/mackerel, tarli/sardine,
-paplet/pomfret, surmai/seer, bombil/Bombay duck) is derived from documented
-SST/chlorophyll bands per ground — local names first, because that is what a
-fisher calls them. Trip length comes from the odds, the distance and the
+paplet/pomfret, surmai/seer, bombil/Bombay duck, hilsa/ilish) is derived from
+documented SST/chlorophyll bands per ground, **weighted by real regional
+occurrence records** (an OBIS / Map of Life snapshot of Indian coastal
+waters) — so the oil sardine headlines Kerala, Bombay duck headlines Mumbai
+and hilsa appears in Bengal, exactly as the records say. Local names first,
+because that is what a fisher calls them. Trip length comes from the odds, the distance and the
 remaining safe-weather window — and is cut short automatically when the weather
 closes in.
 
