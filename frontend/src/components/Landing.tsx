@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import * as api from "../api";
 import type { Language } from "../types";
-import { CompassMark, CourseArrow, FishGlyph, PlayGlyph } from "./glyphs";
+import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph } from "./glyphs";
 
 /** Every word on the front door, in the fisher's three languages. */
 const L10N: Record<
@@ -14,6 +14,7 @@ const L10N: Record<
     sub: string;
     ctaTour: string;
     ctaOpen: string;
+    ctaPhone: string;
     ctaTry: string;
     openOrca: string;
     openWord: string;
@@ -33,6 +34,7 @@ const L10N: Record<
     sub: "Marine EcOsystem Reasoning with Collaborative Agents — India's marine data turned into plain words a fisher can act on, in his own language, with every number carrying its source.",
     ctaTour: "Watch the guided tour",
     ctaOpen: "Open the app",
+    ctaPhone: "Phone version",
     ctaTry: "Try: cyclone near Paradip →",
     openOrca: "Open ORCA",
     openWord: "Open",
@@ -85,6 +87,7 @@ const L10N: Record<
     sub: "भारत का समुद्री डेटा, मछुआरे की अपनी भाषा में, सीधे काम आने वाले शब्दों में — और हर आँकड़े के साथ उसका स्रोत।",
     ctaTour: "गाइडेड टूर देखें",
     ctaOpen: "ऐप खोलें",
+    ctaPhone: "फ़ोन संस्करण",
     ctaTry: "देखें: पारादीप के पास चक्रवात →",
     openOrca: "ORCA खोलें",
     openWord: "खोलें",
@@ -137,6 +140,7 @@ const L10N: Record<
     sub: "भारताचा सागरी डेटा, मच्छीमाराच्या स्वतःच्या भाषेत, थेट कामी येणाऱ्या शब्दांत — आणि प्रत्येक आकड्यासोबत त्याचा स्रोत.",
     ctaTour: "गाइडेड टूर पाहा",
     ctaOpen: "अ‍ॅप उघडा",
+    ctaPhone: "फोन आवृत्ती",
     ctaTry: "पाहा: पारादीपजवळ चक्रीवादळ →",
     openOrca: "ORCA उघडा",
     openWord: "उघडा",
@@ -378,6 +382,13 @@ export default function Landing({
               </button>
               <button onClick={() => onEnter("home")} className="btn-line !px-5 !py-2.5">
                 {t.ctaOpen}
+              </button>
+              {/* full reload on purpose: phone vs console is decided at boot */}
+              <button
+                onClick={() => (window.location.href = `/?m=1&lang=${language}`)}
+                className="btn-line !px-5 !py-2.5"
+              >
+                <PhoneGlyph size={15} /> {t.ctaPhone}
               </button>
               <button
                 onClick={() => onScenario("Is there a cyclone near Paradip? Can I go fishing?")}

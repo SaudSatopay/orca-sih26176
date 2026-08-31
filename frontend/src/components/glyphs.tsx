@@ -246,6 +246,39 @@ export function BoatGlyph({ size = 16, className = "" }: G) {
   );
 }
 
+/** A phone with a small verdict ring on screen — the fisher's app. */
+export function PhoneGlyph({ size = 16, className = "" }: G) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" className={className} aria-hidden>
+      <rect x="5" y="1.8" width="10" height="16.4" rx="2" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="10" cy="8.6" r="3" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M8.6 15.6 h2.8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** A folded chart with a plotted course — the map tab's mark. */
+export function MapGlyph({ size = 22, className = "" }: G) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" className={className} aria-hidden>
+      <path
+        d="M3.5 5.5 L9 3.5 L15 5.5 L20.5 3.5 V18.5 L15 20.5 L9 18.5 L3.5 20.5 Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <path d="M9 3.5 V18.5 M15 5.5 V20.5" stroke="currentColor" strokeWidth="1.2" opacity="0.5" />
+      <path
+        d="M6 15 C8 12 10 13 12 10 C13.5 8 16 8.5 18 7"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeDasharray="2.5 2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export function PauseGlyph({ size = 13, className = "" }: G) {
   return (
     <svg width={size} height={size} viewBox="0 0 14 14" className={className} aria-hidden>

@@ -105,6 +105,24 @@ species tooltip, the `method` string and a fifth System-page provider card
 ("BUNDLED SNAPSHOT"). To refresh the snapshot later, re-run the OBIS count
 queries and update the table + date.
 
+**The phone app (31 Aug 2026):** small screens (≤640px, or `?m=1` to force /
+`?m=0` to suppress) render `MobileApp.tsx` instead of the desktop console —
+the fisher's own app, designed for low literacy: zero taps to the coloured
+verdict circle, ONE tap on the giant LISTEN button to hear the whole plan
+spoken (browsers require a gesture before TTS — that button IS the gesture),
+big tap-cards (areas speak themselves and jump to the map), giant mic on the
+Ask screen, three bottom tabs (Today · Map · Ask), never deeper. Reuses
+/api/fishing, /api/chat and MarineMap (new `heightPx` prop). PWA manifest +
+SVG icon in `frontend/public/` → Add to Home Screen opens standalone at
+`/?m=1` — the bridge to Android. `?tab=map|ask`, `?lang`, `?at` work on
+mobile too; `?debug=1` overlays a layout probe listing over-wide elements.
+
+**Headless-screenshot gotcha #2:** headless Edge clamps windows to ~500px
+wide and CROPS the PNG to the requested size — a 390px capture chops the
+right edge and looks like overflow when the layout is fine. For real phone
+captures use the iframe harness trick (a local page with a 375px iframe
+pointing at the app) at window-size 500×870.
+
 **Stale-bundle guard:** `main.py` now serves `index.html` with
 `Cache-Control: no-store` — a browser tab from before a rebuild was silently
 running old JS on stage (the "missing cyclone" report). Hashed /assets stay

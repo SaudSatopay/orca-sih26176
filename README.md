@@ -1,6 +1,6 @@
 <div align="center">
 
-# O R C A
+![ORCA — Ten agents read the sea. One safe, explainable decision.](docs/banner.png)
 
 ### Marine EcOsystem Reasoning with Collaborative Agents
 
@@ -62,6 +62,16 @@ Coast Guard instructions — and it says so, on every screen.
 | ![Ask ORCA](docs/ask.png) | ![Authority board](docs/authority.png) |
 | *70/100 HIGH with every point attributed, stamped verdicts, safety overrides* | *Every landing centre scored by the same engine, CSV export* |
 
+**The phone app — for the fisher himself** (`/?m=1`, or just open it on a phone)
+
+| Today — one tap to hear the plan | The living chart | Ask by voice |
+|:---:|:---:|:---:|
+| ![Phone Today](docs/phone-today.png) | ![Phone map](docs/phone-map.png) | ![Phone ask](docs/phone-ask.png) |
+
+*Colour-coded verdict, a giant LISTEN button that speaks the whole plan in the
+fisher's language, tap-to-hear area cards, and a microphone as the interface —
+designed for users who may read little. Installs to the home screen as a PWA.*
+
 **The engine room — architecture, live** (`/?tab=system`)
 
 ![System view](docs/system.png)
@@ -110,6 +120,15 @@ locally and the app degrades gracefully without it.)
 ---
 
 ## A tour of the app
+
+### The phone app — for the fisher himself
+Open ORCA on a phone (or add `?m=1`) and it becomes a different product,
+designed for users who may read little: **zero taps** to a big colour-coded
+verdict circle, **one tap** on a giant LISTEN button to hear the whole plan
+spoken in your language, area cards that speak themselves, a full-screen
+living chart, and a **giant microphone** to ask by voice. Three bottom tabs —
+Today · Map · Ask — never anything deeper. It ships with a PWA manifest, so
+*Add to Home Screen* installs it like an app — the path to Android.
 
 ### The landing page
 A chart-styled front door: live coastline stats (centres monitored, official

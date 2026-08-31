@@ -111,6 +111,7 @@ export default function MarineMap({
   language = "en",
   onPickLocation,
   focusRank,
+  heightPx,
 }: {
   origin: Location | null;
   zones: ZoneFeature[];
@@ -122,6 +123,8 @@ export default function MarineMap({
   geofence: GeofenceAlert[];
   /** Official warnings; those carrying `storm` geometry are drawn on the chart. */
   alerts?: MarineAlert[];
+  /** Fixed map height (px) — the phone layout sizes the chart to the screen. */
+  heightPx?: number;
   language?: Language;
   /** Tap anywhere on the water to move the fisher's position. */
   onPickLocation?: (lat: number, lon: number) => void;
@@ -135,7 +138,7 @@ export default function MarineMap({
   const [flowMode, setFlowMode] = useState<FlowMode>("wind");
   const [probe, setProbe] = useState<PositionCheck | null>(null);
   const [dragging, setDragging] = useState(false);
-  const mapHeight = areas.length ? 540 : 420;
+  const mapHeight = heightPx ?? (areas.length ? 540 : 420);
 
   // Leaflet caches the container size, so tell it whenever the height changes.
   useEffect(() => {
