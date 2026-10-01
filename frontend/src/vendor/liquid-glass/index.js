@@ -79,6 +79,24 @@ float roundedRectDistance(vec2 coord, vec2 size, float radius) {
   return outsideCorner + insideCorner - radius;
 }
 
+/* ORCA: the true outward normal of the rounded-rect SDF. The library used
+   normalize(coord - centre), which on a wide, short lens points sideways
+   even at the bottom edge, splaying everything near the rim into whiskers.
+   Here a pixel near a straight edge displaces straight through it, and only
+   the corner arcs blend the two axes. */
+vec2 rectNormal(vec2 coord, vec2 size, float radius) {
+  vec2 center = size * 0.5;
+  vec2 p = coord * size - center;
+  vec2 d = abs(p) - (center - radius);
+  if (max(d.x, d.y) > 0.0) {
+    vec2 c = max(d, 0.0);
+    vec2 s = vec2(p.x >= 0.0 ? 1.0 : -1.0, p.y >= 0.0 ? 1.0 : -1.0);
+    return normalize(c * s + vec2(0.0001));
+  }
+  if (d.x > d.y) return vec2(p.x >= 0.0 ? 1.0 : -1.0, 0.0);
+  return vec2(0.0, p.y >= 0.0 ? 1.0 : -1.0);
+}
+
 void main() {
   vec2 coord = v_texcoord;
   vec2 lensPx = (coord - 0.5) * u_resolution;
@@ -88,7 +106,7 @@ void main() {
 
   float sd = roundedRectDistance(coord, u_resolution, u_radius);
   float distIn = max(-sd, 0.0);
-  vec2 shapeNormal = coord == vec2(0.5) ? vec2(0.0, 1.0) : normalize((coord - 0.5) * u_resolution);
+  vec2 shapeNormal = rectNormal(coord, u_resolution, u_radius);
 
   float edge = exp(-distIn * u_edgeDistance) * u_edgeIntensity;
   float rim = exp(-distIn * u_rimDistance) * u_rimIntensity;

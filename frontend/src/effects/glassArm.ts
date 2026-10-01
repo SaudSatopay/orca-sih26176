@@ -95,10 +95,12 @@ export function armTabs(args: {
   const t0 = performance.now();
   const region = union(args.lenses, 24);
   const backdrop = paintSheet(region, args.sheetEl, args.strip);
+  // A short lens: the magnified body is the star, the bend confined to a
+  // couple of pixels at the rim (hot rim values read as ripple, not glass).
   const stills = renderStills(backdrop, region, args.lenses, {
     radius: 3,
-    magnify: 1.14,
-    controls: { blurRadius: 0.7, edgeIntensity: 3.5, edgeDistance: 0.2, rimIntensity: 7, rimDistance: 0.6, cornerBoost: 1.2 },
+    magnify: 1.18,
+    controls: { blurRadius: 0.7, edgeIntensity: 1.1, edgeDistance: 0.3, rimIntensity: 3.0, rimDistance: 0.85, cornerBoost: 0.5 },
   }, args.dpr);
   return { stills, backdrop: backdrop.canvas, ms: performance.now() - t0 };
 }
@@ -117,8 +119,8 @@ export async function armOpen(args: {
   const backdrop = await paintGround(region, args.rule);
   const stills = renderStills(backdrop, region, [args.lens], {
     radius: 2,
-    magnify: 1.1,
-    controls: { blurRadius: 0.7, edgeIntensity: 3, edgeDistance: 0.22, rimIntensity: 6, rimDistance: 0.65, cornerBoost: 1 },
+    magnify: 1.12,
+    controls: { blurRadius: 0.7, edgeIntensity: 1.0, edgeDistance: 0.3, rimIntensity: 2.6, rimDistance: 0.8, cornerBoost: 0.5 },
   }, args.dpr);
   return { stills, backdrop: backdrop.canvas, ms: performance.now() - t0 };
 }

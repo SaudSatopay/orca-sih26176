@@ -59,6 +59,24 @@ function splitTop(value: string): string[] {
   return out.filter(Boolean);
 }
 
+/** Split on top-level whitespace — `calc(100% + 140px)` stays one token. */
+function splitSpaceTop(value: string): string[] {
+  const out: string[] = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < value.length; i++) {
+    const ch = value[i];
+    if (ch === "(") depth++;
+    else if (ch === ")") depth--;
+    else if (/\s/.test(ch) && depth === 0) {
+      if (i > start) out.push(value.slice(start, i));
+      start = i + 1;
+    }
+  }
+  if (value.length > start) out.push(value.slice(start));
+  return out;
+}
+
 /** "12px" | "30%" | "calc(100% + 140px)" → px, resolved against `span`. */
 function resolveLength(raw: string, span: number): number {
   const v = raw.trim();
@@ -108,6 +126,26 @@ function parseStops(parts: string[], axis: number): Stop[] {
 function isTransparent(color: string): boolean {
   const m = color.match(/^rgba?\([^)]*,\s*([\d.]+)\s*\)$/);
   return m ? parseFloat(m[1]) === 0 : color === "transparent";
+}
+
+/**
+ * Canvas gradients interpolate stop colours WITHOUT premultiplying alpha, so
+ * a `transparent` (black) stop drags the ramp grey — CSS premultiplies and
+ * shows no such cast. Rewriting each fully transparent stop as alpha-0 of
+ * its nearest opaque neighbour's channels reproduces the CSS result.
+ */
+function fixTransparentStops(stops: Stop[]): Stop[] {
+  const rgbOf = (color: string): string | null => {
+    const m = color.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/);
+    return m ? `${m[1]}, ${m[2]}, ${m[3]}` : null;
+  };
+  return stops.map((s, i) => {
+    if (!isTransparent(s.color)) return s;
+    const neighbour =
+      [...stops.slice(i + 1), ...stops.slice(0, i).reverse()].find((o) => !isTransparent(o.color)) ?? s;
+    const rgb = rgbOf(neighbour.color);
+    return rgb ? { ...s, color: `rgba(${rgb}, 0)` } : s;
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -170,7 +208,7 @@ function paintLinear(ctx: CanvasRenderingContext2D, body: string, box: Box, regi
   const deg = ((parseFloat(m[1]) % 360) + 360) % 360;
   if (deg !== 0 && deg !== 90 && deg !== 180 && deg !== 270) return false;
   const axis = deg === 90 || deg === 270 ? box.w : box.h;
-  const stops = parseStops(splitTop(m[2]), axis);
+  const stops = fixTransparentStops(parseStops(splitTop(m[2]), axis));
   if (stops.length < 2) return false;
   let g: CanvasGradient;
   if (deg === 0) g = ctx.createLinearGradient(0, box.h + box.oy, 0, box.oy);
@@ -192,7 +230,7 @@ function paintRadial(ctx: CanvasRenderingContext2D, body: string, box: Box, regi
   const cx = (parseFloat(m[3]) / 100) * box.w + box.ox;
   const cy = (parseFloat(m[4]) / 100) * box.h + box.oy;
   if (!(rx > 0) || !(ry > 0)) return false;
-  const stops = parseStops(splitTop(m[5]), rx);
+  const stops = fixTransparentStops(parseStops(splitTop(m[5]), rx));
   if (stops.length < 2) return false;
   ctx.save();
   ctx.translate(cx, cy);
@@ -230,7 +268,7 @@ async function paintUrl(
 ): Promise<boolean> {
   if (!url.startsWith("data:")) return false; // the surfaces use data URIs only
   const img = await loadImage(url);
-  const pos = position.trim().split(/\s+/);
+  const pos = splitSpaceTop(position.trim());
   const px = resolveLength(pos[0] ?? "0%", box.w - img.width);
   const py = resolveLength(pos[1] ?? "0%", box.h - img.height);
   ctx.drawImage(img, px + box.ox, py + box.oy);
