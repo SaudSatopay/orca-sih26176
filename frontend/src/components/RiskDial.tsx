@@ -79,7 +79,13 @@ export default function RiskDial({
   });
 
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
+    <div
+      className="relative shrink-0"
+      style={{ width: size, height: size }}
+      // The count-up is decoration; assistive tech gets the final reading at once.
+      role="img"
+      aria-label={`${score} / 100 · ${category}`}
+    >
       <svg width={size} height={size}>
         {ticks.map((tk, i) => (
           <line
