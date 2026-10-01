@@ -126,7 +126,7 @@ export default function Landing({
   const warningsN = useCountUp(warnings, 1300);
   const langsN = useCountUp(3, 800);
 
-  const cardTabs: ("home" | "ask" | "authority")[] = ["home", "ask", "authority"];
+  const cardTabs: ("home" | "ask" | "authority" | "system")[] = ["home", "ask", "authority", "system"];
 
   const stats = [
     { k: t.stats[0], v: agentsN },
@@ -137,7 +137,7 @@ export default function Landing({
   ];
 
   return (
-    <div className="mx-auto flex min-h-full max-w-[1240px] flex-col px-5 py-5">
+    <main className="mx-auto flex min-h-full max-w-[1240px] flex-col px-5 py-5">
       <div className="sea-drift" aria-hidden />
       <div className="fish-drift" aria-hidden />
 
@@ -242,40 +242,46 @@ export default function Landing({
         </div>
       </Reveal>
 
-      {/* feature cards */}
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
-        {t.cards.map((c, i) => (
-          <Reveal key={cardTabs[i]} delay={520 + i * 110}>
-            <div className="panel rule-double lift group flex h-full flex-col">
-              <div className="hd">
-                <span className="label flex items-center gap-2 transition-colors group-hover:!text-chart-600">
-                  {c.kicker}
-                  {i === 0 && <FishGlyph size={15} className="swim text-chart-500" />}
-                </span>
-              </div>
-              <div className="flex-1 px-4 py-4">
-                <h3 className="font-display text-heading font-bold leading-snug text-ink-900">
-                  {c.title}
-                </h3>
-                <ul className="mt-3 space-y-2">
-                  {c.lines.map((l) => (
-                    <li key={l} className="flex gap-2.5 text-small leading-relaxed text-ink-700">
-                      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rotate-45 bg-chart-500/70 transition-transform group-hover:rotate-[135deg] group-hover:bg-chart-500" style={{ transitionDuration: "500ms" }} />
-                      {l}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="border-t px-4 py-3" style={{ borderColor: "var(--rule-faint)" }}>
-                <button onClick={() => onEnter(cardTabs[i])} className="btn-line group/open w-full justify-center">
-                  {t.openWord}{" "}
-                  <CourseArrow size={12} className="transition-transform group-hover/open:translate-x-1" />
+      {/* the index of sheets — four ways in, set like a chart catalogue */}
+      <Reveal delay={420}>
+        <nav aria-label={t.indexTitle} className="panel rule-double mt-5 overflow-hidden">
+          <div className="hd">
+            <span className="label">{t.indexTitle}</span>
+          </div>
+          <ul>
+            {t.cards.map((c, i) => (
+              <li key={cardTabs[i]} className={i > 0 ? "border-t" : ""} style={{ borderColor: "var(--rule-faint)" }}>
+                <button
+                  onClick={() => onEnter(cardTabs[i])}
+                  className="sheet-row group grid w-full grid-cols-[2.5rem_minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 px-4 py-4 text-left md:grid-cols-[2.5rem_minmax(0,17rem)_minmax(0,1fr)_auto]"
+                >
+                  <span className="sounding text-headline leading-none text-chart-600">{i + 1}</span>
+                  <span className="min-w-0">
+                    <span className="label flex items-center gap-2">
+                      {c.kicker}
+                      {i === 0 && <FishGlyph size={15} className="swim text-chart-500" />}
+                    </span>
+                    <span className="mt-1 block font-display text-heading font-bold leading-snug text-ink-900">
+                      {c.title}
+                    </span>
+                  </span>
+                  <span className="col-span-2 col-start-2 min-w-0 text-small leading-relaxed text-ink-700 md:col-span-1 md:col-start-3">
+                    {c.lines.map((l) => (
+                      <span key={l} className="block">
+                        {l}
+                      </span>
+                    ))}
+                  </span>
+                  <span className="col-start-3 row-start-1 inline-flex items-center gap-1.5 self-center font-mono text-readout font-bold uppercase tracking-[0.1em] text-chart-700 md:col-start-4">
+                    {t.openWord}
+                    <CourseArrow size={13} className="sheet-row-arrow" />
+                  </span>
                 </button>
-              </div>
-            </div>
-          </Reveal>
-        ))}
-      </div>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </Reveal>
 
       {/* how it decides — the differentiator */}
       <Reveal delay={880}>
@@ -331,6 +337,6 @@ export default function Landing({
           </a>
         </div>
       </Reveal>
-    </div>
+    </main>
   );
 }

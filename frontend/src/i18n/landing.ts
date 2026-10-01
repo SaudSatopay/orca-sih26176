@@ -15,6 +15,7 @@ export const L10N: Record<
     openWord: string;
     watchLive: string;
     pipelineTitle: string;
+    indexTitle: string;
     stats: string[];
     cards: { kicker: string; title: string; lines: string[] }[];
     phases: { t: string; n: string }[];
@@ -33,6 +34,7 @@ export const L10N: Record<
     openWord: "Open",
     watchLive: "watch it run live →",
     pipelineTitle: "How ORCA decides",
+    indexTitle: "Index of sheets",
     stats: ["Agents in the crew", "Landing centres", "Official warnings", "Languages", "Data edition"],
     cards: [
       {
@@ -62,6 +64,15 @@ export const L10N: Record<
           "One-click CSV export for the day's advisory board",
         ],
       },
+      {
+        kicker: "System",
+        title: "The engine room",
+        lines: [
+          "Providers, the 72-hour series cache and the crew, running",
+          "The safety floors that can only raise a score",
+          "A live feed reading the coast port by port",
+        ],
+      },
     ],
     phases: [
       { t: "Understand", n: "parse the question, any language" },
@@ -84,6 +95,7 @@ export const L10N: Record<
     openWord: "खोलें",
     watchLive: "इसे चलते हुए देखें →",
     pipelineTitle: "ORCA फ़ैसला कैसे करता है",
+    indexTitle: "शीटों की सूची",
     stats: ["टीम के एजेंट", "लैंडिंग सेंटर", "आधिकारिक चेतावनियाँ", "भाषाएँ", "डेटा संस्करण"],
     cards: [
       {
@@ -113,6 +125,15 @@ export const L10N: Record<
           "दिन के बोर्ड का एक-क्लिक CSV निर्यात",
         ],
       },
+      {
+        kicker: "सिस्टम",
+        title: "इंजन रूम",
+        lines: [
+          "डेटा स्रोत, 72 घंटे का कैश और टीम, चलते हुए",
+          "सुरक्षा नियम जो स्कोर सिर्फ़ बढ़ा सकते हैं",
+          "तट को बंदरगाह-दर-बंदरगाह पढ़ती लाइव फ़ीड",
+        ],
+      },
     ],
     phases: [
       { t: "समझो", n: "सवाल परखो, किसी भी भाषा में" },
@@ -135,6 +156,7 @@ export const L10N: Record<
     openWord: "उघडा",
     watchLive: "हे चालताना पाहा →",
     pipelineTitle: "ORCA निर्णय कसा घेते",
+    indexTitle: "शीटांची सूची",
     stats: ["टीममधील एजंट", "लँडिंग सेंटर", "अधिकृत इशारे", "भाषा", "डेटा आवृत्ती"],
     cards: [
       {
@@ -162,6 +184,15 @@ export const L10N: Record<
           "किनाऱ्यावरील प्रत्येक लँडिंग सेंटर, त्याच इंजिनने तपासलेले",
           "प्रशासनाला तेच पुरावे दिसतात जे मच्छीमाराला दिसतात",
           "दिवसाच्या बोर्डाचे एक-क्लिक CSV निर्यात",
+        ],
+      },
+      {
+        kicker: "प्रणाली",
+        title: "इंजिन रूम",
+        lines: [
+          "डेटा स्रोत, 72 तासांचा कॅशे आणि टीम, चालू असताना",
+          "सुरक्षा नियम जे गुण फक्त वाढवू शकतात",
+          "किनारा बंदरागणिक वाचणारी लाइव्ह फीड",
         ],
       },
     ],

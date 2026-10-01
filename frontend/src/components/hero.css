@@ -144,6 +144,26 @@
   }
 }
 
+/* Index of sheets: a row answers the pointer with a wash and its arrow
+   leans toward the sheet; a press settles it. */
+.sheet-row {
+  transition: background-color 0.16s ease;
+}
+.sheet-row-arrow {
+  transition: transform 0.2s var(--hero-ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+}
+.sheet-row:active {
+  background-color: theme("colors.chart.100");
+}
+@media (hover: hover) and (pointer: fine) {
+  .sheet-row:hover {
+    background-color: color-mix(in srgb, theme("colors.chart.100") 45%, transparent);
+  }
+  .sheet-row:hover .sheet-row-arrow {
+    transform: translateX(4px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hero-type,
   .hero-tick,
