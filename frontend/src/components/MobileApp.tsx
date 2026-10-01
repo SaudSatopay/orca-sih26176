@@ -45,6 +45,8 @@ import {
   T,
   type MobileStrings,
 } from "../i18n/mobile";
+import { VERDICT } from "../i18n/riskCard";
+import { waveM, windKmh } from "../format";
 import { PORTS } from "../ports";
 import { RATING_COLOR, RATING_INK, RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
 import {
@@ -180,18 +182,30 @@ function useRingCount(target: number, play: boolean, root: RefObject<HTMLElement
 
 /* ------------------------------------------------------------------ dial */
 
+/** The arc from 12 o'clock through `part` of the circle, for the dashed ring. */
+function arcPath(r: number, part: number): string {
+  const p = Math.max(0.001, Math.min(0.9999, part));
+  const a = p * 2 * Math.PI - Math.PI / 2;
+  const x = 60 + r * Math.cos(a);
+  const y = 60 + r * Math.sin(a);
+  return `M 60 ${60 - r} A ${r} ${r} 0 ${p > 0.5 ? 1 : 0} 1 ${x} ${y}`;
+}
+
 /** The risk dial: a ring drawn to the score, with the band edges ticked. */
 function Ring({
   score,
   color,
   size,
   stroke = 9,
+  dashed = false,
   children,
 }: {
   score: number;
   color: string;
   size: number;
   stroke?: number;
+  /** A kept, old reading: the arc draws dashed, like unsurveyed data (PT6). */
+  dashed?: boolean;
   children: ReactNode;
 }) {
   const r = 59 - stroke / 2;
@@ -201,18 +215,28 @@ function Ring({
     <div className="m-ring" style={{ width: size, height: size }} aria-hidden>
       <svg viewBox="0 0 120 120" width={size} height={size}>
         <circle cx="60" cy="60" r={r} fill={paper[50]} stroke={alpha(color, 0.2)} strokeWidth={stroke} />
-        <circle
-          className="m-ring-arc"
-          cx="60"
-          cy="60"
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth={stroke}
-          strokeDasharray={length}
-          strokeDashoffset={length * (1 - part)}
-          style={{ "--m-ring-length": length } as CSSProperties}
-        />
+        {dashed ? (
+          <path
+            d={arcPath(r, part)}
+            fill="none"
+            stroke={color}
+            strokeWidth={stroke}
+            strokeDasharray="3 4"
+          />
+        ) : (
+          <circle
+            className="m-ring-arc"
+            cx="60"
+            cy="60"
+            r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth={stroke}
+            strokeDasharray={length}
+            strokeDashoffset={length * (1 - part)}
+            style={{ "--m-ring-length": length } as CSSProperties}
+          />
+        )}
         {/* where one band ends and the next begins, as on the console's dial */}
         {RISK_BANDS.slice(0, -1).map((b) => {
           const a = (b.max / 100) * 2 * Math.PI;
@@ -529,6 +553,7 @@ function Verdict({
   language,
   t,
   updating,
+  stale,
   speaking,
   canSpeak,
   onListen,
@@ -537,6 +562,8 @@ function Verdict({
   language: Language;
   t: MobileStrings;
   updating: boolean;
+  /** A kept reading after a failure: it must never look live (PT6). */
+  stale: boolean;
   speaking: boolean;
   canSpeak: boolean;
   onListen: () => void;
@@ -557,39 +584,50 @@ function Verdict({
   const color = RISK_COLOR[category];
   const printed = RISK_INK[category];
   const danger = category === "HIGH" || category === "EXTREME";
-  const counted = useRingCount(score, enter, rootRef);
+  const counted = useRingCount(score, enter && !stale, rootRef);
   const read = parseClock(outlook.generated_at);
   const readings = [
-    wave != null && `${wave.toFixed(1)} m ${t.waves}`,
-    wind != null && `${Math.round(wind)} km/h ${t.wind}`,
+    wave != null && `${waveM(wave)} ${t.waves}`,
+    wind != null && `${windKmh(wind)} ${t.wind}`,
   ].filter(Boolean);
 
   return (
     <section
       ref={rootRef}
       aria-labelledby="m-question"
-      className={`panel rule-double ${enter ? "m-enter" : ""}`}
-      style={{ background: alpha(color, 0.07) }}
+      className={`panel rule-double bg-paper-50 ${enter && !stale ? "m-enter" : ""}`}
+      // The band tint rides as an image over the panel's own paper, so the
+      // page's rose and contours never show through the verdict (PT2).
+      style={{
+        backgroundImage: `linear-gradient(${alpha(color, 0.07)}, ${alpha(color, 0.07)})`,
+      }}
     >
       <div className="flex items-baseline justify-between gap-3 px-4 pt-3">
         <h2 id="m-question" className="sounding text-title leading-tight text-ink-900">
           {t.question}
         </h2>
-        <span className="shrink-0 font-mono text-label text-ink-500">
-          {updating
-            ? t.updating
-            : read && fill(t.asOf, { t: clockLabel(language, read.hour, read.minute) })}
-        </span>
+        {stale && read ? (
+          /* an old reading is boxed and dashed, the chart's mark for unsurveyed data */
+          <span className="shrink-0 self-center border border-dashed border-ink-700 bg-paper-50 px-1.5 py-0.5 font-mono text-label font-bold uppercase tracking-[0.08em] text-ink-800">
+            {fill(t.oldAt, { t: clockLabel(language, read.hour, read.minute) })}
+          </span>
+        ) : (
+          <span className="shrink-0 font-mono text-body text-ink-500">
+            {updating
+              ? t.updating
+              : read && fill(t.asOf, { t: clockLabel(language, read.hour, read.minute) })}
+          </span>
+        )}
       </div>
 
       {/* the verdict — colour and symbol first, words second */}
       <div className="flex items-center gap-4 px-4 pt-3.5">
-        <Ring score={score} color={color} size={128}>
+        <Ring score={score} color={color} size={128} dashed={stale}>
           <span style={{ color: printed }}>
             {danger ? <WarnGlyph size={26} /> : <BoatGlyph size={28} />}
           </span>
           <span
-            className="font-display text-dial font-black leading-none tabular-nums"
+            className="lining font-display text-dial font-black leading-none"
             style={{ color: printed }}
           >
             {counted}
@@ -597,14 +635,15 @@ function Verdict({
           <span className="mt-0.5 font-mono text-label font-bold text-ink-500">/ 100</span>
         </Ring>
         <div className="min-w-0">
+          {/* the stamp prints the verdict itself; the band word stands beside the ring (PT3, X1) */}
           <span className="m-stamp" style={{ color: printed }}>
-            {CATEGORY[language][category]}
+            {VERDICT[language][category]}
           </span>
           <p className="mt-3 text-lead font-semibold leading-tight text-ink-900">
-            {fill(t.riskOutOf, { n: score })}
+            {CATEGORY[language][category]}
           </p>
           {readings.length > 0 && (
-            <p className="mt-1.5 font-mono text-label leading-relaxed text-ink-500">
+            <p className="mt-1.5 font-mono text-body leading-relaxed text-ink-700">
               {readings.map((r) => (
                 <span key={String(r)} className="block">
                   {r}
@@ -616,7 +655,9 @@ function Verdict({
       </div>
 
       <p className="px-4 pt-3.5 font-display text-title font-semibold leading-snug text-ink-900 [text-wrap:balance]">
-        {outlook.advice[0]}
+        {/* a kept reading answers from the client's own verdict table, so the
+            sentence follows a language switch even offline (PT6) */}
+        {stale ? VERDICT[language][category] : outlook.advice[0]}
       </p>
 
       {/* THE button — one tap, hear everything */}
@@ -659,25 +700,31 @@ function AnswerCard({
   return (
     <article
       lang={language}
-      className={`panel rule-double ${arriving ? "m-rise" : ""} w-full`}
-      style={risk ? { background: alpha(color, 0.07) } : undefined}
+      className={`panel rule-double ${arriving ? "m-rise" : ""} w-full bg-paper-50`}
+      // The band tint as an image over paper, never in place of it (PT2).
+      style={
+        risk
+          ? { backgroundImage: `linear-gradient(${alpha(color, 0.07)}, ${alpha(color, 0.07)})` }
+          : undefined
+      }
     >
       {risk && (
         <div className="flex items-center gap-3.5 px-4 pt-4">
           <Ring score={risk.score} color={color} size={84} stroke={10}>
             <span
-              className="font-display text-numeral font-black leading-none tabular-nums"
+              className="lining font-display text-numeral font-black leading-none"
               style={{ color: printed }}
             >
               {Math.round(risk.score)}
             </span>
           </Ring>
           <div className="min-w-0">
+            {/* the stamp prints the verdict; the band word stands beside the ring (PA2, X1) */}
             <span className="m-stamp" style={{ color: printed }}>
-              {CATEGORY[language][risk.category as RiskCategory]}
+              {VERDICT[language][risk.category as RiskCategory]}
             </span>
             <p className="mt-2.5 text-lead font-semibold leading-tight text-ink-900">
-              {fill(t.riskOutOf, { n: Math.round(risk.score) })}
+              {CATEGORY[language][risk.category as RiskCategory]}
             </p>
           </div>
         </div>
@@ -688,10 +735,18 @@ function AnswerCard({
       </p>
 
       {risk?.official_warning && (
-        <p className="mx-4 mt-3 flex items-center gap-2 rounded-[2px] border border-risk-extreme/60 px-3 py-2 font-display text-lead font-bold text-risk-extreme hatch-danger">
-          <WarnGlyph size={20} className="shrink-0" />
-          {t.warnSpeak}
-        </p>
+        <div className="mx-4 mt-3 rounded-[2px] border border-risk-extreme/60 px-3 py-2 hatch-danger">
+          <p className="flex items-center gap-2 font-display text-lead font-bold text-risk-extreme">
+            <WarnGlyph size={20} className="shrink-0" />
+            {t.warnSpeak}
+          </p>
+          {/* the warning says what it warns about: its own headline (X1, PA2) */}
+          {res.alerts?.[0]?.headline && (
+            <p className="mt-1 text-body font-semibold leading-snug text-ink-900">
+              {res.alerts[0].headline}
+            </p>
+          )}
+        </div>
       )}
 
       <div className="px-4 pt-3.5">
@@ -717,7 +772,7 @@ function AnswerCard({
       )}
 
       <p
-        className="mt-3 border-t px-4 py-2.5 font-mono text-label leading-relaxed text-ink-500"
+        className="mt-3 border-t px-4 py-2.5 text-body leading-relaxed text-ink-700"
         style={{ borderColor: "var(--rule-faint)" }}
       >
         {res.mode !== "LIVE" && <span className="block">{t.simulated}</span>}
@@ -894,6 +949,10 @@ export default function MobileApp() {
   const stale =
     !current && loaded && (failedNow || loaded.place === place) ? loaded.data : null;
   const outlook = current ?? stale;
+  // A kept reading after a failure must never look live (PT6) …
+  const staleShown = failedNow && !current && stale != null;
+  // … and it is spoken in its own language, whatever the app switched to.
+  const outlookLang = current ? language : (loaded?.language ?? language);
   const placeName = outlook?.location.nearest_landing_centre ?? (place && place.name !== "—" ? place.name : "…");
 
   // Stable identities for the chart (guidelines audit R1): a fresh origin
@@ -998,7 +1057,8 @@ export default function MobileApp() {
         }),
       );
     if (back) bits.push(back.say);
-    toggleSay("plan", bits.join(" "), language);
+    // LISTEN speaks the reading in the language it was written in (PT6).
+    toggleSay("plan", bits.join(" "), outlookLang);
   };
 
   const speakArea = (a: FishingOutlook["areas"][number]) => {
@@ -1178,6 +1238,7 @@ export default function MobileApp() {
                 language={language}
                 t={t}
                 updating={!current && !failedNow}
+                stale={staleShown}
                 speaking={speakingId === "plan"}
                 canSpeak={canSpeak}
                 onListen={speakPlan}
@@ -1277,7 +1338,7 @@ export default function MobileApp() {
                             <span className="block text-title font-bold leading-tight text-ink-900">
                               {Math.round(a.distance_km)} {t.km}
                             </span>
-                            <span className="mt-0.5 block truncate font-mono text-label text-chart-700">
+                            <span className="mt-0.5 block truncate text-body text-ink-700">
                               {speciesLine(a.likely_species, " · ")}
                             </span>
                           </span>
@@ -1316,7 +1377,7 @@ export default function MobileApp() {
                 </div>
               )}
 
-              <p className="px-1 pt-1 text-center font-mono text-label leading-relaxed text-ink-500">
+              <p className="px-1 pt-1 text-center text-body leading-relaxed text-ink-700">
                 {outlook.mode !== "LIVE" && <span className="block">{t.simulated}</span>}
                 <span className="block">{t.advisory}</span>
               </p>

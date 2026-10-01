@@ -1,0 +1,94 @@
+import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import SystemPanel from "./SystemPanel";
+
+vi.mock("../api");
+
+const reading = {
+  location: { name: "Mumbai", latitude: 18.922, longitude: 72.8347, state: "Maharashtra" },
+  valid_for: "2026-10-01",
+  ocean: {
+    agent: "ocean",
+    ok: true,
+    data: {},
+    measurements: {
+      wave_height: { value: 1.5, unit: "m", label: "Wave", provenance: { source: "DEMO", timestamp: "", mode: "DEMO", confidence: 1 } },
+      sst: { value: 28.3, unit: "deg C", label: "SST", provenance: { source: "DEMO", timestamp: "", mode: "DEMO", confidence: 1 } },
+    },
+    unavailable: [],
+    source: "DEMO_STORE",
+    timestamp: "",
+    confidence: 1,
+    mode: "DEMO",
+    latency_ms: 2,
+  },
+  weather: {
+    agent: "weather",
+    ok: true,
+    data: {},
+    measurements: {
+      wind_speed: { value: 19, unit: "km/h", label: "Wind", provenance: { source: "DEMO", timestamp: "", mode: "DEMO", confidence: 1 } },
+      visibility: { value: 8, unit: "km", label: "Visibility", provenance: { source: "DEMO", timestamp: "", mode: "DEMO", confidence: 1 } },
+    },
+    unavailable: [],
+    source: "DEMO_STORE",
+    timestamp: "",
+    confidence: 1,
+    mode: "DEMO",
+    latency_ms: 3,
+  },
+};
+
+async function openPanel(mode: string) {
+  const api = vi.mocked(await import("../api"));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  api.forecast.mockResolvedValue(reading as any);
+  return render(<SystemPanel mode={mode} language="en" />);
+}
+
+afterEach(() => vi.clearAllMocks());
+
+describe("provider status follows the data edition (S1)", () => {
+  it("in DEMO the live providers stand by and the demo store is in use", async () => {
+    await openPanel("DEMO");
+    expect(await screen.findAllByText("Standby · verified")).toHaveLength(2);
+    expect(screen.getByText("In use")).toBeInTheDocument();
+    expect(screen.queryByText("Standby")).not.toBeInTheDocument();
+  });
+
+  it("in LIVE the open providers are in use and the demo store stands by", async () => {
+    await openPanel("LIVE");
+    expect(await screen.findAllByText("In use")).toHaveLength(2);
+    expect(screen.getByText("Standby")).toBeInTheDocument();
+    expect(screen.queryByText("Standby · verified")).not.toBeInTheDocument();
+  });
+});
+
+describe("the live feed (S4, S5, W3)", () => {
+  it("prints degree readings with the degree sign", async () => {
+    await openPanel("DEMO");
+    expect(await screen.findByText("28.3 °C")).toBeInTheDocument();
+    expect(screen.queryByText(/deg C/)).not.toBeInTheDocument();
+  });
+
+  it("shows the first reading once: no log table until the second tick", async () => {
+    await openPanel("DEMO");
+    await screen.findByText("28.3 °C");
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
+  it("offers a visible Hold for the 7 s rotation (WCAG 2.2.2)", async () => {
+    await openPanel("DEMO");
+    const hold = await screen.findByRole("button", { name: "Hold" });
+    expect(hold).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(hold);
+    const resume = screen.getByRole("button", { name: "Resume" });
+    expect(resume).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("explains the cache note in words, not an arrow", async () => {
+    await openPanel("DEMO");
+    expect(screen.getByText(/first read 32 s, from cache 0\.02 s/)).toBeInTheDocument();
+    expect(screen.queryByText(/32 s → 0\.02 s/)).not.toBeInTheDocument();
+  });
+});

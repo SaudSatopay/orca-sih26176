@@ -7,6 +7,7 @@ import { ERRORS } from "../i18n/errors";
 import { CREW_TEXT, L10N, PROVIDER_TEXT } from "../i18n/system";
 import { PORTS } from "../ports";
 import { chart, ink, risk } from "../tokens";
+import { measurement } from "../format";
 import { fill } from "./todayModel";
 import "./views.css";
 
@@ -37,8 +38,8 @@ type FeedRow = {
 const POLL_MS = 7000;
 
 function fmt(m?: api.Measurement | null): string {
-  if (!m || m.value == null) return "—";
-  return `${m.value} ${m.unit}`;
+  // The one format for every quantity: "deg C" prints as "°C" (S5, X5).
+  return measurement(m?.value, m?.unit);
 }
 
 /** Three signals riding a connector between two things in the pipeline. */
@@ -67,12 +68,22 @@ export default function SystemPanel({
   const [rows, setRows] = useState<FeedRow[]>([]);
   const [tick, setTick] = useState(0);
   const [scanning, setScanning] = useState(true);
+  // The visible pause for the 7 s rotation (WCAG 2.2.2): Hold stops the tick.
+  const [held, setHeld] = useState(false);
+  const heldRef = useRef(false);
+  useEffect(() => {
+    heldRef.current = held;
+  }, [held]);
+  // Seconds until the next try, shown while the feed is not answering.
+  const [retryIn, setRetryIn] = useState(POLL_MS / 1000);
   const portIdx = useRef(0);
 
-  // Cycle the coastline: one port per poll, newest reading on top.
+  // Cycle the coastline: one port per poll, newest reading on top. The tick
+  // rests while the sheet is held or the tab is hidden.
   useEffect(() => {
     let alive = true;
     const read = async () => {
+      if (heldRef.current || document.hidden) return;
       const port = PORTS[portIdx.current % PORTS.length];
       portIdx.current += 1;
       try {
@@ -94,7 +105,10 @@ export default function SystemPanel({
         setTick((n) => n + 1);
         setScanning(true);
       } catch {
-        if (alive) setScanning(false);
+        if (alive) {
+          setScanning(false);
+          setRetryIn(POLL_MS / 1000);
+        }
       }
     };
     read();
@@ -105,16 +119,30 @@ export default function SystemPanel({
     };
   }, []);
 
+  // "Next try in {n} s" counts down while the feed is not answering (S5).
+  useEffect(() => {
+    if (scanning) return;
+    const id = setInterval(() => {
+      if (heldRef.current) return;
+      setRetryIn((n) => (n <= 1 ? POLL_MS / 1000 : n - 1));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [scanning]);
+
   const latest = rows[0];
   const sourceName = (id: string) => (id === "OPEN_METEO" ? "Open-Meteo" : t.demoStore);
 
+  // Provider status follows the data edition (S1): in DEMO the live providers
+  // stand by, verified, and the demo store is the one in use; reversed in LIVE.
+  const demo = mode !== "LIVE";
   const pText = PROVIDER_TEXT[language] ?? PROVIDER_TEXT.en;
+  const liveStatus = demo ? t.standbyVerified : t.inUse;
   const providers = [
-    { name: "Open-Meteo Marine", color: risk.low, live: true, ...pText[0] },
-    { name: "Open-Meteo Forecast", color: risk.low, live: true, ...pText[1] },
+    { name: "Open-Meteo Marine", color: demo ? ink[500] : risk.low, live: !demo, ...pText[0], status: liveStatus },
+    { name: "Open-Meteo Forecast", color: demo ? ink[500] : risk.low, live: !demo, ...pText[1], status: liveStatus },
     { name: "INCOIS · IMD · MOSDAC", color: risk.moderate, live: false, ...pText[2] },
     { name: "OBIS · Map of Life", color: chart[600], live: false, ...pText[3] },
-    { name: t.demoStore, color: ink[500], live: false, ...pText[4] },
+    { name: t.demoStore, color: demo ? chart[600] : ink[500], live: demo, ...pText[4], status: demo ? t.inUse : t.standby },
   ];
 
   const crew = CREW_TEXT[language] ?? CREW_TEXT.en;
@@ -133,7 +161,7 @@ export default function SystemPanel({
           <h2 className="font-display text-headline font-bold leading-snug text-ink-900 [text-wrap:balance]">
             {t.title}
           </h2>
-          <p className="mt-1.5 max-w-[78ch] text-body leading-relaxed text-ink-700">{t.intro}</p>
+          <p className="mt-1.5 max-w-[62ch] text-body leading-relaxed text-ink-700">{t.intro}</p>
         </div>
       </section>
 
@@ -247,18 +275,18 @@ export default function SystemPanel({
                 className="mt-2 flex flex-wrap content-center gap-1.5 lg:mt-0"
                 style={{ gridColumn: i * 2 + 1, gridRow: 2 }}
               >
-                {c.agents.map((a, j) => (
+                {c.agents.map((a) => (
                   <li
                     key={a}
                     className="flex items-center gap-1.5 rounded-[2px] border bg-paper-100 px-2 py-1 font-mono text-label font-semibold text-ink-800"
                     style={{ borderColor: "var(--rule)" }}
                   >
+                    {/* Still between readings (S3): nothing runs between polls,
+                        so the chips do not ping. Only the provider in use and
+                        the feed's own dot pulse. */}
                     <span
-                      className="pulse-dot !h-[6px] !w-[6px]"
-                      // The delay must reach the ::after that carries the ping:
-                      // custom properties inherit into pseudo-elements, and a
-                      // negative delay starts each dot mid-cycle, out of phase.
-                      style={{ background: chart[500], color: chart[500], "--pulse-delay": `${-j * 0.3}s` } as CSSProperties}
+                      className="pulse-dot pulse-dot--still !h-[6px] !w-[6px]"
+                      style={{ background: chart[500], color: chart[500] }}
                       aria-hidden
                     />
                     {a}
@@ -297,12 +325,33 @@ export default function SystemPanel({
         </div>
       </section>
 
-      {/* ---------------- the live feed ---------------- */}
+      {/* ---------------- where it goes ---------------- */}
+      <section className="panel overflow-hidden">
+        <div className="hd">
+          <h3 className="label">{t.s4}</h3>
+        </div>
+        <div className="v-cells sm:grid-cols-3">
+          {[
+            { h: t.outVerdict, d: t.outVerdictD },
+            { h: t.outPlan, d: t.outPlanD },
+            { h: t.outLedger, d: t.outLedgerD },
+          ].map((x) => (
+            <div key={x.h} className="px-5 py-4">
+              <div className="flex items-center gap-2">
+                <CourseArrow size={13} className="shrink-0 text-chart-600" />
+                <h4 className="font-display text-lead font-bold text-ink-900">{x.h}</h4>
+              </div>
+              <p className="mt-1.5 text-body leading-relaxed text-ink-700">{x.d}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+      {/* ---------------- the live feed: the log, last and unnumbered ---------------- */}
       <section className="panel rule-double overflow-hidden">
         <div className="hd flex-wrap">
           <h3 className="label flex items-center gap-2.5">
             <span
-              className={`pulse-dot ${scanning ? "" : "pulse-dot--still"}`}
+              className={`pulse-dot ${scanning && !held ? "" : "pulse-dot--still"}`}
               style={{
                 background: scanning ? risk.low : risk.extreme,
                 color: scanning ? risk.low : risk.extreme,
@@ -311,8 +360,19 @@ export default function SystemPanel({
             />
             {t.reading}
           </h3>
-          <span className="font-mono text-label tabular-nums text-ink-500">
-            {t.onePort} {POLL_MS / 1000} s · {mode} {t.flipNote}
+          <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span className="font-mono text-label tabular-nums text-ink-500">
+              {t.onePort} {POLL_MS / 1000} s · {mode} {t.flipNote}
+            </span>
+            {/* the visible pause WCAG 2.2.2 asks for: the rotation can be held */}
+            <button
+              type="button"
+              onClick={() => setHeld((h) => !h)}
+              aria-pressed={held}
+              className="btn-line shrink-0 !px-2.5 !py-1 !text-label"
+            >
+              {held ? t.resume : t.hold}
+            </button>
           </span>
         </div>
 
@@ -325,7 +385,7 @@ export default function SystemPanel({
             <WarnGlyph size={16} className="mt-0.5 shrink-0 text-risk-extreme" />
             <p className="min-w-0 text-body leading-relaxed text-ink-800">
               <span className="font-display font-bold text-ink-900">{err.offlineTitle}.</span>{" "}
-              {latest ? err.offlineBody : t.unreachable}
+              {latest ? err.offlineBody : fill(t.feedRetry, { n: retryIn })}
             </p>
           </div>
         )}
@@ -375,8 +435,9 @@ export default function SystemPanel({
           )
         )}
 
-        {/* the log */}
-        {rows.length > 0 && (
+        {/* the log: earlier readings only — the first tick shows its reading
+            once, in the cells above, and the table starts at the second (S5) */}
+        {rows.length > 1 && (
           <div className="overflow-x-auto">
             <table className="w-full min-w-[720px] border-collapse font-mono text-label">
               <caption className="sr-only">{t.feedCaption}</caption>
@@ -390,7 +451,7 @@ export default function SystemPanel({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r, i) => (
+                {rows.slice(1).map((r, i) => (
                   <tr
                     key={`${r.port}-${r.at}`}
                     className={`border-b last:border-0 ${i === 0 ? "v-row-enter bg-chart-100/40" : ""}`}
@@ -430,27 +491,6 @@ export default function SystemPanel({
         </p>
       </section>
 
-      {/* ---------------- where it goes ---------------- */}
-      <section className="panel overflow-hidden">
-        <div className="hd">
-          <h3 className="label">{t.s4}</h3>
-        </div>
-        <div className="v-cells sm:grid-cols-3">
-          {[
-            { h: t.outVerdict, d: t.outVerdictD },
-            { h: t.outPlan, d: t.outPlanD },
-            { h: t.outLedger, d: t.outLedgerD },
-          ].map((x) => (
-            <div key={x.h} className="px-5 py-4">
-              <div className="flex items-center gap-2">
-                <CourseArrow size={13} className="shrink-0 text-chart-600" />
-                <h4 className="font-display text-lead font-bold text-ink-900">{x.h}</h4>
-              </div>
-              <p className="mt-1.5 text-body leading-relaxed text-ink-700">{x.d}</p>
-            </div>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }

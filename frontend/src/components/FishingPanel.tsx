@@ -1,11 +1,15 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import type { AvoidZone, FishingArea, FishingOutlook, Language } from "../types";
 import { useFirstSight } from "../firstSight";
 import { FishGlyph, SchoolGlyph, WarnGlyph } from "./glyphs";
 import { EmptySweepGlyph, NoEntryGlyph } from "./viewGlyphs";
 import { Draft, DraftSheet, OfflineNotice } from "./SheetStates";
+import RiskDial from "./RiskDial";
 import { FACTORS, RATING_WORD, T } from "../i18n/fishing";
-import { RATING_COLOR, RATING_INK } from "../risk";
+import { VERDICT } from "../i18n/riskCard";
+import { returnLabel } from "../i18n/mobile";
+import { hoursMin, int, minutesMin, waveM } from "../format";
+import { RATING_COLOR, RATING_INK, RISK_INK } from "../risk";
 import {
   CHOOSE_HARBOUR_EVENT,
   FACTOR_KEYS,
@@ -15,6 +19,7 @@ import {
   panelState,
   speciesParts,
   splitAdvice,
+  tripIsOff,
 } from "./todayModel";
 import "./views.css";
 
@@ -61,31 +66,47 @@ export default function FishingPanel({
 
   const chooseHarbour =
     onChooseHarbour ?? (() => window.dispatchEvent(new CustomEvent(CHOOSE_HARBOUR_EVENT)));
+  // A day with no trip in it: the grounds fold away and nothing plans a trip.
+  const off = tripIsOff(data);
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
       {state === "stale" && <OfflineNotice language={language} onRetry={onRetry} busy={loading} />}
-      <Advice data={data} language={language} t={t} />
+      <Advice data={data} language={language} t={t} off={off} />
       <Grounds
         data={data}
         language={language}
         t={t}
+        off={off}
         onSelectArea={onSelectArea}
         onChooseHarbour={chooseHarbour}
       />
-      <Trip data={data} t={t} />
+      {!off && <Trip data={data} t={t} />}
     </div>
   );
 }
 
 /* ------------------------------------------------------------------ advice */
 
-function Advice({ data, language, t }: { data: FishingOutlook; language: Language; t: Strings }) {
+function Advice({
+  data,
+  language,
+  t,
+  off,
+}: {
+  data: FishingOutlook;
+  language: Language;
+  t: Strings;
+  off: boolean;
+}) {
   const titleId = useId();
   const parts = splitAdvice(data);
   const severe = data.safety.category === "HIGH" || data.safety.category === "EXTREME";
   const d = data.duration;
   const words = RATING_WORD[language] ?? RATING_WORD.en;
+  // The dial counts up when this reading arrives, not on every visit.
+  const fresh = useFirstSight(`advice:${data.generated_at}`);
+  const verdictWord = (VERDICT[language] ?? VERDICT.en)[data.safety.category];
 
   // Closed areas: the backend's sentence, paired with the area's own facts.
   // If the advice could not be cut into blocks, the areas still get their rows.
@@ -94,22 +115,31 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
     : data.avoid.map((zone) => ({ text: zone.name, zone }));
 
   // A best hour is only a plan when the trip itself is on.
-  const showBest = data.best_window != null && (d ? d.feasible : !severe);
+  const showBest = data.best_window != null && !off && (d ? d.feasible : !severe);
   const figures: { k: string; v: string; note?: string; alert?: boolean }[] = [];
   if (showBest && data.best_window)
     figures.push({
       k: t.bestTime,
       v: `${hourReadout(data.best_window.from_hour)}–${hourReadout(data.best_window.to_hour)}`,
     });
-  if (d?.feasible) {
-    figures.push({ k: t.stay, v: `${d.recommended_hours} ${t.hours}` });
-    if (d.return_by)
+  if (d?.feasible && !off) {
+    figures.push({ k: t.stay, v: hoursMin(d.recommended_hours) });
+    if (d.return_by) {
+      // The day the clock time belongs to, as the phone already says it (T5).
+      const back = returnLabel(language, d.return_by, data.generated_at);
+      const note = [
+        back?.day,
+        d.return_reason_wave_m != null ? `${t.returnWhy} ${waveM(d.return_reason_wave_m)}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
       figures.push({
         k: t.returnBy,
         v: d.return_by,
-        note: d.return_reason_wave_m != null ? `${t.returnWhy} ${d.return_reason_wave_m} m` : undefined,
+        note: note || undefined,
         alert: true,
       });
+    }
   }
 
   // Sentences the figures do not already say.
@@ -136,22 +166,31 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
         </span>
       </div>
 
-      {/* the verdict leads */}
-      <div className={`px-5 pb-4 pt-4 ${severe ? "hatch-danger" : ""}`}>
-        <p
-          className={`font-display text-headline font-bold leading-[1.15] [text-wrap:balance] ${
-            severe ? "text-risk-extreme" : "text-ink-900"
-          }`}
-        >
-          {parts.verdict}
-        </p>
-        {parts.sea && <p className="mt-2 text-lead leading-snug text-ink-700">{parts.sea}</p>}
-        {parts.notices.map((line) => (
-          <p key={line} className="mt-2.5 flex items-start gap-2 text-body font-semibold leading-snug text-ink-900">
-            <WarnGlyph size={15} className="mt-0.5 shrink-0 text-risk-extreme" />
-            <span className="min-w-0">{line}</span>
+      {/* the verdict leads: dial, stamp, then the plain instruction (L1) */}
+      <div
+        className={`flex flex-wrap items-center gap-x-5 gap-y-3 px-5 pb-4 pt-4 ${severe ? "hatch-danger" : ""}`}
+        data-fresh={fresh ? "" : undefined}
+      >
+        <RiskDial score={data.safety.score} category={data.safety.category} size={96} fresh={fresh} />
+        <div className="min-w-0 flex-1 basis-[240px]">
+          <span className="stamp" style={{ color: RISK_INK[data.safety.category] }}>
+            {verdictWord}
+          </span>
+          <p
+            className={`mt-2.5 font-display text-headline font-bold leading-[1.15] [text-wrap:balance] ${
+              severe ? "text-risk-extreme" : "text-ink-900"
+            }`}
+          >
+            {parts.verdict}
           </p>
-        ))}
+          {parts.sea && <p className="mt-2 text-lead leading-snug text-ink-700">{parts.sea}</p>}
+          {parts.notices.map((line) => (
+            <p key={line} className="mt-2.5 flex items-start gap-2 text-body font-semibold leading-snug text-ink-900">
+              <WarnGlyph size={15} className="mt-0.5 shrink-0 text-risk-extreme" />
+              <span className="min-w-0">{line}</span>
+            </p>
+          ))}
+        </div>
       </div>
 
       {/* do not: drawn as the chart draws a danger area */}
@@ -161,28 +200,37 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
             <NoEntryGlyph size={13} /> {t.avoid}
           </h3>
           <ul className="mt-2.5 space-y-2">
-            {prohibitions.map(({ text, zone }, i) => (
-              <li key={`${i}-${text}`} className="v-prohibit">
-                <NoEntryGlyph size={18} className="mt-px shrink-0 text-risk-extreme" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-body font-semibold leading-snug text-ink-900">{text}</p>
-                  {zone && (
-                    <p className="mt-1 font-mono text-label leading-snug text-ink-700">
-                      {zone.window && zone.name !== text ? `${zone.name} · ` : ""}
-                      {Math.round(zone.distance_km)} km {t.away} ·{" "}
-                      {zone.window
-                        ? `${t.closedBetween} ${zone.window.replace("-", "–")}`
-                        : t.always}
-                    </p>
+            {prohibitions.map(({ text, zone }, i) => {
+              // Every closed row carries its tag: ALWAYS CLOSED, or CLOSED NOW (T6).
+              const tag = zone ? (!zone.window ? t.always : zone.active_now ? t.closedNow : null) : null;
+              return (
+                <li key={`${i}-${text}`} className="v-prohibit">
+                  <NoEntryGlyph size={18} className="mt-px shrink-0 text-risk-extreme" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-body font-semibold leading-snug text-ink-900">{text}</p>
+                    {zone && (
+                      <p className="mt-1 font-mono text-label leading-snug text-ink-700">
+                        {zone.window && zone.name !== text ? `${zone.name} · ` : ""}
+                        {int(zone.distance_km)} km {t.away}
+                        {zone.window && (
+                          <>
+                            {" · "}
+                            <span className="whitespace-nowrap">
+                              {t.closedBetween} {zone.window.replace("-", "–")}
+                            </span>
+                          </>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                  {tag && (
+                    <span className="shrink-0 self-center whitespace-nowrap border border-risk-extreme bg-paper-50 px-1.5 py-0.5 font-mono text-label font-bold uppercase tracking-[0.1em] text-risk-extreme">
+                      {tag}
+                    </span>
                   )}
-                </div>
-                {zone?.window && zone.active_now && (
-                  <span className="shrink-0 self-center border border-risk-extreme bg-paper-50 px-1.5 py-0.5 font-mono text-label font-bold uppercase tracking-[0.1em] text-risk-extreme">
-                    {t.closedNow}
-                  </span>
-                )}
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}
@@ -253,8 +301,9 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
                 <div className="mt-1 text-label font-semibold leading-tight text-ink-800">
                   {words[f.rating]}
                 </div>
-                <div className="mt-1.5 font-mono text-label leading-snug text-ink-500">
-                  {f.wave_height_m} m {t.waves}
+                {/* the trend line is reserved even on Today, so cells share baselines (T6) */}
+                <div className="mt-1.5 min-h-[2lh] font-mono text-label leading-snug text-ink-500">
+                  {waveM(f.wave_height_m)} {t.waves}
                   {f.day_offset > 0 && (
                     <>
                       <br />
@@ -262,9 +311,12 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
                     </>
                   )}
                 </div>
-                <div className="mt-1 font-mono text-label leading-snug text-ink-500">
-                  {t.bestAt} {hourReadout(f.best_hour)}
-                </div>
+                {/* a warned day offers no best hour (C4) */}
+                {!f.official_warning && (
+                  <div className="mt-1 font-mono text-label leading-snug text-ink-500">
+                    {t.bestAt} {hourReadout(f.best_hour)}
+                  </div>
+                )}
                 {f.official_warning && (
                   <div className="mt-1.5 inline-flex items-center gap-1 border border-risk-extreme bg-paper-50 px-1.5 py-0.5 text-risk-extreme">
                     <WarnGlyph size={10} />
@@ -298,34 +350,56 @@ function Grounds({
   data,
   language,
   t,
+  off,
   onSelectArea,
   onChooseHarbour,
 }: {
   data: FishingOutlook;
   language: Language;
   t: Strings;
+  /** A do-not-go day: the grounds fold away and stop selling the trip (C4). */
+  off: boolean;
   onSelectArea?: (rank: number) => void;
   onChooseHarbour: () => void;
 }) {
   const titleId = useId();
   const top = data.areas.slice(0, 3);
   const km = Math.round(data.radius_km);
+  // Folded by default on a no-go day; opened only on purpose.
+  const [opened, setOpened] = useState(false);
+  const show = !off || opened;
   // The factor meters draw when this reading arrives, not on every visit.
   const fresh = useFirstSight(`grounds:${data.generated_at}`);
 
   return (
     <section className="panel overflow-hidden" aria-labelledby={titleId} data-fresh={fresh ? "" : undefined}>
-      <div className="hd">
-        <h2 id={titleId} className="label flex items-center gap-2">
-          {t.areas}
-          <SchoolGlyph size={26} className="swim text-chart-500" />
-        </h2>
-        <span className="shrink-0 font-mono text-label tabular-nums text-ink-500">
-          {language === "en" ? `${t.within} ${km} km` : `${km} km ${t.within}`}
-        </span>
-      </div>
+      {off ? (
+        <button
+          type="button"
+          aria-expanded={opened}
+          onClick={() => setOpened((o) => !o)}
+          className="hd hatch-danger w-full cursor-pointer text-left"
+        >
+          <span id={titleId} className="label flex items-center gap-2 !text-risk-extreme">
+            <NoEntryGlyph size={13} className="shrink-0" /> {t.notToday}
+          </span>
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="v-chevron shrink-0 self-center text-risk-extreme" aria-hidden>
+            <path d="M1.5 3.5 L5 7 L8.5 3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      ) : (
+        <div className="hd">
+          <h2 id={titleId} className="label flex items-center gap-2">
+            {t.areas}
+            <SchoolGlyph size={26} className="swim text-chart-500" />
+          </h2>
+          <span className="shrink-0 font-mono text-label tabular-nums text-ink-500">
+            {language === "en" ? `${t.within} ${km} km` : `${km} km ${t.within}`}
+          </span>
+        </div>
+      )}
 
-      {top.length === 0 ? (
+      {!show ? null : top.length === 0 ? (
         <div className="flex flex-wrap items-start gap-x-4 gap-y-3 px-5 py-5">
           <EmptySweepGlyph className="shrink-0 text-chart-500" />
           <div className="min-w-0 flex-1 basis-[200px]">
@@ -343,7 +417,7 @@ function Grounds({
           <ol className="space-y-2">
             {top.map((a) => (
               <li key={a.id}>
-                <GroundCard area={a} language={language} t={t} onSelect={onSelectArea} />
+                <GroundCard area={a} language={language} t={t} muted={off} onSelect={onSelectArea} />
               </li>
             ))}
           </ol>
@@ -360,11 +434,14 @@ function GroundCard({
   area: a,
   language,
   t,
+  muted = false,
   onSelect,
 }: {
   area: FishingArea;
   language: Language;
   t: Strings;
+  /** A no-go day: no trip stamp, percentages quiet in ink (C4). */
+  muted?: boolean;
   onSelect?: (rank: number) => void;
 }) {
   const names = FACTORS[language] ?? FACTORS.en;
@@ -397,7 +474,7 @@ function GroundCard({
               <span className="ml-1 text-label">km</span>
             </span>
             <span className="font-mono text-label font-semibold text-ink-500">{a.bearing}</span>
-            {a.recommended && (
+            {a.recommended && !muted && (
               <span className="stamp !px-1.5 !py-0.5 !text-label text-risk-low">{t.bestTrip}</span>
             )}
           </span>
@@ -422,8 +499,8 @@ function GroundCard({
 
         <span className="shrink-0 text-right">
           <span
-            className="sounding block text-headline leading-none"
-            style={{ color: RATING_INK[a.rating] }}
+            className={`sounding block text-headline leading-none ${muted ? "text-ink-500" : ""}`}
+            style={muted ? undefined : { color: RATING_INK[a.rating] }}
           >
             {a.probability}
             <span className="text-body text-ink-500">%</span>
@@ -468,10 +545,10 @@ function Trip({ data, t }: { data: FishingOutlook; t: Strings }) {
   const e = data.economics;
   const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
+  // "Stay there" lives in the Advice plan; the Trip row holds the travel figures (T5).
   const time = [
-    { k: t.stay, v: `${d.recommended_hours}`, u: t.hours, hero: true },
-    { k: t.travel, v: `${d.travel_each_way_minutes}`, u: t.min, hero: false },
-    { k: t.total, v: `${d.total_trip_hours}`, u: t.hours, hero: false },
+    { k: t.travel, v: minutesMin(d.travel_each_way_minutes), u: "", hero: false },
+    { k: t.total, v: hoursMin(d.total_trip_hours), u: "", hero: false },
   ];
   const worth = e
     ? [
@@ -499,7 +576,7 @@ function Trip({ data, t }: { data: FishingOutlook; t: Strings }) {
               }`}
             >
               {x.v}
-              <span className="ml-1 text-label font-semibold text-ink-500">{x.u}</span>
+              {x.u && <span className="ml-1 text-label font-semibold text-ink-500">{x.u}</span>}
             </dd>
           </div>
         ))}
@@ -517,7 +594,8 @@ function Trip({ data, t }: { data: FishingOutlook; t: Strings }) {
           <dl className="v-figures v-figures--flush">
             {worth.map((x) => (
               <div key={x.k} className={x.hero ? "bg-risk-low/[0.07]" : ""}>
-                <dt className="label">{x.k}</dt>
+                {/* two label lines reserved: a wrapped label never drops its figure (T6) */}
+                <dt className="label min-h-[2lh]">{x.k}</dt>
                 <dd
                   className={`mt-1 font-mono text-title font-bold tabular-nums leading-none ${
                     x.hero ? "text-risk-low" : "text-ink-900"

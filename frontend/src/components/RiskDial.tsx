@@ -149,7 +149,7 @@ export default function RiskDial({
       <div className="absolute inset-0 grid place-items-center">
         <div className="text-center leading-none">
           <div
-            className="font-display text-dial font-black tabular-nums tracking-tight"
+            className="lining font-display text-dial font-black tracking-tight"
             style={{ color: RISK_INK[category] }}
           >
             {Math.max(0, value)}

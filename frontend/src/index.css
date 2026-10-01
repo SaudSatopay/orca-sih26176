@@ -1030,3 +1030,18 @@ html {
     animation: none !important;
   }
 }
+
+/* ============================================================
+   APPENDED — c3b panels builder (do not reorder; other builders
+   append their own blocks below or above this one).
+
+   X12: Fraunces defaults to old-style figures, which sit at
+   x-height and misalign in columns. Scores and totals set in the
+   display face carry lining, tabular figures; the page ground's
+   decorative depth soundings keep old-style.
+   ============================================================ */
+@layer components {
+  .lining {
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+}
