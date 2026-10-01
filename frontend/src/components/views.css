@@ -380,16 +380,25 @@ button.v-card:active {
   background: theme(colors.ink.900);
   color: theme(colors.paper.50);
 }
+/* Fingers need more room than a pointer does. */
+@media (pointer: coarse) {
+  .v-seg {
+    padding: 7px 10px;
+  }
+  .v-map-key > button {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
 .v-option {
   transition: background-color 140ms ease;
 }
 .v-option:focus-visible {
   outline-offset: -2px;
 }
-.v-quiet-btn {
-  color: theme(colors.ink.700);
-}
+.v-quiet-btn,
 .v-danger-btn {
+  border: 1px solid var(--rule-strong);
   color: theme(colors.ink.700);
 }
 @media (hover: hover) and (pointer: fine) {
@@ -477,7 +486,7 @@ button.v-card:active {
 .v-chevron {
   transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
 }
-[aria-expanded="true"] > .v-chevron {
+[aria-expanded="true"] .v-chevron {
   transform: rotate(180deg);
 }
 /* On a narrow chart an open key takes the foot of the sheet: the drag hint
@@ -486,6 +495,12 @@ button.v-card:active {
   [data-key="open"] .v-map-hint {
     display: none;
   }
+}
+
+/* The tour panel takes focus when it opens so a screen reader announces it;
+   it is a container, not a control, so it wears no ring of its own. */
+.v-tour:focus-visible {
+  outline: none;
 }
 
 /* The tour's step timer: a bar that fills by transform, not by width. */
