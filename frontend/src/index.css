@@ -374,9 +374,21 @@ main:focus-visible {
 .sea-drift:has(> i) {
   background-image: none;
 }
+/* The phone keeps the static shell's own sea (.shell-sea in index.html) for the
+   life of the page. Once the document is marked as a phone, its three painted
+   backgrounds stand down and the same three transform layers take over, so the
+   compositor moves the water and nothing repaints. */
+html.phone .shell-sea {
+  overflow: hidden;
+  contain: strict;
+  background-image: none;
+}
 .sea-drift::before,
 .sea-drift::after,
-.sea-drift > i {
+.sea-drift > i,
+html.phone .shell-sea::before,
+html.phone .shell-sea::after,
+html.phone .shell-sea > i {
   content: "";
   position: absolute;
   top: 0;
@@ -385,21 +397,24 @@ main:focus-visible {
   background-position: bottom left;
   will-change: transform;
 }
-.sea-drift::before {
+.sea-drift::before,
+html.phone .shell-sea::before {
   left: 0;
   right: -280px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='70' viewBox='0 0 280 70'%3E%3Cpath d='M0 34 Q35 14 70 34 T140 34 T210 34 T280 34 L280 70 L0 70 Z' fill='%232A7391' fill-opacity='0.10'/%3E%3C/svg%3E");
   background-size: 280px 70px;
   animation: seadrift-a 13s linear infinite;
 }
-.sea-drift::after {
+.sea-drift::after,
+html.phone .shell-sea::after {
   left: -340px;
   right: 0;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='84' viewBox='0 0 340 84'%3E%3Cpath d='M0 40 Q42 18 85 40 T170 40 T255 40 T340 40 L340 84 L0 84 Z' fill='%232A7391' fill-opacity='0.07'/%3E%3C/svg%3E");
   background-size: 340px 84px;
   animation: seadrift-b 21s linear infinite;
 }
-.sea-drift > i {
+.sea-drift > i,
+html.phone .shell-sea > i {
   left: 0;
   right: -420px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='100' viewBox='0 0 420 100'%3E%3Cpath d='M0 46 Q52 24 105 46 T210 46 T315 46 T420 46 L420 100 L0 100 Z' fill='%231E5F7A' fill-opacity='0.05'/%3E%3C/svg%3E");
