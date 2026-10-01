@@ -3,6 +3,9 @@ import { colors, fontSize } from "./src/tokens.ts";
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  // Every `hover:` utility sits behind `@media (hover: hover) and (pointer: fine)`:
+  // a finger never leaves a control stuck in its hover state.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       // "Living nautical chart": warm chart paper, marine ink, shallow-water

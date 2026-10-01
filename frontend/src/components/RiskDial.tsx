@@ -12,10 +12,13 @@ export default function RiskDial({
   score,
   category,
   size = 138,
+  label,
 }: {
   score: number;
   category: RiskCategory;
   size?: number;
+  /** The band in the reader's language, for assistive tech; defaults to the category. */
+  label?: string;
 }) {
   const [shown, setShown] = useState(0);
   const color = RISK_COLOR[category];
@@ -85,9 +88,9 @@ export default function RiskDial({
       style={{ width: size, height: size }}
       // The count-up is decoration; assistive tech gets the final reading at once.
       role="img"
-      aria-label={`${score} / 100 · ${category}`}
+      aria-label={`${score} / 100 · ${label ?? category}`}
     >
-      <svg width={size} height={size}>
+      <svg width={size} height={size} aria-hidden>
         {ticks.map((tk, i) => (
           <line
             key={i}

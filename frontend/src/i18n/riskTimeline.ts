@@ -8,6 +8,10 @@ export const L: Record<Language, Record<string, string>> = {
     none: "No low-risk window in the next 24 hours",
     now: "now",
     loading: "Reading the next 24 hours…",
+    wave: "wave",
+    wind: "wind",
+    warning: "official warning",
+    chart: "Risk score for each of the next 24 hours. Highest: {peak} out of 100 at {hour}:00.",
   },
   hi: {
     title: "कब जाना सुरक्षित है?",
@@ -16,6 +20,10 @@ export const L: Record<Language, Record<string, string>> = {
     none: "अगले 24 घंटों में कोई सुरक्षित समय नहीं",
     now: "अभी",
     loading: "अगले 24 घंटे पढ़ रहे हैं…",
+    wave: "लहर",
+    wind: "हवा",
+    warning: "आधिकारिक चेतावनी",
+    chart: "अगले 24 घंटों में हर घंटे का जोखिम स्कोर। सबसे अधिक: {hour}:00 बजे 100 में से {peak}।",
   },
   mr: {
     title: "कधी जाणे सुरक्षित आहे?",
@@ -24,5 +32,9 @@ export const L: Record<Language, Record<string, string>> = {
     none: "पुढील २४ तासांत सुरक्षित वेळ नाही",
     now: "आत्ता",
     loading: "पुढील २४ तास वाचत आहे…",
+    wave: "लाट",
+    wind: "वारा",
+    warning: "अधिकृत इशारा",
+    chart: "पुढील २४ तासांतील प्रत्येक तासाचा धोका गुण. सर्वाधिक: {hour}:00 वाजता 100 पैकी {peak}.",
   },
 };

@@ -3,6 +3,7 @@ import * as api from "../api";
 import type { Language, Location, TimelinePoint } from "../types";
 import { RISK_BANDS, RISK_COLOR } from "../risk";
 import { L } from "../i18n/riskTimeline";
+import { CATEGORY } from "../i18n/riskCard";
 import { chart, ink, paper, risk, typePx } from "../tokens";
 
 /** Longest run of hours at or below `limit`, returned as [startHour, endHour]. */
@@ -35,6 +36,7 @@ export default function RiskTimeline({
     null,
   );
   const t = L[language] ?? L.en;
+  const band = CATEGORY[language] ?? CATEGORY.en;
   const lat = location?.latitude;
   const lon = location?.longitude;
   const points = loaded && loaded.lat === lat && loaded.lon === lon ? loaded.points : null;
@@ -54,7 +56,13 @@ export default function RiskTimeline({
   const window = useMemo(() => (points ? bestWindow(points) : null), [points]);
 
   if (!location) return null;
-  if (!points) return <div className="panel p-5 text-prose leading-5 italic text-ink-400">{t.loading}</div>;
+  if (!points)
+    return (
+      <div className="panel flex items-center gap-3 p-5 text-prose leading-5 text-ink-500" role="status">
+        <span className="wave-rule w-12 shrink-0" aria-hidden />
+        {t.loading}
+      </div>
+    );
   if (!points.length) return null;
 
   const W = 720;
@@ -74,11 +82,11 @@ export default function RiskTimeline({
   const peak = points.reduce((a, b) => (b.score > a.score ? b : a), points[0]);
 
   return (
-    <div className="panel overflow-hidden">
-      <div className="hd">
-        <div>
-          <h3 className="font-display text-lead font-bold text-ink-900">{t.title}</h3>
-          <p className="mt-0.5 text-readout text-ink-400">{t.sub}</p>
+    <section className="panel overflow-hidden">
+      <div className="hd !items-center">
+        <div className="min-w-0">
+          <h2 className="font-display text-lead font-bold text-ink-900">{t.title}</h2>
+          <p className="mt-0.5 text-readout text-ink-500">{t.sub}</p>
         </div>
         {window ? (
           <span className="shrink-0 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-2.5 py-1 font-mono text-label font-bold tabular-nums text-risk-low">
@@ -93,7 +101,15 @@ export default function RiskTimeline({
       </div>
 
       <div className="px-3 pb-3 pt-2">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 150 }}>
+        <svg
+          viewBox={`0 0 ${W} ${H}`}
+          className="w-full"
+          style={{ height: 150 }}
+          role="img"
+          aria-label={t.chart
+            .replace("{peak}", String(peak.score))
+            .replace("{hour}", String(peak.hour).padStart(2, "0"))}
+        >
           <defs>
             <linearGradient id="riskArea" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={chart[500]} stopOpacity="0.22" />
@@ -174,10 +190,10 @@ export default function RiskTimeline({
               strokeWidth={p.warning ? 1.4 : 0}
             >
               <title>
-                {String(p.hour).padStart(2, "0")}:00 — {p.score}/100 {p.category}
-                {p.wave_height_m != null ? ` · wave ${p.wave_height_m} m` : ""}
-                {p.wind_speed_kmh != null ? ` · wind ${p.wind_speed_kmh} km/h` : ""}
-                {p.warning ? " · official warning" : ""}
+                {String(p.hour).padStart(2, "0")}:00 — {p.score}/100 {band[p.category] ?? p.category}
+                {p.wave_height_m != null ? ` · ${t.wave} ${p.wave_height_m} m` : ""}
+                {p.wind_speed_kmh != null ? ` · ${t.wind} ${p.wind_speed_kmh} km/h` : ""}
+                {p.warning ? ` · ${t.warning}` : ""}
               </title>
             </circle>
           ))}
@@ -235,6 +251,6 @@ export default function RiskTimeline({
           )}
         </svg>
       </div>
-    </div>
+    </section>
   );
 }

@@ -20,6 +20,35 @@
   --rule-strong: theme(colors.rule.strong);
   --rule-faint: theme(colors.rule.faint);
   --chart-teal: theme(colors.chart.500);
+
+  /* The house curves, in one place. Entrances and hovers leave fast and settle
+     (ease-out); things that move across the sheet accelerate and brake
+     (ease-in-out). Presses answer in --press. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --press: 120ms;
+  --hover: 180ms;
+
+  /* The sheet itself: graticule grid, aged edges, and the sea rising from
+     the foot of the sheet — the page always stands in shallow water. */
+  --sheet-ground:
+    repeating-linear-gradient(
+      90deg,
+      theme(colors.chart.500 / 6%) 0 1px,
+      transparent 1px 130px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      theme(colors.chart.500 / 6%) 0 1px,
+      transparent 1px 130px
+    ),
+    radial-gradient(130% 100% at 50% -10%, transparent 55%, theme(colors.paper.400 / 24%) 100%),
+    linear-gradient(
+      0deg,
+      theme(colors.chart.500 / 16%),
+      theme(colors.chart.500 / 5%) 32%,
+      transparent 60%
+    );
 }
 
 html {
@@ -37,27 +66,22 @@ body {
   color: theme(colors.ink.700);
   font-family: "Archivo Variable", "Segoe UI", "Nirmala UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  /* The sheet itself: graticule grid, aged edges, and the sea rising from
-     the foot of the sheet — the page always stands in shallow water. */
-  background:
-    repeating-linear-gradient(
-      90deg,
-      theme(colors.chart.500 / 6%) 0 1px,
-      transparent 1px 130px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      theme(colors.chart.500 / 6%) 0 1px,
-      transparent 1px 130px
-    ),
-    radial-gradient(130% 100% at 50% -10%, transparent 55%, theme(colors.paper.400 / 24%) 100%),
-    linear-gradient(
-      0deg,
-      theme(colors.chart.500 / 16%),
-      theme(colors.chart.500 / 5%) 32%,
-      transparent 60%
-    ),
-    var(--paper);
+  caret-color: var(--chart-teal);
+  background: var(--sheet-ground), var(--paper);
+}
+
+/* The console scrolls as one long sheet. Its ground is a fixed layer (see
+   .sheet-ground) so the graticule and the rising sea stay with the viewport
+   instead of ending after the first screen; the body keeps plain paper. */
+:root[data-surface="console"] body {
+  background: var(--paper);
+}
+.sheet-ground {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background: var(--sheet-ground);
 }
 
 /* Bathymetric contours — a surveyed seamount, lower left of the sheet. */
@@ -83,12 +107,61 @@ body::after {
   z-index: 2000;
   pointer-events: none;
   opacity: 0.045;
+  /* Its own compositor layer: rastered once, then only composited, so paint
+     underneath never touches the grain. */
+  transform: translateZ(0);
+  contain: strict;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
 #root {
   position: relative;
   z-index: 1;
+}
+
+/* The ambient loops are polite: all of them stop while the tab is hidden, and
+   each stops while it is off-screen (src/ambient.ts sets both marks). */
+:root[data-ambient="paused"] *,
+:root[data-ambient="paused"] *::before,
+:root[data-ambient="paused"] *::after,
+[data-offscreen],
+[data-offscreen]::before,
+[data-offscreen]::after,
+[data-offscreen] *,
+[data-offscreen] *::before,
+[data-offscreen] *::after {
+  animation-play-state: paused !important;
+}
+
+/* Devanagari is not letterspaced: wide tracking pulls its conjuncts and
+   matras apart. Labels, tabs, buttons and stamps drop to a hair of tracking
+   when the sheet is in Hindi or Marathi (<html lang> follows the language). */
+:lang(hi) :is(.label, .tab, .btn-ink, .btn-line, .stamp, [class*="tracking-["]),
+:lang(mr) :is(.label, .tab, .btn-ink, .btn-line, .stamp, [class*="tracking-["]) {
+  letter-spacing: 0.02em !important;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+p {
+  text-wrap: pretty;
+}
+
+/* No double-tap zoom delay on anything pressable. */
+button,
+a,
+[role="button"],
+input {
+  touch-action: manipulation;
+}
+
+/* The skip link lands on the sheet; the ring sits inside it so the sheet's
+   own edge is not doubled. */
+main:focus-visible {
+  outline-offset: 6px;
 }
 
 ::selection {
@@ -157,25 +230,27 @@ body::after {
     transform: rotate(2deg);
   }
 }
-/* Waterlines crawl sideways, one tile-width per loop so they never jump. */
+/* Waterlines, swell and schools all travel by transform on a layer one tile
+   wider than its box: the compositor moves them and nothing repaints. Each
+   loop covers exactly one tile, so it never jumps. */
 @keyframes wavecrawl {
   to {
-    background-position-x: -14px;
+    transform: translate3d(-14px, 0, 0);
   }
 }
 @keyframes seadrift-a {
   to {
-    background-position-x: -280px;
+    transform: translate3d(-280px, 0, 0);
   }
 }
 @keyframes seadrift-b {
   to {
-    background-position-x: 340px;
+    transform: translate3d(340px, 0, 0);
   }
 }
 @keyframes seadrift-c {
   to {
-    background-position-x: -420px;
+    transform: translate3d(-420px, 0, 0);
   }
 }
 /* Bars draw themselves in. Deliberately NO fill-mode: if animations never
@@ -194,7 +269,7 @@ body::after {
 
 .grow-x {
   transform-origin: left center;
-  animation: growx 0.9s cubic-bezier(0.25, 0.8, 0.3, 1);
+  animation: growx 0.9s var(--ease-out);
 }
 
 /* Fish idle at station against the current: a small forward dart, drift back. */
@@ -219,7 +294,7 @@ body::after {
 /* Schools crossing the foot of the page, upstream of the drifting swell. */
 @keyframes schoolrun {
   to {
-    background-position-x: 620px;
+    transform: translate3d(620px, 0, 0);
   }
 }
 .fish-drift {
@@ -229,9 +304,17 @@ body::after {
   z-index: -1;
   pointer-events: none;
   opacity: 0.6;
+  overflow: hidden;
+  contain: strict;
+}
+.fish-drift::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 -620px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='620' height='90' viewBox='0 0 620 90' fill='%231E5F7A'%3E%3Cg opacity='0.35'%3E%3Cpath d='M40 30 C43 26 48 25.5 52 28.8 L58 26 C57 27.3 56.5 28.6 56.5 30 C56.5 31.4 57 32.7 58 34 L52 31.2 C48 34.5 43 34 40 30 Z'/%3E%3Cpath d='M70 44 C73 40 78 39.5 82 42.8 L88 40 C87 41.3 86.5 42.6 86.5 44 C86.5 45.4 87 46.7 88 48 L82 45.2 C78 48.5 73 48 70 44 Z'/%3E%3Cpath d='M52 60 C55 56 60 55.5 64 58.8 L70 56 C69 57.3 68.5 58.6 68.5 60 C68.5 61.4 69 62.7 70 64 L64 61.2 C60 64.5 55 64 52 60 Z'/%3E%3C/g%3E%3Cg opacity='0.22' transform='translate(330 12)'%3E%3Cpath d='M0 18 C4 13 10 12.5 15 16.5 L23 13 C21.7 14.7 21 16.3 21 18 C21 19.7 21.7 21.3 23 23 L15 19.5 C10 23.5 4 23 0 18 Z'/%3E%3Cpath d='M38 34 C42 29 48 28.5 53 32.5 L61 29 C59.7 30.7 59 32.3 59 34 C59 35.7 59.7 37.3 61 39 L53 35.5 C48 39.5 42 39 38 34 Z'/%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat-x;
   background-size: 620px 90px;
+  will-change: transform;
   animation: schoolrun 46s linear infinite;
 }
 
@@ -338,30 +421,43 @@ body::after {
   height: 150px;
   z-index: -1;
   pointer-events: none;
+  overflow: hidden;
+  contain: strict;
+  /* The farthest swell. It stands still unless the element carries an <i>
+     to move it (the console does). */
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='100' viewBox='0 0 420 100'%3E%3Cpath d='M0 46 Q52 24 105 46 T210 46 T315 46 T420 46 L420 100 L0 100 Z' fill='%231E5F7A' fill-opacity='0.05'/%3E%3C/svg%3E") repeat-x bottom left / 420px 100px;
 }
-.sea-drift,
+.sea-drift:has(> i) {
+  background-image: none;
+}
 .sea-drift::before,
-.sea-drift::after {
+.sea-drift::after,
+.sea-drift > i {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
   background-repeat: repeat-x;
   background-position: bottom left;
+  will-change: transform;
 }
-.sea-drift {
+.sea-drift::before {
+  left: 0;
+  right: -280px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='70' viewBox='0 0 280 70'%3E%3Cpath d='M0 34 Q35 14 70 34 T140 34 T210 34 T280 34 L280 70 L0 70 Z' fill='%232A7391' fill-opacity='0.10'/%3E%3C/svg%3E");
   background-size: 280px 70px;
   animation: seadrift-a 13s linear infinite;
 }
-.sea-drift::before,
 .sea-drift::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-}
-.sea-drift::before {
+  left: -340px;
+  right: 0;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='84' viewBox='0 0 340 84'%3E%3Cpath d='M0 40 Q42 18 85 40 T170 40 T255 40 T340 40 L340 84 L0 84 Z' fill='%232A7391' fill-opacity='0.07'/%3E%3C/svg%3E");
   background-size: 340px 84px;
   animation: seadrift-b 21s linear infinite;
 }
-.sea-drift::after {
+.sea-drift > i {
+  left: 0;
+  right: -420px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='100' viewBox='0 0 420 100'%3E%3Cpath d='M0 46 Q52 24 105 46 T210 46 T315 46 T420 46 L420 100 L0 100 Z' fill='%231E5F7A' fill-opacity='0.05'/%3E%3C/svg%3E");
   background-size: 420px 100px;
   animation: seadrift-c 31s linear infinite;
@@ -392,82 +488,142 @@ body::after {
     background: linear-gradient(180deg, theme(colors.chart.500 / 6%), theme(colors.chart.500 / 1.5%));
   }
 
-  /* Interactive sheets lift off the table slightly. */
+  /* Interactive sheets lift off the table slightly — for a pointer that can
+     hover; a finger gets the pressed state only. */
   .lift {
-    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+    transition:
+      transform var(--hover) var(--ease-out),
+      box-shadow var(--hover) var(--ease-out),
+      border-color var(--hover) ease;
   }
-  .lift:hover {
-    transform: translateY(-3px);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      0 3px 6px theme(colors.ink.900 / 10%),
-      0 22px 40px -22px theme(colors.ink.900 / 45%);
+  @media (hover: hover) and (pointer: fine) {
+    .lift:hover {
+      transform: translateY(-3px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.55),
+        0 3px 6px theme(colors.ink.900 / 10%),
+        0 22px 40px -22px theme(colors.ink.900 / 45%);
+    }
+    .lift.rule-double:hover {
+      border-top-color: var(--chart-teal);
+    }
   }
-  .lift.rule-double:hover {
-    border-top-color: var(--chart-teal);
+  .lift:active {
+    transform: translateY(0) scale(0.99);
+    transition-duration: var(--press);
   }
 
   .label {
     @apply font-mono text-label font-semibold uppercase tracking-[0.16em] text-ink-400;
   }
 
-  /* ------------------------------------------------ controls */
+  /* ------------------------------------------------ controls
+     Every control answers three ways: hover (fine pointers only), the dashed
+     chart-teal focus ring (global, never removed), and a press that lands in
+     --press. Disabled controls do none of it. */
   .btn-ink {
     @apply inline-flex items-center gap-2 rounded-[2px] bg-ink-900 px-4 py-2 font-mono text-readout font-bold uppercase tracking-[0.12em] text-paper-50;
-    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .btn-ink:hover:not(:disabled) {
-    @apply bg-ink-700;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px -6px theme(colors.ink.900 / 50%);
-  }
-  .btn-ink:active {
-    transform: translateY(1px);
-    box-shadow: none;
+    transition:
+      background-color var(--hover) ease,
+      transform var(--hover) var(--ease-out),
+      box-shadow var(--hover) var(--ease-out);
   }
   .btn-line {
     @apply inline-flex items-center gap-2 rounded-[2px] border px-3.5 py-2 font-mono text-readout font-bold uppercase tracking-[0.1em] text-ink-700;
     border-color: var(--rule-strong);
     background: transparent;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease,
-      transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .btn-line:hover:not(:disabled) {
-    @apply bg-ink-900 text-paper-50;
-    border-color: var(--ink);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 14px -6px theme(colors.ink.900 / 45%);
-  }
-  .btn-line:active {
-    transform: translateY(1px);
-    box-shadow: none;
+    transition:
+      background-color var(--hover) ease,
+      color var(--hover) ease,
+      border-color var(--hover) ease,
+      transform var(--hover) var(--ease-out),
+      box-shadow var(--hover) var(--ease-out);
   }
   .btn-square {
-    @apply grid h-9 w-9 shrink-0 place-items-center rounded-[2px] border text-ink-700 transition;
+    @apply grid h-9 w-9 shrink-0 place-items-center rounded-[2px] border text-ink-700;
     border-color: var(--rule-strong);
+    transition:
+      background-color var(--hover) ease,
+      color var(--hover) ease,
+      border-color var(--hover) ease,
+      transform var(--hover) var(--ease-out);
   }
-  .btn-square:hover:not(:disabled) {
-    @apply bg-ink-900 text-paper-50;
-    border-color: var(--ink);
-  }
-
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-[2px] border bg-paper-50 px-2.5 py-1.5 text-small font-medium text-ink-700;
     border-color: var(--rule);
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease,
-      transform 0.2s ease;
+    transition:
+      background-color var(--hover) ease,
+      color var(--hover) ease,
+      border-color var(--hover) ease,
+      transform var(--hover) var(--ease-out);
   }
-  .chip:hover:not(:disabled) {
-    @apply bg-ink-900 text-paper-50;
-    border-color: var(--ink);
-    transform: translateY(-1px);
+  @media (hover: hover) and (pointer: fine) {
+    .btn-ink:hover:not(:disabled) {
+      @apply bg-ink-700;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px -6px theme(colors.ink.900 / 50%);
+    }
+    .btn-line:hover:not(:disabled) {
+      @apply bg-ink-900 text-paper-50;
+      border-color: var(--ink);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px -6px theme(colors.ink.900 / 45%);
+    }
+    .btn-square:hover:not(:disabled) {
+      @apply bg-ink-900 text-paper-50;
+      border-color: var(--ink);
+    }
+    .chip:hover:not(:disabled) {
+      @apply bg-ink-900 text-paper-50;
+      border-color: var(--ink);
+      transform: translateY(-1px);
+    }
+  }
+  .btn-ink:active:not(:disabled),
+  .btn-line:active:not(:disabled),
+  .btn-square:active:not(:disabled),
+  .chip:active:not(:disabled),
+  .press:active:not(:disabled) {
+    transform: scale(0.97);
+    box-shadow: none;
+    transition-duration: var(--press);
+  }
+  .btn-ink:disabled,
+  .btn-line:disabled,
+  .btn-square:disabled,
+  .chip:disabled {
+    cursor: not-allowed;
+  }
+
+  /* A plain pressable: anything that is a button but not one of the above. */
+  .press {
+    transition:
+      background-color var(--hover) ease,
+      color var(--hover) ease,
+      border-color var(--hover) ease,
+      transform var(--hover) var(--ease-out);
+  }
+
+  /* A cell of the title block that can be pressed: washes on hover, dips on
+     press. */
+  .cell-press {
+    transition: background-color var(--hover) ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .cell-press:hover:not(:disabled) {
+      background-color: theme(colors.paper.150);
+    }
+  }
+  .cell-press:active:not(:disabled) {
+    background-color: theme(colors.paper.200);
+    transition-duration: var(--press);
   }
 
   /* Folio tabs: the underline draws itself from the left; hovering an
      inactive tab previews it in chart teal. */
   .tab {
-    @apply relative px-1 pb-2.5 pt-1 font-mono text-readout font-bold uppercase tracking-[0.14em] text-ink-400;
-    transition: color 0.2s ease;
+    @apply relative shrink-0 px-1 pb-2.5 pt-1 font-mono text-readout font-bold uppercase tracking-[0.14em] text-ink-400;
+    transition: color var(--hover) ease;
   }
   .tab::after {
     content: "";
@@ -477,14 +633,21 @@ body::after {
     background: var(--ink);
     transform: scaleX(0);
     transform-origin: left center;
-    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.3, 1), background-color 0.2s ease;
+    transition:
+      transform 0.28s var(--ease-out),
+      background-color var(--hover) ease;
   }
-  .tab:hover {
-    @apply text-ink-700;
+  @media (hover: hover) and (pointer: fine) {
+    .tab:hover {
+      @apply text-ink-700;
+    }
+    .tab:not(.tab-on):hover::after {
+      transform: scaleX(1);
+      background: var(--chart-teal);
+    }
   }
-  .tab:not(.tab-on):hover::after {
-    transform: scaleX(1);
-    background: var(--chart-teal);
+  .tab:active {
+    @apply text-ink-900;
   }
   .tab-on {
     @apply text-ink-900;
@@ -493,15 +656,145 @@ body::after {
     transform: scaleX(1);
   }
 
+  /* Fields keep the global dashed focus ring: a keyboard user must see where
+     they are typing. The border darkens as well. */
   .field {
-    @apply w-full rounded-[2px] border px-3.5 py-2.5 text-body text-ink-800 outline-none transition placeholder:text-ink-400;
+    @apply w-full rounded-[2px] border px-3.5 py-2.5 text-body text-ink-800 placeholder:text-ink-400;
     border-color: var(--rule);
     background: var(--paper-bright);
+    transition:
+      border-color var(--hover) ease,
+      box-shadow var(--hover) ease;
   }
   .field:focus {
     border-color: var(--rule-strong);
     box-shadow: 0 0 0 1px var(--rule-strong);
-    outline: none;
+  }
+  .field:focus-visible {
+    outline: 2px dashed var(--chart-teal);
+    outline-offset: 2px;
+  }
+
+  /* The skip link: off the sheet until a keyboard reaches it. */
+  .skip-link {
+    @apply inline-flex items-center rounded-[2px] bg-ink-900 px-4 py-2 font-mono text-readout font-bold uppercase tracking-[0.12em] text-paper-50;
+    position: absolute;
+    left: 1rem;
+    top: 0.5rem;
+    z-index: 3000;
+    transform: translateY(-200%);
+  }
+  .skip-link:focus-visible {
+    transform: translateY(0);
+  }
+
+  /* ------------------------------------------------ the Ask sheet
+     Two columns from 1024 px: the conversation holds the left, the answer
+     runs down the right, and the whole sheet scrolls as one page. Below
+     that everything stacks in one column with the verdict first: the answer
+     column dissolves (display: contents) so the verdict can lead. */
+  .ask-sheet {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .ask-answer {
+    display: contents;
+  }
+  .ask-sheet [data-area="verdict"] {
+    order: -1;
+  }
+  @media (min-width: 1024px) {
+    .ask-sheet {
+      display: grid;
+      grid-template-columns: clamp(320px, 30vw, 420px) minmax(0, 1fr);
+      align-items: start;
+    }
+    .ask-answer {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 0;
+    }
+    .ask-sheet [data-area="verdict"] {
+      order: 0;
+    }
+  }
+
+  /* The verdict panel answers to its own width, not the window's: the ranked
+     reasons sit beside the verdict when there is room for both. */
+  .verdict {
+    container-type: inline-size;
+  }
+  .verdict-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .verdict-why {
+    border-top: 1px solid var(--rule-faint);
+  }
+  @container (min-width: 660px) {
+    .verdict-body {
+      grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+    }
+    .verdict-why {
+      border-top: 0;
+      border-left: 1px solid var(--rule-faint);
+    }
+  }
+
+  /* One instrument bank: six readings behind hairlines. Three across when
+     the bank is narrow, six when it has the room; the 1px gaps show the rule
+     colour laid under the cells, so the dividers are right at any count. */
+  .conditions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    background-color: theme(colors.ink.900 / 12%);
+  }
+  .conditions > * {
+    background-color: var(--paper-bright);
+  }
+  .conditions > [data-accent] {
+    background-image: linear-gradient(theme(colors.chart.100 / 40%), theme(colors.chart.100 / 40%));
+  }
+  @media (min-width: 1100px) {
+    .conditions {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
+  }
+
+  /* The scenario deck and the crew manifest answer to their own width too. */
+  .deck,
+  .crew {
+    container-type: inline-size;
+  }
+  .deck-grid,
+  .crew-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .deck-grid > * + *,
+  .crew-grid > * + * {
+    border-top: 1px solid var(--rule-faint);
+  }
+  @container (min-width: 900px) {
+    .deck-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+    .deck-grid > * + * {
+      border-top: 0;
+      border-left: 1px solid var(--rule-faint);
+    }
+  }
+  @container (min-width: 560px) {
+    .crew-grid {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .crew-grid > * + * {
+      border-top: 0;
+      border-left: 1px solid var(--rule-faint);
+    }
   }
 
   /* ------------------------------------------------ chart language */
@@ -534,9 +827,15 @@ body::after {
 
   /* Sea-surface symbol, used as a section divider — and it flows. */
   .wave-rule {
+    position: relative;
     height: 7px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='7'%3E%3Cpath d='M0 5 Q3.5 1 7 5 T14 5' fill='none' stroke='%232A7391' stroke-opacity='0.55' stroke-width='1'/%3E%3C/svg%3E")
-      repeat-x center;
+    overflow: hidden;
+  }
+  .wave-rule::before {
+    content: "";
+    position: absolute;
+    inset: 0 -14px 0 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='7'%3E%3Cpath d='M0 5 Q3.5 1 7 5 T14 5' fill='none' stroke='%232A7391' stroke-opacity='0.55' stroke-width='1'/%3E%3C/svg%3E") repeat-x left center;
     animation: wavecrawl 2.6s linear infinite;
   }
 
@@ -549,8 +848,10 @@ body::after {
     opacity: 0;
     pointer-events: none;
   }
-  .group:hover .badge-ping {
-    animation: ping2 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  @media (hover: hover) and (pointer: fine) {
+    .group:hover .badge-ping {
+      animation: ping2 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
   }
 
   /* The map is presented as a chart sheet: paper margin, tick marks,
@@ -631,8 +932,19 @@ body::after {
   color: theme(colors.ink.700) !important;
   border-color: var(--rule) !important;
 }
-.leaflet-bar a:hover {
-  background: var(--ink) !important;
+.leaflet-bar a {
+  transition:
+    background-color var(--hover) ease,
+    color var(--hover) ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .leaflet-bar a:hover {
+    background: var(--ink) !important;
+    color: var(--paper-bright) !important;
+  }
+}
+.leaflet-bar a:active {
+  background: theme(colors.ink.700) !important;
   color: var(--paper-bright) !important;
 }
 
@@ -695,13 +1007,23 @@ path.radius-drift {
   transform-origin: 50% 60%;
 }
 .leaflet-marker-icon .buoy {
-  transition: transform 0.22s ease;
+  transition: transform var(--hover) var(--ease-out);
 }
-.leaflet-marker-icon:hover .buoy {
-  transform: scale(1.12);
+@media (hover: hover) and (pointer: fine) {
+  .leaflet-marker-icon:hover .buoy {
+    transform: scale(1.12);
+  }
+}
+
+/* The one view entrance: a short rise, transform only, on the house curve. */
+.animate-rise {
+  animation-timing-function: var(--ease-out);
 }
 
 /* ---- scrollbars ---- */
+html {
+  scrollbar-color: theme(colors.chart.500 / 45%) transparent;
+}
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;

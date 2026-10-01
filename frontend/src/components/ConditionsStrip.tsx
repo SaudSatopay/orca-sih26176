@@ -26,21 +26,22 @@ export default function ConditionsStrip({
   ];
 
   return (
-    <div className="panel grid grid-cols-3 sm:grid-cols-6">
-      {tiles.map((tile, i) => (
+    <dl className="conditions panel overflow-hidden">
+      {tiles.map((tile) => (
         <div
           key={tile.label}
-          className={`min-w-0 px-3 py-2.5 ${i > 0 ? "border-l" : ""} ${
-            tile.accent ? "bg-chart-100/40" : ""
-          }`}
-          style={{ borderColor: "var(--rule-faint)" }}
+          className="min-w-0 px-3 py-2.5"
+          data-accent={tile.accent ? "" : undefined}
         >
-          <div className="label truncate !text-micro">{tile.label}</div>
-          <div className="mt-1 truncate font-mono text-prose font-bold tabular-nums leading-none text-ink-900">
+          <dt className="label truncate !text-micro">{tile.label}</dt>
+          <dd
+            className="mt-1 truncate font-mono text-prose font-bold tabular-nums leading-none text-ink-900"
+            title={tile.value ?? undefined}
+          >
             {tile.value ?? "—"}
-          </div>
+          </dd>
         </div>
       ))}
-    </div>
+    </dl>
   );
 }

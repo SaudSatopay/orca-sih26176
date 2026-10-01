@@ -6,9 +6,15 @@ import type { ChatResponse } from "./types";
 // The chart needs a real layout engine; the conversation does not need the chart.
 vi.mock("./components/MarineMap", () => ({ default: () => null }));
 vi.mock("./api");
+// The first test imports the whole console cold; on a busy machine that alone
+// can take several seconds.
+vi.setConfig({ testTimeout: 20_000 });
 
 const QUESTION = "मी उद्या सकाळी ६ वाजता मुंबईजवळ मासेमारीला जाऊ शकतो का?";
-const ANSWER = "धोका जास्त आहे — जाऊ नका. जोखीम 70/100.";
+// The conversation sets the first sentence as the lead and the rest as prose.
+const LEAD = "धोका जास्त आहे — जाऊ नका.";
+const REST = "जोखीम 70/100.";
+const ANSWER = `${LEAD} ${REST}`;
 
 const response = {
   answer: ANSWER,
@@ -58,14 +64,15 @@ describe("a rehearsed scenario opened by deep link", () => {
   it("asks once and answers once under StrictMode", async () => {
     const api = await openApp("?demo=danger");
 
-    expect(await screen.findByText(ANSWER)).toBeInTheDocument();
+    expect(await screen.findByText(LEAD)).toBeInTheDocument();
     // leave room for a second, stale run to land if there is one
     await act(() => new Promise((r) => setTimeout(r, 500)));
 
     expect(api.ask).toHaveBeenCalledTimes(1);
     expect(api.ask).toHaveBeenCalledWith(expect.objectContaining({ message: QUESTION }));
     expect(screen.getAllByText(QUESTION)).toHaveLength(1);
-    expect(screen.getAllByText(ANSWER)).toHaveLength(1);
+    expect(screen.getAllByText(LEAD)).toHaveLength(1);
+    expect(screen.getAllByText(REST)).toHaveLength(1);
   });
 
   it("keeps only the newest answer when two scenarios overlap", async () => {

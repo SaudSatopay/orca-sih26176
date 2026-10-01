@@ -22,6 +22,24 @@ export const TAB_LABEL: Record<Language, Record<AppTab, string>> = {
   mr: { home: "आज", ask: "ORCA ला विचारा", authority: "प्रशासन", system: "प्रणाली" },
 };
 
+/** What the browser tab calls each view: "Today — ORCA". */
+export const VIEW_TITLE: Record<Language, Record<AppTab, string>> = {
+  en: { home: "Today", ask: "Ask", authority: "Authority", system: "System" },
+  hi: { home: "आज", ask: "पूछें", authority: "प्रशासन", system: "प्रणाली" },
+  mr: { home: "आज", ask: "विचारा", authority: "प्रशासन", system: "प्रणाली" },
+};
+
+/** Each language under its own name, and as the switch prints it. */
+export const LANG_NAME: Record<Language, string> = { en: "English", hi: "हिन्दी", mr: "मराठी" };
+export const LANG_SHORT: Record<Language, string> = { en: "EN", hi: "हिं", mr: "मरा" };
+
+/** The data edition, as the title block prints it. */
+export const MODE_LABEL: Record<Language, Record<string, string>> = {
+  en: { LIVE: "LIVE", DEMO: "DEMO", CACHE: "CACHE" },
+  hi: { LIVE: "लाइव", DEMO: "डेमो", CACHE: "कैश" },
+  mr: { LIVE: "लाइव्ह", DEMO: "डेमो", CACHE: "कॅशे" },
+};
+
 /** The app chrome, in the fisher's language. */
 export const UI: Record<Language, Record<string, string>> = {
   en: {
@@ -43,6 +61,27 @@ export const UI: Record<Language, Record<string, string>> = {
     areas: "Areas",
     inRadius: "in {km} km",
     readingSea: "Reading the sea at your location…",
+    skip: "Skip to the sheet",
+    frontPage: "ORCA — back to the front page",
+    tagline: "Marine EcOsystem Reasoning · Collaborative Agents",
+    views: "Sheets",
+    modeHint: "Switch between rehearsed demo data and live public feeds",
+    modeSwitching: "Switching…",
+    voiceHint: "Read each answer aloud",
+    voiceOn: "On",
+    voiceOff: "Off",
+    selectedPoint: "Selected point",
+    yourLocation: "Your location",
+    deckLead: "Start with a rehearsed question",
+    deckSub: "Five questions with known answers. Pick one, or ask your own below.",
+    pendingTitle: "The verdict is stamped here",
+    pendingBody:
+      "Ask, and this sheet fills in: a 0–100 risk score, the reasons ranked by weight, the course on the chart and every reading with its source.",
+    stale: "Earlier answer. The crew is working on the new one.",
+    outlookFailTitle: "ORCA could not read the sea here",
+    outlookFailBody:
+      "The plan for this position did not load. Check the connection, then read it again. Always follow the official warning.",
+    outlookRetry: "Read it again",
   },
   hi: {
     chartNo: "चार्ट क्र.",
@@ -63,6 +102,27 @@ export const UI: Record<Language, Record<string, string>> = {
     areas: "जगहें",
     inRadius: "{km} किमी में",
     readingSea: "आपके स्थान की जानकारी ले रहे हैं…",
+    skip: "सीधे शीट पर जाएँ",
+    frontPage: "ORCA — मुखपृष्ठ पर लौटें",
+    tagline: "समुद्री तंत्र की समझ · मिलकर काम करते एजेंट",
+    views: "शीटें",
+    modeHint: "तैयार डेमो डेटा और लाइव सार्वजनिक फ़ीड के बीच बदलें",
+    modeSwitching: "बदल रहे हैं…",
+    voiceHint: "हर जवाब बोलकर सुनाएँ",
+    voiceOn: "चालू",
+    voiceOff: "बंद",
+    selectedPoint: "चुना हुआ स्थान",
+    yourLocation: "आपका स्थान",
+    deckLead: "तैयार सवाल से शुरू करें",
+    deckSub: "पाँच सवाल, जिनके जवाब जाँचे हुए हैं। एक चुनें, या नीचे अपना सवाल पूछें।",
+    pendingTitle: "फ़ैसले की मुहर यहाँ लगेगी",
+    pendingBody:
+      "पूछिए, और यह शीट भर जाएगी: 0–100 जोखिम स्कोर, वज़न के क्रम में कारण, चार्ट पर मार्ग और हर रीडिंग उसके स्रोत के साथ।",
+    stale: "पिछला जवाब। टीम नए जवाब पर काम कर रही है।",
+    outlookFailTitle: "ORCA यहाँ का समुद्र नहीं पढ़ सका",
+    outlookFailBody:
+      "इस स्थान की योजना लोड नहीं हुई। कनेक्शन जाँचें, फिर दोबारा पढ़ें। आधिकारिक चेतावनी हमेशा मानें।",
+    outlookRetry: "दोबारा पढ़ें",
   },
   mr: {
     chartNo: "तक्ता क्र.",
@@ -83,5 +143,26 @@ export const UI: Record<Language, Record<string, string>> = {
     areas: "जागा",
     inRadius: "{km} किमीमध्ये",
     readingSea: "तुमच्या ठिकाणाची माहिती घेत आहे…",
+    skip: "थेट शीटवर जा",
+    frontPage: "ORCA — मुखपृष्ठावर परत जा",
+    tagline: "सागरी परिसंस्थेची समज · एकत्र काम करणारे एजंट",
+    views: "शीट",
+    modeHint: "तयार डेमो डेटा आणि लाइव्ह सार्वजनिक फीड यांमध्ये बदला",
+    modeSwitching: "बदलत आहे…",
+    voiceHint: "प्रत्येक उत्तर मोठ्याने वाचा",
+    voiceOn: "चालू",
+    voiceOff: "बंद",
+    selectedPoint: "निवडलेले ठिकाण",
+    yourLocation: "तुमचे ठिकाण",
+    deckLead: "तयार प्रश्नाने सुरुवात करा",
+    deckSub: "पाच प्रश्न, ज्यांची उत्तरे तपासलेली आहेत. एक निवडा, किंवा खाली स्वतःचा प्रश्न विचारा.",
+    pendingTitle: "निर्णयाचा शिक्का इथे उमटेल",
+    pendingBody:
+      "विचारा, आणि ही शीट भरेल: 0–100 धोका गुण, वजनानुसार कारणे, चार्टवरील मार्ग आणि प्रत्येक नोंद तिच्या स्रोतासह.",
+    stale: "आधीचे उत्तर. टीम नव्या उत्तरावर काम करत आहे.",
+    outlookFailTitle: "ORCA ला इथला समुद्र वाचता आला नाही",
+    outlookFailBody:
+      "या ठिकाणाची योजना लोड झाली नाही. कनेक्शन तपासा, मग पुन्हा वाचा. अधिकृत इशारा नेहमी पाळा.",
+    outlookRetry: "पुन्हा वाचा",
   },
 };
