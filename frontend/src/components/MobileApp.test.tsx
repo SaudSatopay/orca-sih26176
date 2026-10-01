@@ -111,7 +111,7 @@ describe("the phone's Today tab", () => {
     expect(screen.getByText("Reading the sea…")).toBeInTheDocument();
 
     // the stamp prints the verdict phrase; the band word stands beside the ring (PT3, X1)
-    expect(await screen.findByText("Go with caution")).toBeInTheDocument();
+    expect(await screen.findByText("Go with care")).toBeInTheDocument();
     expect(screen.getByText("Moderate")).toBeInTheDocument();
     expect(screen.getByText("You can go, but be careful and stay close to shore.")).toBeInTheDocument();
     expect(screen.getByText("Sea safety for fishers")).toBeInTheDocument();
@@ -125,7 +125,7 @@ describe("the phone's Today tab", () => {
   it("labels a return time after midnight in the fisher's terms", async () => {
     const { MobileApp } = await openPhone();
     render(<MobileApp />);
-    await screen.findByText("Go with caution");
+    await screen.findByText("Go with care");
     expect(screen.getByText("12:07 AM")).toBeInTheDocument();
     expect(screen.getByText("tonight, after midnight")).toBeInTheDocument();
     expect(screen.queryByText("00:07")).not.toBeInTheDocument();
@@ -153,28 +153,28 @@ describe("the phone's Today tab", () => {
     render(<MobileApp />);
 
     const alert = await screen.findByRole("alert");
-    expect(within(alert).getByText("ORCA cannot reach the crew")).toBeInTheDocument();
+    expect(within(alert).getByText("No signal")).toBeInTheDocument();
     fireEvent.click(within(alert).getByRole("button", { name: "Try again" }));
-    expect(await screen.findByText("Go with caution")).toBeInTheDocument();
+    expect(await screen.findByText("Go with care")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("keeps the last reading, marked OLD, and its verdict follows the language (PT6)", async () => {
     const { api, MobileApp } = await openPhone();
     render(<MobileApp />);
-    await screen.findByText("Go with caution");
+    await screen.findByText("Go with care");
 
     api.fishingOutlook.mockRejectedValue(new Error("offline"));
     fireEvent.click(screen.getByRole("button", { name: "Language: English" }));
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "हिंदी" }));
 
     const alert = await screen.findByRole("alert");
-    expect(within(alert).getByText("ORCA टीम तक नहीं पहुँच पा रहा")).toBeInTheDocument();
+    expect(within(alert).getByText("सिग्नल नहीं है")).toBeInTheDocument();
     expect(within(alert).getByText(/पिछली रीडिंग: Mumbai/)).toBeInTheDocument();
     // the kept reading never looks live: a boxed OLD tag with the reading's time
     expect(screen.getByText(/पुरानी ·/)).toBeInTheDocument();
     // and the verdict sentence comes from the client table, in the new language
-    expect(screen.getAllByText("सावधानी से जाएँ").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("जाएँ, पर सावधानी से")).toBeInTheDocument();
     // the arc is drawn dashed, like unsurveyed data
     expect(document.querySelector("path[stroke-dasharray='3 4']")).not.toBeNull();
   });
@@ -182,7 +182,7 @@ describe("the phone's Today tab", () => {
   it("offers the harbour list when the phone has no position", async () => {
     const { api, MobileApp } = await openPhone();
     render(<MobileApp />);
-    await screen.findByText("Go with caution");
+    await screen.findByText("Go with care");
     expect(screen.getByText("Your position could not be found. Showing Mumbai.")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Choose harbour" }));
@@ -207,9 +207,9 @@ describe("the phone's Ask tab", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
 
-    // the stamp and the headline both speak the one verdict table (PA2, X1)
-    const verdicts = await screen.findAllByText("High risk — not recommended");
-    expect(verdicts.length).toBeGreaterThanOrEqual(2);
+    // the stamp speaks the verdict table; the headline is the answer's own (PA2, X1)
+    expect(await screen.findByText("Do not go")).toBeInTheDocument();
+    expect(screen.getByText("High risk — not recommended")).toBeInTheDocument();
     expect(api.ask).toHaveBeenCalledWith(expect.objectContaining({ message: "Can I go at 6?" }));
     expect(screen.getByText("Can I go at 6?")).toBeInTheDocument();
     expect(screen.getByText("High")).toBeInTheDocument();
@@ -227,7 +227,7 @@ describe("the phone's Ask tab", () => {
     fireEvent.click(screen.getByRole("button", { name: "Where are the fish today?" }));
     const alert = await screen.findByRole("alert");
     fireEvent.click(within(alert).getByRole("button", { name: "Try again" }));
-    expect((await screen.findAllByText("High risk — not recommended")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Do not go")).length).toBeGreaterThan(0);
     expect(api.ask).toHaveBeenCalledTimes(2);
   });
 });

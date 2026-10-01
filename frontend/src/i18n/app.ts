@@ -7,13 +7,34 @@ export const SCENARIOS: {
   n: string;
   label: Record<Language, string>;
   ask: string;
+  /** The language the rehearsed question itself is written in. */
+  askLang: Language;
+  /** One grammar for every hint: PLACE · expected band. */
   hint: string;
+  /** For Devanagari questions: what the question says, in each reader language. */
+  gloss?: Record<Language, string>;
 }[] = [
-  { id: "safe", n: "1", label: { en: "Safe", hi: "सुरक्षित", mr: "सुरक्षित" }, ask: "Is it safe to go fishing tomorrow morning near Goa?", hint: "Goa · LOW" },
-  { id: "danger", n: "2", label: { en: "Rough", hi: "ख़राब मौसम", mr: "खराब हवामान" }, ask: "मी उद्या सकाळी ६ वाजता मुंबईजवळ मासेमारीला जाऊ शकतो का?", hint: "Mumbai · मराठी" },
-  { id: "cyclone", n: "3", label: { en: "Cyclone", hi: "चक्रवात", mr: "चक्रीवादळ" }, ask: "Is there a cyclone near Paradip? Can I go fishing?", hint: "Paradip · EXTREME" },
-  { id: "pfz", n: "4", label: { en: "Fishing zones", hi: "मत्स्य क्षेत्र", mr: "मासेमारी क्षेत्रे" }, ask: "कोच्चि के पास मछली पकड़ने का क्षेत्र कहाँ है?", hint: "Kochi · हिंदी" },
-  { id: "route", n: "5", label: { en: "Safe route", hi: "सुरक्षित मार्ग", mr: "सुरक्षित मार्ग" }, ask: "Give me the safest route to the nearest fishing zone near Mumbai", hint: "Mumbai · geofence" },
+  { id: "safe", n: "1", label: { en: "Safe", hi: "सुरक्षित", mr: "सुरक्षित" }, ask: "Is it safe to go fishing tomorrow morning near Goa?", askLang: "en", hint: "Goa · LOW" },
+  {
+    id: "danger", n: "2", label: { en: "Rough", hi: "ख़राब मौसम", mr: "खराब हवामान" },
+    ask: "मी उद्या सकाळी ६ वाजता मुंबईजवळ मासेमारीला जाऊ शकतो का?", askLang: "mr", hint: "Mumbai · HIGH",
+    gloss: {
+      en: "In Marathi: can I go fishing near Mumbai at 6 tomorrow morning?",
+      hi: "मराठी में: क्या मैं कल सुबह 6 बजे मुंबई के पास मछली पकड़ने जा सकता हूँ?",
+      mr: "मी उद्या सकाळी ६ वाजता मुंबईजवळ मासेमारीला जाऊ शकतो का?",
+    },
+  },
+  { id: "cyclone", n: "3", label: { en: "Cyclone", hi: "चक्रवात", mr: "चक्रीवादळ" }, ask: "Is there a cyclone near Paradip? Can I go fishing?", askLang: "en", hint: "Paradip · EXTREME" },
+  {
+    id: "pfz", n: "4", label: { en: "Fishing zones", hi: "मत्स्य क्षेत्र", mr: "मासेमारी क्षेत्रे" },
+    ask: "कोच्चि के पास मछली पकड़ने का क्षेत्र कहाँ है?", askLang: "hi", hint: "Kochi · MODERATE",
+    gloss: {
+      en: "In Hindi: where is the fishing zone near Kochi?",
+      hi: "कोच्चि के पास मछली पकड़ने का क्षेत्र कहाँ है?",
+      mr: "हिंदीत: कोचीजवळ मासेमारीचे क्षेत्र कुठे आहे?",
+    },
+  },
+  { id: "route", n: "5", label: { en: "Safe route", hi: "सुरक्षित मार्ग", mr: "सुरक्षित मार्ग" }, ask: "Give me the safest route to the nearest fishing zone near Mumbai", askLang: "en", hint: "Mumbai · MODERATE" },
 ];
 
 export const TAB_LABEL: Record<Language, Record<AppTab, string>> = {
@@ -55,7 +76,7 @@ export const UI: Record<Language, Record<string, string>> = {
     recommended: "Recommended",
     warnings: "Official marine warnings",
     validTill: "valid till",
-    safety: "Safety",
+    safety: "Risk",
     waves: "Waves",
     wind: "Wind",
     areas: "Areas",
@@ -76,7 +97,8 @@ export const UI: Record<Language, Record<string, string>> = {
     pendingTitle: "The verdict is stamped here",
     pendingBody:
       "Ask, and this sheet fills in: a 0–100 risk score, the reasons ranked by weight, the course on the chart and every reading with its source.",
-    stale: "Earlier answer. The crew is working on the new one.",
+    crossesOne: "Crosses 1 restricted area",
+    crossesMany: "Crosses {n} restricted areas",
   },
   hi: {
     chartNo: "चार्ट क्र.",
@@ -91,7 +113,7 @@ export const UI: Record<Language, Record<string, string>> = {
     recommended: "सुझाया गया",
     warnings: "आधिकारिक समुद्री चेतावनियाँ",
     validTill: "मान्य",
-    safety: "सुरक्षा",
+    safety: "जोखिम",
     waves: "लहरें",
     wind: "हवा",
     areas: "जगहें",
@@ -112,7 +134,8 @@ export const UI: Record<Language, Record<string, string>> = {
     pendingTitle: "फ़ैसले की मुहर यहाँ लगेगी",
     pendingBody:
       "पूछिए, और यह शीट भर जाएगी: 0–100 जोखिम स्कोर, वज़न के क्रम में कारण, चार्ट पर मार्ग और हर रीडिंग उसके स्रोत के साथ।",
-    stale: "पिछला जवाब। टीम नए जवाब पर काम कर रही है।",
+    crossesOne: "1 प्रतिबंधित क्षेत्र से होकर गुज़रता है",
+    crossesMany: "{n} प्रतिबंधित क्षेत्रों से होकर गुज़रता है",
   },
   mr: {
     chartNo: "तक्ता क्र.",
@@ -127,7 +150,7 @@ export const UI: Record<Language, Record<string, string>> = {
     recommended: "सुचवलेला",
     warnings: "अधिकृत सागरी इशारे",
     validTill: "पर्यंत",
-    safety: "सुरक्षा",
+    safety: "धोका",
     waves: "लाटा",
     wind: "वारा",
     areas: "जागा",
@@ -148,6 +171,7 @@ export const UI: Record<Language, Record<string, string>> = {
     pendingTitle: "निर्णयाचा शिक्का इथे उमटेल",
     pendingBody:
       "विचारा, आणि ही शीट भरेल: 0–100 धोका गुण, वजनानुसार कारणे, चार्टवरील मार्ग आणि प्रत्येक नोंद तिच्या स्रोतासह.",
-    stale: "आधीचे उत्तर. टीम नव्या उत्तरावर काम करत आहे.",
+    crossesOne: "1 प्रतिबंधित क्षेत्रातून जातो",
+    crossesMany: "{n} प्रतिबंधित क्षेत्रांतून जातो",
   },
 };

@@ -45,7 +45,7 @@ import {
   T,
   type MobileStrings,
 } from "../i18n/mobile";
-import { VERDICT } from "../i18n/riskCard";
+import { INSTRUCTION, VERDICT } from "../i18n/riskCard";
 import { waveM, windKmh } from "../format";
 import { PORTS } from "../ports";
 import { RATING_COLOR, RATING_INK, RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
@@ -655,9 +655,9 @@ function Verdict({
       </div>
 
       <p className="px-4 pt-3.5 font-display text-title font-semibold leading-snug text-ink-900 [text-wrap:balance]">
-        {/* a kept reading answers from the client's own verdict table, so the
+        {/* a kept reading answers from the client's own tables, so the
             sentence follows a language switch even offline (PT6) */}
-        {stale ? VERDICT[language][category] : outlook.advice[0]}
+        {stale ? INSTRUCTION[language][category] : outlook.advice[0]}
       </p>
 
       {/* THE button — one tap, hear everything */}

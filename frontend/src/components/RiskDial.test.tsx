@@ -81,20 +81,24 @@ describe("RiskCard", () => {
     mode: "DEMO",
   };
 
-  it("shows 70, the HIGH stamp and the verdict in words", () => {
+  it("shows 70, the verdict-phrase stamp, the band in the eyebrow and the instruction", () => {
     render(<RiskCard risk={risk} evidence={[]} language="en" />);
     settle();
     expect(screen.getByRole("img", { name: "70 / 100 · HIGH" })).toHaveTextContent("70");
+    // the band lives in the eyebrow; the stamp prints the verdict phrase
     expect(screen.getByText("HIGH")).toBeInTheDocument();
-    expect(screen.getByText("High risk — not recommended")).toBeInTheDocument();
+    expect(screen.getByText("Do not go", { selector: ".stamp" })).toBeInTheDocument();
+    expect(screen.getByText("Going is not recommended")).toBeInTheDocument();
     expect(screen.getByText("Official warning", { selector: ".stamp" })).toBeInTheDocument();
   });
 
   it("says the same verdict in Hindi and Marathi", () => {
     const hi = render(<RiskCard risk={risk} evidence={[]} language="hi" />);
-    expect(screen.getByText("जोखिम अधिक है — जाने की सलाह नहीं")).toBeInTheDocument();
+    expect(screen.getByText("जाने की सलाह नहीं")).toBeInTheDocument();
+    expect(screen.getByText("न जाएँ", { selector: ".stamp" })).toBeInTheDocument();
     hi.unmount();
     render(<RiskCard risk={risk} evidence={[]} language="mr" />);
-    expect(screen.getByText("धोका जास्त आहे — जाऊ नका")).toBeInTheDocument();
+    expect(screen.getByText("जाण्याचा सल्ला नाही")).toBeInTheDocument();
+    expect(screen.getByText("जाऊ नका", { selector: ".stamp" })).toBeInTheDocument();
   });
 });

@@ -71,7 +71,16 @@ export default function ScenarioDeck({
                     {s.hint}
                   </span>
                 </span>
-                <span className="mt-1 block text-body leading-snug text-ink-700">{s.ask}</span>
+                <span lang={s.askLang} className="mt-1 block text-body leading-snug text-ink-700">
+                  {s.ask}
+                </span>
+                {/* a Devanagari question carries a one-line gloss for readers
+                    of another language, so no card is a mystery */}
+                {s.gloss && language !== s.askLang && (
+                  <span className="mt-0.5 block text-label leading-snug text-ink-500">
+                    {s.gloss[language] ?? s.gloss.en}
+                  </span>
+                )}
               </span>
             ) : (
               <>

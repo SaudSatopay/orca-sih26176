@@ -19,6 +19,7 @@ import {
   StopGlyph,
   WarnGlyph,
 } from "./components/glyphs";
+import { NoEntryGlyph } from "./components/viewGlyphs";
 import GuidedTour from "./components/GuidedTour";
 import Landing from "./components/Landing";
 import LocationPicker, { type PickedLocation } from "./components/LocationPicker";
@@ -51,10 +52,11 @@ import {
 import { CATEGORY } from "./i18n/riskCard";
 import { TOUR } from "./i18n/tour";
 import { useFittedHeight, useMediaQuery, usePageTop } from "./layout";
+import { tripIsOff } from "./components/todayModel";
 import { PORTS } from "./ports";
 import { RISK_INK } from "./risk";
 import { SPEECH_LOCALE } from "./speech";
-import { readBootParams } from "./boot";
+import { initialLanguage, readBootParams } from "./boot";
 import { ink, risk } from "./tokens";
 
 const SESSION = "demo";
@@ -74,6 +76,19 @@ type Tab = AppTab | "landing";
 
 /** The deep link this page was opened with — read once, before first render. */
 const BOOT = readBootParams(window.location.search);
+
+/**
+ * Every sheet is an address. The URL for a view keeps the params that name
+ * this reading (`m`, `lang`, `at`) and drops the one-shot ones (`demo`,
+ * `tour`), so a copied link reopens the same sheet in the same edition.
+ */
+function urlFor(next: AppTab | "landing"): URL {
+  const url = new URL(window.location.href);
+  ["demo", "tour"].forEach((k) => url.searchParams.delete(k));
+  if (next === "landing") url.searchParams.delete("tab");
+  else url.searchParams.set("tab", next);
+  return url;
+}
 const BOOT_SCENARIO = BOOT.demo
   ? SCENARIOS.find((x) => x.id === BOOT.demo || x.n === BOOT.demo)
   : undefined;
@@ -84,11 +99,18 @@ export default function App() {
   );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [latest, setLatest] = useState<ChatResponse | null>(null);
-  const [busy, setBusy] = useState(false);
+  // A deep-linked scenario first-paints with the deck folded and the crew
+  // already working, so the sheet never jumps when the timer fires (CLS).
+  const [busy, setBusy] = useState(BOOT_SCENARIO != null);
   /** The question /api/chat could not answer, kept so it can be sent again. */
   const [unanswered, setUnanswered] = useState<string | null>(null);
+  // The reader's language: an explicit choice, else the deep link, else what
+  // the browser said at boot. The chrome never follows an answer's language —
+  // the answer speaks its own inside the panels, marked with lang=.
   const [langChoice, setLangChoice] = useState<Language | null>(BOOT.lang);
-  const [detected, setDetected] = useState<Language>("en");
+  const [detected] = useState<Language>(() =>
+    initialLanguage(window.location.search, navigator.languages),
+  );
   const language = langChoice ?? detected;
   const [zones, setZones] = useState<ZoneFeature[]>([]);
   const [mode, setMode] = useState<string>("DEMO");
@@ -217,7 +239,6 @@ export default function App() {
       });
       if (stale()) return;
       setLatest(res);
-      setDetected(res.language);
       setMode(res.mode);
       setMessages((m) => [
         ...m,
@@ -246,14 +267,45 @@ export default function App() {
     }
   };
 
+  // ------------------------------------------------- views are addresses
+  // One function for every sheet change: pushState, so Back walks the
+  // sheets instead of leaving ORCA, and `m`, `lang` and `at` survive.
+  const go = useCallback((next: Tab) => {
+    setTab(next);
+    window.history.pushState(null, "", urlFor(next));
+  }, []);
+
+  useEffect(() => {
+    // Back and Forward re-read the address the same way boot does, so a
+    // demo or pinned-position entry restores the sheet it showed.
+    const onPop = () => {
+      const b = readBootParams(window.location.search);
+      setTab(b.tab ?? (b.demo ? "ask" : b.at ? "home" : "landing"));
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // Focus follows the view: after a sheet change the new <main> takes focus
+  // (it has tabIndex -1), so a keyboard or screen reader lands on what just
+  // opened, not at the top of the document. The tour drives the tabs itself
+  // and keeps its own focus.
+  const wasTab = useRef(tab);
+  useEffect(() => {
+    if (wasTab.current !== tab && !tourOn)
+      document.querySelector<HTMLElement>("main")?.focus({ preventScroll: true });
+    wasTab.current = tab;
+  }, [tab, tourOn]);
+
   const runScenario = async (ask: string) => {
     const mine = ++conversation.current;
-    setTab("ask");
+    // Only a real view change earns a history entry: a scenario run from the
+    // Ask sheet itself (or the boot deep link) stays on the address it has.
+    if (tab !== "ask") go("ask");
     await api.resetSession(SESSION).catch(() => {});
     if (mine !== conversation.current) return; // a newer run has taken over
     setMessages([]);
     setLatest(null);
-    setLangChoice(null);
     await send(ask);
   };
 
@@ -307,7 +359,6 @@ export default function App() {
     setUnanswered(null);
     setMessages([]);
     setLatest(null);
-    setLangChoice(null);
     setTab("home");
     tourActionDone.current = -1;
     setTourStep(0);
@@ -405,6 +456,9 @@ export default function App() {
     [place, ui.yourLocation, ui.selectedPoint],
   );
 
+  // A do-not-go day quiets the chart: buoys to paper rings, no percentages.
+  const tripOff = useMemo(() => (outlook ? tripIsOff(outlook) : false), [outlook]);
+
   // Stable identity: the chart's redraw effect depends on `origin`, so this
   // object may only change when a reading it shows changes — never because
   // an unrelated piece of state (voice, the tour) re-rendered the app.
@@ -433,7 +487,7 @@ export default function App() {
           mode={mode}
           language={language}
           onLanguage={setLangChoice}
-          onEnter={setTab}
+          onEnter={go}
           onTour={startTour}
           onScenario={runScenario}
         />
@@ -481,9 +535,14 @@ export default function App() {
       {/* ---------------- title block, drafted like a chart's cartouche ---------------- */}
       <header className="panel rule-double">
         <div className="flex flex-wrap items-stretch">
-          {/* identity — pressing it returns to the front page */}
-          <button
-            onClick={() => setTab("landing")}
+          {/* identity — a real address: following it returns to the front page */}
+          <a
+            href={urlFor("landing").search || "/"}
+            onClick={(e) => {
+              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+              e.preventDefault();
+              go("landing");
+            }}
             title={ui.frontPage}
             className="cell-press flex min-w-0 flex-1 items-center gap-4 py-3.5 pl-5 pr-6 text-left"
           >
@@ -495,20 +554,20 @@ export default function App() {
               >
                 ORCA
               </span>
-              <span className="mt-1 block font-mono text-label font-semibold uppercase tracking-[0.18em] text-chart-600">
+              <span className="mt-1 hidden font-mono text-label font-semibold uppercase tracking-[0.18em] text-chart-600 lg:block">
                 {ui.tagline}
               </span>
               <span className="sr-only">. {ui.frontPage}</span>
             </span>
-          </button>
+          </a>
 
-          {/* title-block cells: one row beside the name from 1280 px, a row of
-              their own under it below that */}
+          {/* title-block cells: they join the identity row from 768 px, so
+              the masthead holds two rows, not three, on a projector */}
           <div
-            className="flex basis-full items-stretch border-t xl:basis-auto xl:border-t-0"
+            className="flex min-w-0 basis-full items-stretch border-t md:basis-auto md:border-t-0"
             style={cellRule}
           >
-            <div className={`${cell} hidden border-l-0 md:flex xl:border-l`} style={cellRule}>
+            <div className={`${cell} hidden border-l-0 xl:flex xl:border-l`} style={cellRule}>
               <span className="label">{ui.chartNo}</span>
               <span className="mt-1 font-mono text-body font-bold text-ink-800">SIH26176</span>
             </div>
@@ -568,7 +627,7 @@ export default function App() {
                     aria-pressed={language === l}
                     title={LANG_NAME[l]}
                     lang={l}
-                    className={`press rounded-[2px] border px-1.5 py-0.5 font-mono text-label font-bold ${
+                    className={`press min-h-7 rounded-[2px] border px-2.5 font-mono text-label font-bold ${
                       language === l
                         ? "border-ink-900 bg-ink-900 text-paper-50"
                         : "text-ink-500 hover:bg-paper-150 hover:text-ink-900"
@@ -601,16 +660,16 @@ export default function App() {
           style={cellRule}
         >
           {TABS.map((x) => (
-            // Real links: each sheet has an address, so it can be opened in a
-            // new tab or copied. A plain press swaps the sheet in place.
+            // Real links: each sheet has an address that keeps m, lang and at,
+            // so it can be opened in a new tab or copied. A plain press swaps
+            // the sheet in place and writes the same address into history.
             <a
               key={x}
-              href={`?tab=${x}`}
+              href={urlFor(x).search}
               onClick={(e) => {
                 if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
                 e.preventDefault();
-                setTab(x);
-                window.history.replaceState(null, "", `?tab=${x}`);
+                go(x);
               }}
               aria-current={tab === x ? "page" : undefined}
               className={`tab mt-2 ${tab === x ? "tab-on" : ""}`}
@@ -619,7 +678,7 @@ export default function App() {
             </a>
           ))}
           <span
-            className="label ml-auto hidden shrink-0 pb-2.5 !tracking-[0.12em] !text-chart-600 md:block"
+            className="label ml-auto hidden shrink-0 pb-2.5 !tracking-[0.12em] !text-chart-600 xl:block"
             aria-hidden
           >
             {ui.marginalia}
@@ -711,6 +770,7 @@ export default function App() {
                         geofence={NONE}
                         alerts={homeAlerts}
                         language={language}
+                        severe={tripOff}
                         onPickLocation={pickLocation}
                         focusRank={focusRank}
                         heightPx={todayMapHeight}
@@ -759,7 +819,9 @@ export default function App() {
                   messages={messages}
                   busy={busy}
                   failed={unanswered !== null}
+                  hasAnswer={latest !== null}
                   language={language}
+                  answerLang={latest?.language}
                   suggestions={suggestions}
                   onSend={send}
                   onRetry={() => unanswered && send(unanswered, true)}
@@ -767,22 +829,26 @@ export default function App() {
               </div>
 
               <div className="ask-answer">
-                {/* the verdict: first in the column, first on a narrow sheet */}
-                <div data-area="verdict" className="min-w-0 space-y-4">
+                {/* The verdict slot: first in the column, first on a narrow
+                    sheet. One occupant at a time — pending note, the working
+                    crew, or the verdict — inside one reserved height, so the
+                    chart below never jumps while they hand over. */}
+                <div
+                  data-area="verdict"
+                  data-settled={messages.length > 0 || busy || latest ? "" : undefined}
+                  className="min-w-0 space-y-4"
+                >
                   {busy && <CrewWorking language={language} />}
 
-                  {latest?.risk && (
-                    <div
-                      className={`transition-opacity duration-200 ${busy ? "space-y-2 opacity-60" : ""}`}
-                      aria-busy={busy}
-                    >
-                      {busy && <p className="label px-1">{ui.stale}</p>}
-                      <RiskCard
-                        risk={latest.risk}
-                        evidence={latest.evidence}
-                        language={latest.language}
-                      />
-                    </div>
+                  {!busy && latest?.risk && (
+                    <RiskCard
+                      risk={latest.risk}
+                      evidence={latest.evidence}
+                      language={language}
+                      answerLang={latest.language}
+                      trace={latest.trace}
+                      elapsed={latest.elapsed_ms}
+                    />
                   )}
 
                   {!latest && !busy && (
@@ -803,7 +869,7 @@ export default function App() {
                         <circle cx="38" cy="38" r="36.5" fill="none" stroke={ink[300]} strokeWidth="0.8" />
                       </svg>
                       <div className="min-w-0">
-                        <h2 className="font-display text-title font-bold leading-snug text-ink-900">
+                        <h2 className="font-display text-lead font-bold leading-snug text-ink-900">
                           {ui.pendingTitle}
                         </h2>
                         <p className="mt-1 max-w-[62ch] text-body leading-relaxed text-ink-700">
@@ -826,7 +892,9 @@ export default function App() {
                   />
                 </ErrorBoundary>
 
-                {latest && <ConditionsStrip res={latest} language={latest.language} />}
+                {latest && (
+                  <ConditionsStrip res={latest} language={language} answerLang={latest.language} />
+                )}
 
                 {latest && latest.alerts.length > 0 && (
                   <section className="panel hatch-danger overflow-hidden border-risk-extreme/60">
@@ -835,7 +903,7 @@ export default function App() {
                         <WarnGlyph size={13} /> {ui.warnings}
                       </h2>
                     </div>
-                    <div className="space-y-3 px-4 py-3.5">
+                    <div className="space-y-3 px-4 py-3.5" lang={latest.language}>
                       {latest.alerts.map((a, i) => (
                         <div key={i} className="max-w-[78ch]">
                           <h3 className="font-display text-lead font-bold leading-snug text-risk-extreme">
@@ -853,10 +921,10 @@ export default function App() {
                 )}
 
                 {latest && (
-                  <RiskTimeline location={latest.intent.location} language={latest.language} />
+                  <RiskTimeline location={latest.intent.location} language={language} />
                 )}
 
-                {latest && <PFZList zones={latest.pfz} language={latest.language} />}
+                {latest && <PFZList zones={latest.pfz} language={language} />}
 
                 {latest && latest.routes.length > 0 && (
                   <section className="panel overflow-hidden">
@@ -864,60 +932,97 @@ export default function App() {
                       <h2 className="label">{ui.courses}</h2>
                     </div>
                     <div className="space-y-2 px-4 py-3.5">
-                      {latest.routes.map((r) => (
-                        <div
-                          key={r.name}
-                          className={`rounded-[2px] border px-3.5 py-3 ${
-                            r.recommended ? "border-risk-low/70 bg-risk-low/[0.06]" : "bg-paper-100"
-                          }`}
-                          style={r.recommended ? undefined : { borderColor: "var(--rule)" }}
-                        >
-                          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                            <h3 className="flex items-center gap-2.5 font-display text-body font-bold text-ink-900">
-                              {/* course symbology, drawn as plotted */}
-                              <svg width="26" height="8" className="shrink-0" aria-hidden>
-                                <line
-                                  x1="1"
-                                  y1="4"
-                                  x2="25"
-                                  y2="4"
-                                  stroke={r.recommended ? risk.low : ink[400]}
-                                  strokeWidth="2"
-                                  strokeDasharray={r.recommended ? "7 4" : "2 4"}
-                                />
-                              </svg>
-                              {r.name}
-                              {r.recommended && (
-                                <span className="stamp !px-1.5 !py-0.5 !text-label text-risk-low">
-                                  {ui.recommended}
-                                </span>
-                              )}
-                            </h3>
-                            <span className="shrink-0 font-mono text-label tabular-nums text-ink-500">
-                              {r.distance_km} km · {Math.round(r.eta_minutes)} min
-                            </span>
+                      {latest.routes.map((r) => {
+                        // The optimiser counts every restricted polygon a
+                        // course enters; a crossing course is marked, never
+                        // set as a neutral option.
+                        const crossings = Math.round(r.penalties?.restricted_zones ?? 0);
+                        return (
+                          <div
+                            key={r.name}
+                            className={`rounded-[2px] border px-3.5 py-3 ${
+                              r.recommended
+                                ? "border-risk-low/70 bg-risk-low/[0.06]"
+                                : crossings > 0
+                                  ? "hatch-danger border-risk-extreme/50 bg-paper-100"
+                                  : "bg-paper-100"
+                            }`}
+                            style={
+                              r.recommended || crossings > 0
+                                ? undefined
+                                : { borderColor: "var(--rule)" }
+                            }
+                          >
+                            <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                              <h3 className="flex items-center gap-2.5 font-display text-body font-bold text-ink-900">
+                                {/* course symbology, drawn as plotted */}
+                                <svg width="26" height="8" className="shrink-0" aria-hidden>
+                                  <line
+                                    x1="1"
+                                    y1="4"
+                                    x2="25"
+                                    y2="4"
+                                    stroke={r.recommended ? risk.low : ink[400]}
+                                    strokeWidth="2"
+                                    strokeDasharray={r.recommended ? "7 4" : "2 4"}
+                                  />
+                                </svg>
+                                <span lang={latest.language}>{r.name}</span>
+                                {r.recommended && (
+                                  // a finding, not a verdict: the flat boxed
+                                  // tag — the stamp belongs to verdicts only
+                                  <span className="border border-risk-low bg-paper-50 px-1.5 py-0.5 font-mono text-label font-bold uppercase tracking-[0.1em] text-risk-low">
+                                    {ui.recommended}
+                                  </span>
+                                )}
+                                {crossings > 0 && (
+                                  <span className="flex items-center gap-1.5 font-mono text-label font-bold uppercase tracking-[0.08em] text-risk-extreme">
+                                    <NoEntryGlyph size={13} className="shrink-0" />
+                                    {crossings === 1
+                                      ? ui.crossesOne
+                                      : ui.crossesMany.replace("{n}", String(crossings))}
+                                  </span>
+                                )}
+                              </h3>
+                              <span className="shrink-0 font-mono text-label tabular-nums text-ink-500">
+                                {r.distance_km} km · {Math.round(r.eta_minutes)} min
+                              </span>
+                            </div>
+                            <p
+                              lang={latest.language}
+                              className="mt-1 max-w-[78ch] pl-9 text-label leading-relaxed text-ink-500"
+                            >
+                              {r.notes}
+                            </p>
                           </div>
-                          <p className="mt-1 max-w-[78ch] pl-9 text-label leading-relaxed text-ink-500">
-                            {r.notes}
-                          </p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </section>
                 )}
 
-                {latest && <EvidenceLedger evidence={latest.evidence} language={latest.language} />}
+                {latest && (
+                  <EvidenceLedger
+                    evidence={latest.evidence}
+                    language={language}
+                    answerLang={latest.language}
+                  />
+                )}
 
                 {latest && (
                   <AgentTracePanel
                     trace={latest.trace}
                     elapsed={latest.elapsed_ms}
-                    language={latest.language}
+                    language={language}
+                    answerLang={latest.language}
                   />
                 )}
 
                 {latest && (
-                  <p className="max-w-[78ch] px-1 pb-2 font-mono text-label leading-relaxed text-ink-500">
+                  <p
+                    lang={latest.language}
+                    className="max-w-[78ch] px-1 pb-2 font-mono text-label leading-relaxed text-ink-500"
+                  >
                     {latest.disclaimer}
                   </p>
                 )}

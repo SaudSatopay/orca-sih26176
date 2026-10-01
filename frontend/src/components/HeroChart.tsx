@@ -814,13 +814,18 @@ export default function HeroChart({
         className="relative z-[2] flex items-center border-t px-5 py-2.5"
         style={{ borderColor: "var(--rule-faint)" }}
       >
-        <button
-          onClick={() => onAsk(question)}
+        <a
+          href={`?demo=${scene}`}
+          onClick={(e) => {
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
+            onAsk(question);
+          }}
           className="group ml-auto inline-flex items-center gap-1.5 font-mono text-label font-bold uppercase tracking-[0.1em] text-chart-700 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
         >
           {t.askReal}
           <CourseArrow size={12} className="transition-transform group-hover:translate-x-1" />
-        </button>
+        </a>
       </figcaption>
     </figure>
   );

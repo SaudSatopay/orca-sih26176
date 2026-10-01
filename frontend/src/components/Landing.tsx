@@ -161,7 +161,7 @@ export default function Landing({
   ];
 
   return (
-    <main className="mx-auto flex min-h-full max-w-[1240px] flex-col px-5 py-5">
+    <main tabIndex={-1} className="mx-auto flex min-h-full max-w-[1240px] flex-col px-5 py-5">
       {/* the ground stays with the viewport, so the page never ends in a seam */}
       <div className="sheet-ground" aria-hidden />
       {/* the living ground: the sheet's contours breathing (poster: the page as it is) */}
@@ -249,10 +249,18 @@ export default function Landing({
           <Reveal delay={160}>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <GlassLoupe id="open">
-                <button onClick={() => onEnter("home")} className="btn-ink group !px-6 !py-3">
+                <a
+                  href={`?tab=home&lang=${language}`}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                    e.preventDefault();
+                    onEnter("home");
+                  }}
+                  className="btn-ink group !px-6 !py-3"
+                >
                   {t.openOrca}
                   <CourseArrow size={13} className="transition-transform group-hover:translate-x-1" />
-                </button>
+                </a>
               </GlassLoupe>
               <button onClick={onTour} className="btn-line !px-5 !py-3">
                 <PlayGlyph size={11} /> {t.ctaTour}
@@ -299,8 +307,13 @@ export default function Landing({
           <ul>
             {t.cards.map((c, i) => (
               <li key={cardTabs[i]} className={i > 0 ? "border-t" : ""} style={{ borderColor: "var(--rule-faint)" }}>
-                <button
-                  onClick={() => onEnter(cardTabs[i])}
+                <a
+                  href={`?tab=${cardTabs[i]}&lang=${language}`}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                    e.preventDefault();
+                    onEnter(cardTabs[i]);
+                  }}
                   className="sheet-row group grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-6 gap-y-2 px-4 py-4 text-left md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)_auto] md:items-center"
                 >
                   {/* the sheet number rides in the label, above the title: one column, never beside it */}
@@ -328,7 +341,7 @@ export default function Landing({
                     {t.openWord}
                     <CourseArrow size={13} className="sheet-row-arrow" />
                   </span>
-                </button>
+                </a>
               </li>
             ))}
           </ul>
@@ -340,12 +353,17 @@ export default function Landing({
         <div className="panel mt-5 overflow-hidden">
           <div className="hd">
             <span className="label">{t.pipelineTitle}</span>
-            <button
-              onClick={() => onEnter("system")}
+            <a
+              href={`?tab=system&lang=${language}`}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                onEnter("system");
+              }}
               className="font-mono text-label font-bold uppercase tracking-[0.1em] text-chart-600 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
             >
               {t.watchLive}
-            </button>
+            </a>
           </div>
           <div className="grid sm:grid-cols-4">
             {t.phases.map((p, i) => (

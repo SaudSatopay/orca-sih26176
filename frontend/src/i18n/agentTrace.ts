@@ -2,17 +2,17 @@ import type { Language } from "../types";
 
 export const LABEL: Record<Language, Record<string, string>> = {
   en: {
-    intent: "Intent", weather: "Weather", ocean: "Ocean", pfz: "Fishing zones",
+    intent: "Intent", planner: "Planner", weather: "Weather", ocean: "Ocean", pfz: "Fishing zones",
     cyclone: "Alerts", gis: "GIS", risk: "Risk engine", route: "Route",
     explanation: "Explanation",
   },
   hi: {
-    intent: "आशय", weather: "मौसम", ocean: "समुद्र", pfz: "मत्स्य क्षेत्र",
+    intent: "आशय", planner: "प्लानर", weather: "मौसम", ocean: "समुद्र", pfz: "मत्स्य क्षेत्र",
     cyclone: "चेतावनियाँ", gis: "GIS", risk: "रिस्क इंजन", route: "मार्ग",
     explanation: "व्याख्या",
   },
   mr: {
-    intent: "हेतू", weather: "हवामान", ocean: "समुद्र", pfz: "मासेमारी क्षेत्रे",
+    intent: "हेतू", planner: "प्लॅनर", weather: "हवामान", ocean: "समुद्र", pfz: "मासेमारी क्षेत्रे",
     cyclone: "इशारे", gis: "GIS", risk: "रिस्क इंजिन", route: "मार्ग",
     explanation: "स्पष्टीकरण",
   },
@@ -26,6 +26,8 @@ export const T: Record<Language, Record<string, string>> = {
     called: "called",
     waiting: "standing by",
     status: "ok:reported|degraded:partial|failed:failed|skipped:not needed",
+    plannerSummary: "Chose the specialists and ran the independent ones together",
+    notNeeded: "Not needed for this question",
     agents: "agents",
     total: "ms total",
     concurrent: "CONCURRENT",
@@ -42,6 +44,8 @@ export const T: Record<Language, Record<string, string>> = {
     called: "बुलाया गया",
     waiting: "तैयार",
     status: "ok:रिपोर्ट मिली|degraded:अधूरी|failed:विफल|skipped:ज़रूरत नहीं",
+    plannerSummary: "विशेषज्ञ चुने और स्वतंत्र एजेंटों को एक साथ चलाया",
+    notNeeded: "इस सवाल के लिए ज़रूरत नहीं",
     agents: "एजेंट",
     total: "ms कुल",
     concurrent: "एक साथ",
@@ -58,6 +62,8 @@ export const T: Record<Language, Record<string, string>> = {
     called: "बोलावले",
     waiting: "तयार",
     status: "ok:अहवाल मिळाला|degraded:अपूर्ण|failed:अयशस्वी|skipped:गरज नाही",
+    plannerSummary: "तज्ज्ञ निवडले आणि स्वतंत्र एजंट एकाच वेळी चालवले",
+    notNeeded: "या प्रश्नासाठी गरज नाही",
     agents: "एजंट",
     total: "ms एकूण",
     concurrent: "एकाच वेळी",

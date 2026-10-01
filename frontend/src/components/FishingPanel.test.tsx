@@ -164,7 +164,7 @@ describe("the Advice panel's verdict lockup (impeccable L1)", () => {
     // the dial, with the score for assistive tech
     expect(screen.getByRole("img", { name: /28 \/ 100/ })).toBeInTheDocument();
     // the stamp prints the verdict phrase from the one VERDICT table (X1)
-    expect(screen.getByText("Go with caution")).toBeInTheDocument();
+    expect(screen.getByText("Go with care")).toBeInTheDocument();
     // the headline is the plain instruction
     expect(
       screen.getByText("You can go, but be careful and stay close to shore."),
@@ -173,7 +173,7 @@ describe("the Advice panel's verdict lockup (impeccable L1)", () => {
 
   it("stamps the do-not-go phrase on an EXTREME day", () => {
     render(<FishingPanel data={noGoDay} language="en" />);
-    expect(screen.getByText("EXTREME — do not go to sea")).toBeInTheDocument();
+    expect(screen.getByText("Do not launch")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: /92 \/ 100/ })).toBeInTheDocument();
   });
 });

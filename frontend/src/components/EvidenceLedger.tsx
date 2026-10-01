@@ -10,9 +10,13 @@ import { UI } from "../i18n/riskCard";
 export default function EvidenceLedger({
   evidence,
   language = "en",
+  answerLang,
 }: {
   evidence: Evidence[];
+  /** The reader's language: the ledger's own labels print in it. */
   language?: Language;
+  /** The language the traced readings were written in. */
+  answerLang?: Language;
 }) {
   const ui = UI[language] ?? UI.en;
   const [colValue, colReading, colSource, colUpdated] = ui.cols.split("|");
@@ -67,7 +71,14 @@ export default function EvidenceLedger({
         </button>
       </h2>
 
-      <div id={tableId} hidden={!open} className="overflow-x-auto px-4 pb-3 pt-1">
+      <div
+        id={tableId}
+        hidden={!open}
+        tabIndex={0}
+        role="region"
+        aria-label={ui.ledger}
+        className="overflow-x-auto px-4 pb-3 pt-1"
+      >
         <table className="w-full min-w-[520px] text-left font-mono text-label">
           <thead>
             <tr className="border-b" style={{ borderColor: "var(--rule)" }}>
@@ -82,7 +93,7 @@ export default function EvidenceLedger({
               ))}
             </tr>
           </thead>
-          <tbody className="text-ink-800">
+          <tbody className="text-ink-800" lang={answerLang}>
             {evidence.map((e, i) => (
               <tr key={i} className="border-t" style={{ borderColor: "var(--rule-faint)" }}>
                 <th scope="row" className="py-1.5 pr-3 font-sans font-normal">

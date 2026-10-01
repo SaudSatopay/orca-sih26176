@@ -11,9 +11,13 @@ function findEvidence(res: ChatResponse, label: string): string | null {
 export default function ConditionsStrip({
   res,
   language = "en",
+  answerLang,
 }: {
   res: ChatResponse;
+  /** The reader's language: the instrument labels print in it. */
   language?: Language;
+  /** The language the answer's own readings were written in. */
+  answerLang?: Language;
 }) {
   const t = L[language] ?? L.en;
   const tiles = [
@@ -35,6 +39,7 @@ export default function ConditionsStrip({
         >
           <dt className="label truncate !text-label">{tile.label}</dt>
           <dd
+            lang={tile.value ? answerLang : undefined}
             className="mt-1 truncate font-mono text-body font-bold tabular-nums leading-none text-ink-900"
             title={tile.value ?? undefined}
           >

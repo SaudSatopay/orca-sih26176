@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as api from "../api";
 import type { Language, Location, TimelinePoint } from "../types";
 import { RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
@@ -35,6 +35,21 @@ export default function RiskTimeline({
   const [loaded, setLoaded] = useState<{ lat: number; lon: number; points: TimelinePoint[] } | null>(
     null,
   );
+  // The chart fills its panel: the viewBox is drawn at the measured width, so
+  // there is no letterbox at any panel size. Text is set in px of the viewBox,
+  // which equals CSS px because width and viewBox agree.
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState(0);
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      if (w > 0) setMeasured(Math.round(w));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
   const t = L[language] ?? L.en;
   const band = CATEGORY[language] ?? CATEGORY.en;
   const lat = location?.latitude;
@@ -65,7 +80,8 @@ export default function RiskTimeline({
     );
   if (!points.length) return null;
 
-  const W = 720;
+  // Drawn at the panel's own width: no letterbox, one CSS px per viewBox unit.
+  const W = Math.max(measured, 320);
   const H = 150;
   const padX = 8;
   const padTop = 12;
@@ -94,13 +110,14 @@ export default function RiskTimeline({
             {String((points[window[1]].hour + 1) % 24).padStart(2, "0")}:00
           </span>
         ) : (
-          <span className="stamp shrink-0 !px-2 !py-0.5 !text-label text-risk-extreme">
+          // A finding, not a verdict: the flat boxed tag, never the stamp.
+          <span className="shrink-0 border border-risk-extreme bg-paper-50 px-1.5 py-0.5 font-mono text-label font-bold uppercase tracking-[0.1em] text-risk-extreme">
             {t.none}
           </span>
         )}
       </div>
 
-      <div className="px-3 pb-3 pt-2">
+      <div ref={frameRef} className="px-3 pb-3 pt-2">
         <svg
           viewBox={`0 0 ${W} ${H}`}
           className="w-full"
@@ -132,6 +149,23 @@ export default function RiskTimeline({
               fill={b.color}
               opacity={0.055}
             />
+          ))}
+
+          {/* band names, written in the margin at the right edge */}
+          {RISK_BANDS.map((b) => (
+            <text
+              key={`bn${b.category}`}
+              x={W - padX - 4}
+              y={(y(b.from) + y(b.max)) / 2 + 3.5}
+              fill={ink[400]}
+              fontSize={typePx.label}
+              fontWeight="600"
+              textAnchor="end"
+              letterSpacing="0.08em"
+              fontFamily="'Spline Sans Mono Variable', monospace"
+            >
+              {band[b.category] ?? b.category}
+            </text>
           ))}
 
           {/* hour grid, as chart graticule */}
@@ -216,7 +250,7 @@ export default function RiskTimeline({
             fontWeight="700"
             fontFamily="'Spline Sans Mono Variable', monospace"
           >
-            {t.now}
+            {t.now} · {points[nowIdx].score}
           </text>
 
           {/* peak label — a sounding above the worst hour */}

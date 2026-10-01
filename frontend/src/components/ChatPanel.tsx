@@ -20,7 +20,9 @@ export default function ChatPanel({
   messages,
   busy,
   failed,
+  hasAnswer = false,
   language,
+  answerLang,
   suggestions,
   onSend,
   onRetry,
@@ -29,7 +31,11 @@ export default function ChatPanel({
   busy: boolean;
   /** The last question could not be answered: /api/chat did not respond. */
   failed: boolean;
+  /** An earlier answer is still on the sheet, so the error can say so truthfully. */
+  hasAnswer?: boolean;
   language: Language;
+  /** The language the latest answer (and its follow-ups) was written in. */
+  answerLang?: Language;
   suggestions: string[];
   onSend: (text: string) => void;
   onRetry: () => void;
@@ -119,10 +125,10 @@ export default function ChatPanel({
         aria-label={t.log}
         aria-busy={busy}
         tabIndex={empty ? undefined : 0}
-        className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-auto px-4 py-4 max-lg:max-h-[60vh]"
+        className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-auto px-4 py-4"
       >
         {empty && (
-          <div className="flex h-full flex-col justify-end gap-3 pb-1">
+          <div className="flex h-full flex-col justify-start gap-3 pb-1">
             <p className="font-display text-lead font-bold leading-snug text-ink-900">
               {t.emptyMain}
             </p>
@@ -143,12 +149,17 @@ export default function ChatPanel({
           m.role === "user" ? (
             <div key={m.id} data-asked className={`flex ${atMount.has(m.id) ? "" : "animate-rise"} flex-col items-end pl-8`}>
               <div className="label mb-1 !text-label">{t.youAsked}</div>
-              <p className="rounded-[3px] rounded-br-none bg-ink-900 px-3.5 py-2.5 font-display text-body font-medium leading-snug text-paper-50">
+              <p className="break-words rounded-[3px] rounded-br-none bg-ink-900 px-3.5 py-2.5 font-display text-body font-medium leading-snug text-paper-50">
                 {m.text}
               </p>
             </div>
           ) : (
-            <Answer key={m.id} text={m.text} arriving={!atMount.has(m.id)} />
+            <Answer
+              key={m.id}
+              text={m.text}
+              lang={m.response?.language}
+              arriving={!atMount.has(m.id)}
+            />
           ),
         )}
 
@@ -170,7 +181,9 @@ export default function ChatPanel({
                 <h3 className="font-display text-lead font-bold leading-snug text-ink-900">
                   {err.offlineTitle}
                 </h3>
-                <p className="mt-1 text-body leading-relaxed text-ink-700">{err.offlineBody}</p>
+                <p className="mt-1 text-body leading-relaxed text-ink-700">
+                  {hasAnswer ? err.offlineBody : err.offlineFirstBody}
+                </p>
                 <button className="btn-line mt-3" onClick={onRetry}>
                   {err.retry}
                 </button>
@@ -188,6 +201,7 @@ export default function ChatPanel({
             {suggestions.slice(0, 4).map((s) => (
               <button
                 key={s}
+                lang={answerLang}
                 className="chip !py-1 !text-label disabled:opacity-50"
                 onClick={() => submit(s)}
                 disabled={busy}
@@ -256,11 +270,12 @@ export default function ChatPanel({
   );
 }
 
-/** ORCA's side: the verdict sentence, the advice, then the provenance apart. */
-function Answer({ text, arriving }: { text: string; arriving: boolean }) {
+/** ORCA's side: the verdict sentence, the advice, then the provenance apart.
+ *  The bubble speaks the answer's own language, and says so for assistive tech. */
+function Answer({ text, lang, arriving }: { text: string; lang?: Language; arriving: boolean }) {
   const { lead, body, sources, note } = splitAnswer(text);
   return (
-    <article className={`${arriving ? "animate-rise " : ""}pr-4`}>
+    <article lang={lang} className={`${arriving ? "animate-rise " : ""}break-words pr-4`}>
       <div className="mb-1.5 flex items-center gap-2">
         <CompassMark size={22} className="shrink-0 text-ink-900" />
         <span className="label !text-label !text-ink-700">ORCA</span>
