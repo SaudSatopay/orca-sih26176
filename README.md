@@ -18,6 +18,8 @@
 *"Can I go fishing tomorrow at 6 AM?" is a life-or-death question on India's coast.*
 *ORCA answers it with evidence, in Marathi, Hindi or English — and shows its working.*
 
+**Live:** <https://orca-psi-one.vercel.app> · phone edition at [`/?m=1`](https://orca-psi-one.vercel.app/?m=1) · or run it locally in one double-click ([Quickstart](#quickstart))
+
 </div>
 
 ---
@@ -99,6 +101,7 @@ locally and the app degrades gracefully without it.)
 | Command | What it does |
 |---|---|
 | `RUN-ORCA.bat` / `.\start-orca.ps1` | Demo mode (cached, rehearsed data). **Use this on stage.** |
+| *(verified)* | *These steps were re-run on a fresh clone on 1 Oct 2026: pip install, smoke test, server, phone and desktop views — nothing else needed.* |
 | `.\start-orca.ps1 -Live` | Live public providers, auto-falls back to cache per reading |
 | `.\dev.ps1` | Hot-reload backend + Vite HMR frontend |
 | `cd backend; python smoke_test.py` | All five demo scenarios, headless, with pass/fail |
@@ -494,6 +497,13 @@ better than a dark dashboard on a hackathon projector.
 7. Public deployment for the national round
 
 ---
+
+## Credits
+
+- **Team Random (U3M71E5U)** — design, engineering and the words, for SIH26176 (ISRO).
+- **Open data:** [Open-Meteo](https://open-meteo.com) marine and forecast APIs (live mode); an [OBIS](https://obis.org) / Map of Life species-occurrence snapshot (bundled, dated); [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors for the base map; INCOIS / IMD advisory formats inform the demo's rehearsed warnings.
+- **Type:** [Fraunces](https://fonts.google.com/specimen/Fraunces), [Archivo](https://fonts.google.com/specimen/Archivo), [Spline Sans Mono](https://fonts.google.com/specimen/Spline+Sans+Mono) and [Noto Serif Devanagari](https://fonts.google.com/noto/specimen/Noto+Serif+Devanagari), self-hosted via Fontsource.
+- **Open source:** FastAPI, pydantic, httpx, uvicorn; React, Vite, TypeScript, Tailwind, Leaflet, three.js / React Three Fiber, Paper Shaders; [liquid-glass-js](https://github.com/dashersw/liquid-glass-js) (MIT, vendored and credited in-tree).
 
 <div align="center">
 
