@@ -1,18 +1,21 @@
 {
-  "name": "ORCA — Marine Decision Support",
+  "name": "ORCA — safe-to-fish decisions",
   "short_name": "ORCA",
-  "description": "Ten agents read the sea. One safe, explainable decision — in your language.",
+  "description": "Ten agents read the sea and return one safe, explainable decision for a fisher, in Marathi, Hindi or English. Decision support, not an official advisory.",
+  "id": "/?m=1",
   "start_url": "/?m=1",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["weather", "navigation", "utilities"],
   "background_color": "#F5EEDD",
   "theme_color": "#F5EEDD",
   "icons": [
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }
