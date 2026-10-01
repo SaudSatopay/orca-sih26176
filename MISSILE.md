@@ -3,7 +3,7 @@
 status: stage=3 iteration=0 verdict=CONTINUE updated=2026-10-01T10:00:00Z
 mode: full flight (resumed from recon)
 branch: missile/20261001
-url: none
+url: https://orca-psi-one.vercel.app
 max_iterations: 6
 
 ## Target
@@ -162,6 +162,9 @@ Order: foundations, then ship a preview early, then tokens and accessibility, th
 <!-- iterations:end -->
 
 ## Decisions
+
+- Deploy, 1 Oct 2026: `vercel deploy --yes` (no `--prod`) created the Vercel project `orca`. Because it was the project's first deployment, Vercel assigned it to the production alias https://orca-psi-one.vercel.app on its own. That was not intended: the plan said preview only. Nothing existed there before, so nothing was replaced. Later deploys from this branch are previews; the production alias only moves again if the user asks for `--prod`. To take it down: `vercel remove orca`.
+- Vercel runs the API on Python 3.12 (3.10 is not offered); local and CI run 3.10. `/api/health` and `/api/scenarios` answer on the deployment.
 
 - Gate: the user was shown the target and asked go, adjust or stop, and answered by firing the missile again with a direction. Taken as go with an adjustment (frontend beauty first). No second confirmation was asked.
 - Hosting: proceeding with the recommended Vercel preview (static frontend plus the FastAPI app as a Python function). Preview only, never production. The in-memory chat session caveat stands and is tested on the preview.

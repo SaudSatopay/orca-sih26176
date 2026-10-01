@@ -32,3 +32,6 @@ Thumbs.db
 .missile/
 .playwright-cli/
 .claude/worktrees/
+.vercel
+
+.vercel
