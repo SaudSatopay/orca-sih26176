@@ -54,6 +54,11 @@ const small = (html: string, px: number = typePx.label) =>
 const startsNarrow = () =>
   typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 480px)").matches;
 
+/** The OS "reduce motion" setting: the chart then cuts to its new view instead of travelling. */
+const prefersStill = () =>
+  typeof window !== "undefined" &&
+  !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
 /**
  * Leaflet map presented as a chart sheet: paper margin, tick marks, double
  * neatline, compass rose, hatched danger areas, plotted courses.
@@ -491,8 +496,9 @@ export default function MarineMap({
       bounds.push([origin.latitude, origin.longitude]);
     }
 
-    if (bounds.length > 1) map.fitBounds(L.latLngBounds(bounds).pad(0.22), { animate: true });
-    else if (origin) map.setView([origin.latitude, origin.longitude], 10, { animate: true });
+    const animate = !prefersStill();
+    if (bounds.length > 1) map.fitBounds(L.latLngBounds(bounds).pad(0.22), { animate });
+    else if (origin) map.setView([origin.latitude, origin.longitude], 10, { animate });
   }, [origin, zones, pfz, areas, routes, radiusKm, focusRank, alerts, language]);
 
   // Fly to a ground when the user taps its card in the list.
@@ -500,7 +506,8 @@ export default function MarineMap({
     const map = mapRef.current;
     if (!map || !focusRank) return;
     const target = areas.find((a) => a.rank === focusRank);
-    if (target) map.flyTo([target.latitude, target.longitude], 11, { duration: 0.8 });
+    if (target)
+      map.flyTo([target.latitude, target.longitude], 11, { duration: 0.8, animate: !prefersStill() });
   }, [focusRank, areas]);
 
   const critical = geofence.filter((g) => g.severity === "critical");

@@ -36,9 +36,8 @@ export default {
         ],
         mono: ['"Spline Sans Mono Variable"', '"Nirmala UI"', "Consolas", "monospace"],
       },
-      // Transform-only entrances, deliberately: an animation that starts at
-      // opacity 0 with fill-mode both leaves content INVISIBLE if animations
-      // never run (hidden tab, some projectors) — and these carry safety data.
+      // Transform-only entrances with no fill-mode: if an animation never
+      // runs, the element is simply at rest, fully visible.
       keyframes: {
         rise: {
           "0%": { transform: "translateY(8px)" },
@@ -51,8 +50,8 @@ export default {
         },
       },
       animation: {
-        rise: "rise .35s ease-out both",
-        stampIn: "stampIn .45s cubic-bezier(.2,.9,.3,1.2) both",
+        rise: "rise .35s ease-out",
+        stampIn: "stampIn .45s cubic-bezier(.2,.9,.3,1.2)",
       },
     },
   },

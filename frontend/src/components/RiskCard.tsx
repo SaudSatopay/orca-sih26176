@@ -70,11 +70,11 @@ export default function RiskCard({
               >
                 {band}
               </span>
+              {/* No delay on the second stamp: without a fill-mode a delayed
+                  stamp would sit at rest, jump out to 1.3x and land. The two
+                  stamps land together. */}
               {risk.official_warning && (
-                <span
-                  className={`stamp ${fresh ? "animate-stampIn" : ""} text-label text-risk-extreme`}
-                  style={{ animationDelay: "120ms" }}
-                >
+                <span className={`stamp ${fresh ? "animate-stampIn" : ""} text-label text-risk-extreme`}>
                   {ui.warning}
                 </span>
               )}

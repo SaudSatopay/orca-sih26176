@@ -10,6 +10,12 @@ const styles = import.meta.glob<string>("./**/*.css", {
   query: "?raw",
   import: "default",
 });
+const config = import.meta.glob<string>("../tailwind.config.js", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+});
+
 const bare = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
 /** Every `@keyframes` block: its file, its name and the properties it animates. */
@@ -74,5 +80,16 @@ describe("motion doctrine", () => {
         if (name && !REBUILDING.has(name)) offenders.push(`${file}: animation: ${value.trim()}`);
       }
     expect(offenders).toEqual([]);
+  });
+
+  // C (plan 4)
+  it("the house entrances keep no fill-mode, and reduced motion never resets a resting transform", () => {
+    const tailwind = Object.values(config)[0] ?? "";
+    const animation = /animation:\s*\{([^}]*)\}/.exec(tailwind)?.[1] ?? "";
+    expect(animation).toContain("rise");
+    expect(animation).not.toMatch(/\b(both|forwards|backwards)\b/);
+    const css = bare(styles["./index.css"]);
+    const reduced = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
+    expect(reduced).not.toMatch(/transform:\s*none\s*!important/);
   });
 });

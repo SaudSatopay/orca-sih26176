@@ -1001,12 +1001,11 @@ html {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  /* Entrance animations use fill-mode:both, which would otherwise leave
-     elements stuck at opacity 0 when animation is suppressed. */
+  /* The entrances are transform-only and have no fill-mode, so switching them
+     off is all reduced motion needs. Nothing here may reset `transform`: the
+     stamp's -2 degree tilt is how it rests, not how it moves. */
   .animate-rise,
   .animate-stampIn {
     animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
   }
 }
