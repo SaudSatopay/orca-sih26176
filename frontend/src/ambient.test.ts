@@ -100,4 +100,32 @@ describe("ambient motion", () => {
     for (const cls of [".sea-drift", ".fish-drift", ".wave-rule", ".compass-needle", ".storm-spin"])
       expect(AMBIENT_SELECTOR.split(",")).toContain(cls);
   });
+
+  it("rests the loops, and only the loops, while the tab is hidden", () => {
+    document.body.innerHTML = `<div class="wave-rule"></div><main class="animate-rise"></main><span class="v-countdown"></span>`;
+    stop = watchAmbientMotion();
+    setHidden(true);
+    expect(document.querySelector(".wave-rule")).toHaveAttribute("data-offscreen");
+    expect(document.querySelector(".animate-rise")).not.toHaveAttribute("data-offscreen");
+    expect(document.querySelector(".v-countdown")).not.toHaveAttribute("data-offscreen");
+    setHidden(false);
+    expect(document.querySelector(".wave-rule")).not.toHaveAttribute("data-offscreen");
+  });
+
+  it("keeps an off-screen loop resting when the tab comes back", () => {
+    document.body.innerHTML = `<div class="wave-rule"></div>`;
+    const wave = document.querySelector(".wave-rule")!;
+    stop = watchAmbientMotion();
+    FakeIO.last!.report(wave, false);
+    setHidden(true);
+    setHidden(false);
+    expect(wave).toHaveAttribute("data-offscreen");
+  });
+
+  it("watches the pipeline's signals and the drafting hatch, and no dead class", () => {
+    const list = AMBIENT_SELECTOR.split(",");
+    expect(list).toEqual(expect.arrayContaining([".v-connector", ".v-draft"]));
+    expect(list).not.toContain(".signal-line");
+    expect(list).not.toContain(".svg-swim");
+  });
 });

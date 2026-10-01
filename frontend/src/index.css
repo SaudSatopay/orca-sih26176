@@ -28,6 +28,8 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --press: 120ms;
   --hover: 180ms;
+  /* every bar that draws itself in — why-bars, factor meters, coast stems */
+  --draw: 600ms;
 
   /* The sheet itself: graticule grid, aged edges, and the sea rising from
      the foot of the sheet — the page always stands in shallow water. */
@@ -121,11 +123,10 @@ body::after {
   z-index: 1;
 }
 
-/* The ambient loops are polite: all of them stop while the tab is hidden, and
-   each stops while it is off-screen (src/ambient.ts sets both marks). */
-:root[data-ambient="paused"] *,
-:root[data-ambient="paused"] *::before,
-:root[data-ambient="paused"] *::after,
+/* The ambient loops are polite: each rests while it is off-screen, and all of
+   them rest while the tab is hidden (src/ambient.ts puts the mark on the loops
+   themselves). Only loops are ever paused: an entrance or a countdown keeps
+   its own time, so nothing waits half-drawn for a tab to come back. */
 [data-offscreen],
 [data-offscreen]::before,
 [data-offscreen]::after,
@@ -189,9 +190,12 @@ main:focus-visible {
     opacity: 0;
   }
 }
+/* A dash pattern loops cleanly only over a whole number of its own periods.
+   Each running path carries its distance as --dash-loop (src/dash.ts works it
+   out from the pattern); 48 suits the 12 12 course and the 3 5 drafting ring. */
 @keyframes dashdrift {
   to {
-    stroke-dashoffset: -48;
+    stroke-dashoffset: var(--dash-loop, -48);
   }
 }
 @keyframes needlesway {
@@ -271,7 +275,7 @@ main:focus-visible {
 
 .grow-x {
   transform-origin: left center;
-  animation: growx 0.9s var(--ease-out);
+  animation: growx var(--draw) var(--ease-out);
 }
 
 /* Fish idle at station against the current: a small forward dart, drift back. */
@@ -287,12 +291,6 @@ main:focus-visible {
 .swim {
   animation: swim 3.8s ease-in-out infinite;
 }
-.svg-swim {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: swim 3.8s ease-in-out infinite;
-}
-
 /* Schools crossing the foot of the page, upstream of the drifting swell. */
 @keyframes schoolrun {
   to {
@@ -337,6 +335,8 @@ main:focus-visible {
   border-radius: 9999px;
   border: 1.5px solid currentColor;
   animation: ping2 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  /* a row of dots pings out of step: each host sets its own --pulse-delay */
+  animation-delay: var(--pulse-delay, 0s);
 }
 .pulse-dot--still::after {
   animation: none;
@@ -353,6 +353,27 @@ main:focus-visible {
   transform-box: fill-box;
   transform-origin: center;
   animation: ping2 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* While the console listens, a ring leaves the stop button like a ripple from
+   a buoy. Transform and opacity only; the button itself never fades. */
+@keyframes mic-wave {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+.mic-wave {
+  position: absolute;
+  inset: -1px;
+  border: 2px solid theme(colors.risk.extreme);
+  border-radius: 2px;
+  pointer-events: none;
+  animation: mic-wave 1.8s var(--ease-out) infinite;
 }
 
 /* ------------------------------------------------------------------
@@ -374,9 +395,21 @@ main:focus-visible {
 .sea-drift:has(> i) {
   background-image: none;
 }
+/* The phone keeps the static shell's own sea (.shell-sea in index.html) for the
+   life of the page. Once the document is marked as a phone, its three painted
+   backgrounds stand down and the same three transform layers take over, so the
+   compositor moves the water and nothing repaints. */
+html.phone .shell-sea {
+  overflow: hidden;
+  contain: strict;
+  background-image: none;
+}
 .sea-drift::before,
 .sea-drift::after,
-.sea-drift > i {
+.sea-drift > i,
+html.phone .shell-sea::before,
+html.phone .shell-sea::after,
+html.phone .shell-sea > i {
   content: "";
   position: absolute;
   top: 0;
@@ -385,21 +418,24 @@ main:focus-visible {
   background-position: bottom left;
   will-change: transform;
 }
-.sea-drift::before {
+.sea-drift::before,
+html.phone .shell-sea::before {
   left: 0;
   right: -280px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='280' height='70' viewBox='0 0 280 70'%3E%3Cpath d='M0 34 Q35 14 70 34 T140 34 T210 34 T280 34 L280 70 L0 70 Z' fill='%232A7391' fill-opacity='0.10'/%3E%3C/svg%3E");
   background-size: 280px 70px;
   animation: seadrift-a 13s linear infinite;
 }
-.sea-drift::after {
+.sea-drift::after,
+html.phone .shell-sea::after {
   left: -340px;
   right: 0;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='340' height='84' viewBox='0 0 340 84'%3E%3Cpath d='M0 40 Q42 18 85 40 T170 40 T255 40 T340 40 L340 84 L0 84 Z' fill='%232A7391' fill-opacity='0.07'/%3E%3C/svg%3E");
   background-size: 340px 84px;
   animation: seadrift-b 21s linear infinite;
 }
-.sea-drift > i {
+.sea-drift > i,
+html.phone .shell-sea > i {
   left: 0;
   right: -420px;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='100' viewBox='0 0 420 100'%3E%3Cpath d='M0 46 Q52 24 105 46 T210 46 T315 46 T420 46 L420 100 L0 100 Z' fill='%231E5F7A' fill-opacity='0.05'/%3E%3C/svg%3E");
@@ -986,12 +1022,11 @@ html {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  /* Entrance animations use fill-mode:both, which would otherwise leave
-     elements stuck at opacity 0 when animation is suppressed. */
+  /* The entrances are transform-only and have no fill-mode, so switching them
+     off is all reduced motion needs. Nothing here may reset `transform`: the
+     stamp's -2 degree tilt is how it rests, not how it moves. */
   .animate-rise,
   .animate-stampIn {
     animation: none !important;
-    opacity: 1 !important;
-    transform: none !important;
   }
 }

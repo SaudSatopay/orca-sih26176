@@ -88,7 +88,7 @@ label carrying information must still render at 11 CSS px or more.
 
 ## Motion doctrine (as shipped)
 
-- Entrances are transform-only (`rise`, `stampIn`, `growx`), run without fill-mode, and play once per reading, never again on a later visit to the same sheet. Nothing starts at opacity 0, so safety data is visible even if an animation never runs.
+- Entrances are transform-only (`rise` 260 ms, `stampIn` 450 ms, `growx` at the one `--draw` of 600 ms), run without fill-mode, and play once per reading (`firstSight.ts`), never again on a later visit to the same sheet. Nothing starts at opacity 0, so safety data is visible even if an animation never runs. One curve, `--ease-out`, everywhere.
 - UI transitions are 200 to 300 ms.
 - Ambient loops belong to things that would move at sea: buoys bob (3.4 s), the hull rolls (4.2 s), the compass needle sways (7 s), waterlines crawl, the plotted course's dashes run, the storm symbol turns, signals travel the pipeline, the swell drifts.
 - The chart's sea is a canvas particle field (`FlowLayer.ts`) of wind or surface current over a sea-temperature shade. It checks `prefers-reduced-motion` itself.

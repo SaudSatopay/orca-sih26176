@@ -13,6 +13,7 @@ import type {
   RouteOption,
   ZoneFeature,
 } from "../types";
+import { dashLoop } from "../dash";
 import { RATING_COLOR } from "../risk";
 import { CompassMark } from "./glyphs";
 import { ChevronGlyph } from "./viewGlyphs";
@@ -53,6 +54,16 @@ const small = (html: string, px: number = typePx.label) =>
 /** A narrow chart keeps its key folded so the key does not cover the sea. */
 const startsNarrow = () =>
   typeof window !== "undefined" && !!window.matchMedia?.("(max-width: 480px)").matches;
+
+/** The OS "reduce motion" setting: the chart then cuts to its new view instead of travelling. */
+const prefersStill = () =>
+  typeof window !== "undefined" &&
+  !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+/** Gives a running path a loop of a whole number of its own dash periods, so the dashes never jump. */
+function runDashes(layer: L.Path, dashArray: string) {
+  (layer.getElement() as SVGElement | undefined)?.style.setProperty("--dash-loop", String(-dashLoop(dashArray)));
+}
 
 /**
  * Leaflet map presented as a chart sheet: paper margin, tick marks, double
@@ -106,6 +117,8 @@ export default function MarineMap({
   const [probe, setProbe] = useState<PositionCheck | null>(null);
   const [dragging, setDragging] = useState(false);
   const [keyOpen, setKeyOpen] = useState(() => !startsNarrow());
+  // The key's rise is for the reader opening it, not for the chart mounting.
+  const [keyTouched, setKeyTouched] = useState(false);
   // The grounds view (a search radius is given) is tall from the first paint,
   // so the sheet does not jump when the grounds arrive.
   const mapHeight = heightPx ?? (areas.length || radiusKm ? 540 : 420);
@@ -227,7 +240,7 @@ export default function MarineMap({
 
     // search radius — shows exactly how far ORCA looked for grounds
     if (origin && radiusKm) {
-      L.circle([origin.latitude, origin.longitude], {
+      const reach = L.circle([origin.latitude, origin.longitude], {
         radius: radiusKm * 1000,
         color: chart[500],
         weight: 1.6,
@@ -243,6 +256,7 @@ export default function MarineMap({
           direction: "top",
         })
         .addTo(group);
+      runDashes(reach, "2 7");
     }
 
     // restricted zones — hatched like chart danger areas
@@ -288,13 +302,14 @@ export default function MarineMap({
       const track = s.track ?? [];
       if (track.length > 1) {
         const line = track.map((p) => [p.latitude, p.longitude] as [number, number]);
-        L.polyline(line, {
+        const path = L.polyline(line, {
           color: risk.extreme,
           weight: 2.5,
           opacity: 0.85,
           dashArray: "3 7",
           className: "route-live",
         }).addTo(group);
+        runDashes(path, "3 7");
         track.forEach((p) => {
           L.marker([p.latitude, p.longitude], {
             // The track is read out in the written description; its dots are
@@ -354,11 +369,12 @@ export default function MarineMap({
       const line = r.legs.map((l) => [l.latitude, l.longitude] as [number, number]);
       line.forEach((p) => bounds.push(p));
       const rec = r.recommended;
-      L.polyline(line, {
+      const dashArray = rec ? "12 12" : "2 8";
+      const courseLine = L.polyline(line, {
         color: rec ? risk.low : ink[400],
         weight: rec ? 4 : 2.5,
         opacity: rec ? 0.95 : 0.55,
-        dashArray: rec ? "12 12" : "2 8",
+        dashArray,
         className: rec ? "route-live" : "",
       })
         .bindPopup(
@@ -367,6 +383,7 @@ export default function MarineMap({
             small(esc(r.notes), typePx.label),
         )
         .addTo(group);
+      if (rec) runDashes(courseLine, dashArray);
     });
 
     // fishing grounds as numbered buoys: paper face, rating-coloured ring,
@@ -386,7 +403,7 @@ export default function MarineMap({
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2],
             html: `<div class="bob" style="position:relative;width:${size}px;height:${size}px;
-                        animation-delay:${((a.rank * 7) % 10) / 3}s">
+                        animation-delay:-${((a.rank * 7) % 10) / 3}s">
                      ${focused ? `<div style="position:absolute;inset:-8px;border-radius:50%;
                         border:2px solid ${color};animation:ping2 1.6s cubic-bezier(0,0,.2,1) infinite"></div>` : ""}
                      <div class="buoy" style="position:absolute;inset:0;border-radius:50%;background:${paper[50]};
@@ -423,7 +440,7 @@ export default function MarineMap({
             className: "",
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2],
-            html: `<div class="bob" style="width:${size}px;height:${size}px;animation-delay:${((z.rank * 7) % 10) / 3}s">
+            html: `<div class="bob" style="width:${size}px;height:${size}px;animation-delay:-${((z.rank * 7) % 10) / 3}s">
                      <div class="buoy" style="width:100%;height:100%;border-radius:50%;background:${paper[50]};
                        border:${best ? 4 : 3}px solid ${color};display:grid;place-items:center;
                        color:${ink[900]};font:${best ? `800 ${typePx.lead}px` : `700 ${typePx.body}px`} ${SERIF};
@@ -489,8 +506,9 @@ export default function MarineMap({
       bounds.push([origin.latitude, origin.longitude]);
     }
 
-    if (bounds.length > 1) map.fitBounds(L.latLngBounds(bounds).pad(0.22), { animate: true });
-    else if (origin) map.setView([origin.latitude, origin.longitude], 10, { animate: true });
+    const animate = !prefersStill();
+    if (bounds.length > 1) map.fitBounds(L.latLngBounds(bounds).pad(0.22), { animate });
+    else if (origin) map.setView([origin.latitude, origin.longitude], 10, { animate });
   }, [origin, zones, pfz, areas, routes, radiusKm, focusRank, alerts, language]);
 
   // Fly to a ground when the user taps its card in the list.
@@ -498,7 +516,8 @@ export default function MarineMap({
     const map = mapRef.current;
     if (!map || !focusRank) return;
     const target = areas.find((a) => a.rank === focusRank);
-    if (target) map.flyTo([target.latitude, target.longitude], 11, { duration: 0.8 });
+    if (target)
+      map.flyTo([target.latitude, target.longitude], 11, { duration: 0.8, animate: !prefersStill() });
   }, [focusRank, areas]);
 
   const critical = geofence.filter((g) => g.severity === "critical");
@@ -588,15 +607,18 @@ export default function MarineMap({
             aria-expanded={keyOpen}
             aria-controls={keyId}
             title={keyOpen ? tx.hideKey : tx.showKey}
-            onClick={() => setKeyOpen((v) => !v)}
-            className="flex w-full items-center justify-between gap-3 px-3 py-1.5 font-mono text-label font-bold uppercase tracking-[0.16em] text-ink-500"
+            onClick={() => {
+              setKeyTouched(true);
+              setKeyOpen((v) => !v);
+            }}
+            className="cell-press flex w-full items-center justify-between gap-3 px-3 py-1.5 font-mono text-label font-bold uppercase tracking-[0.16em] text-ink-500"
           >
             {legend.symbols}
             <span className="rotate-180 text-ink-700">
               <ChevronGlyph size={9} className="v-chevron" />
             </span>
           </button>
-          <div id={keyId} hidden={!keyOpen} className="v-map-key-body px-3 pb-2">
+          <div id={keyId} hidden={!keyOpen} className={`${keyTouched ? "v-map-key-body " : ""}px-3 pb-2`}>
             {[
               [risk.low, legend.veryGood],
               [chance.some, legend.some],
@@ -659,7 +681,7 @@ export default function MarineMap({
           <div className="pointer-events-none absolute inset-x-0 top-3 z-[500] flex justify-center px-3">
             <div
               role="status"
-              className={`v-enter pointer-events-auto max-w-[78%] rounded-[2px] px-3.5 py-2 text-body font-semibold text-paper-50 shadow-lg ${banner.style}`}
+              className={`v-drop pointer-events-auto max-w-[78%] rounded-[2px] px-3.5 py-2 text-body font-semibold text-paper-50 shadow-lg ${banner.style}`}
             >
               <div>{banner.text}</div>
               {banner.sub && <div className="mt-0.5 font-mono text-label font-normal">{banner.sub}</div>}

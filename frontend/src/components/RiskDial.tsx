@@ -3,6 +3,14 @@ import { RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
 import type { RiskCategory } from "../types";
 import { alpha, ink, paper } from "../tokens";
 
+/** The OS "reduce motion" setting: the dial then opens on its reading. */
+function prefersStill(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 /**
  * The risk gauge, drawn like a ship's instrument: a fine tick ring, an ink
  * arc, threshold marks at the band edges, and a serif numeral that counts up
@@ -13,24 +21,30 @@ export default function RiskDial({
   category,
   size = 138,
   label,
+  fresh = true,
 }: {
   score: number;
   category: RiskCategory;
   size?: number;
   /** The band in the reader's language, for assistive tech; defaults to the category. */
   label?: string;
+  /** False when this reading has been on screen before: the dial opens on its score. */
+  fresh?: boolean;
 }) {
-  const [shown, setShown] = useState(0);
+  const still = prefersStill();
+  const [shown, setShown] = useState(fresh ? 0 : score);
   const color = RISK_COLOR[category];
   const c = size / 2;
   const rArc = c - 13;
   const circumference = 2 * Math.PI * rArc;
 
   useEffect(() => {
+    const from = shown;
+    // Nothing to count: reduced motion, or the dial already reads this score.
+    if (still || from === score) return;
     const duration = 750;
     let raf = 0;
     const start = performance.now();
-    const from = shown;
 
     const tick = (now: number) => {
       // rAF's timestamp can predate the performance.now() captured above, which
@@ -53,7 +67,10 @@ export default function RiskDial({
       window.clearTimeout(settle);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [score]);
+  }, [score, still]);
+
+  /** What the dial reads now: the count while it runs, the score itself under reduced motion. */
+  const value = still ? score : shown;
 
   // Outer instrument ticks: a mark every 2 points, a major every 10.
   const ticks = Array.from({ length: 50 }, (_, i) => {
@@ -124,8 +141,7 @@ export default function RiskDial({
           strokeWidth={7}
           strokeLinecap="butt"
           strokeDasharray={circumference}
-          strokeDashoffset={circumference * (1 - shown / 100)}
-          style={{ transition: "stroke-dashoffset .12s linear" }}
+          strokeDashoffset={circumference * (1 - value / 100)}
           transform={`rotate(-90 ${c} ${c})`}
         />
         <circle cx={c} cy={c} r={rArc - 6.5} fill="none" stroke={alpha(ink[900], 0.3)} strokeWidth={0.8} />
@@ -136,7 +152,7 @@ export default function RiskDial({
             className="font-display text-dial font-black tabular-nums tracking-tight"
             style={{ color: RISK_INK[category] }}
           >
-            {Math.max(0, shown)}
+            {Math.max(0, value)}
           </div>
           <div className="mt-1 font-mono text-label font-semibold uppercase tracking-[0.2em] text-ink-400">
             / 100

@@ -1,5 +1,6 @@
 import { useId } from "react";
 import type { AvoidZone, FishingArea, FishingOutlook, Language } from "../types";
+import { useFirstSight } from "../firstSight";
 import { FishGlyph, SchoolGlyph, WarnGlyph } from "./glyphs";
 import { EmptySweepGlyph, NoEntryGlyph } from "./viewGlyphs";
 import { Draft, DraftSheet, OfflineNotice } from "./SheetStates";
@@ -309,9 +310,11 @@ function Grounds({
   const titleId = useId();
   const top = data.areas.slice(0, 3);
   const km = Math.round(data.radius_km);
+  // The factor meters draw when this reading arrives, not on every visit.
+  const fresh = useFirstSight(`grounds:${data.generated_at}`);
 
   return (
-    <section className="panel overflow-hidden" aria-labelledby={titleId}>
+    <section className="panel overflow-hidden" aria-labelledby={titleId} data-fresh={fresh ? "" : undefined}>
       <div className="hd">
         <h2 id={titleId} className="label flex items-center gap-2">
           {t.areas}

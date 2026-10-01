@@ -24,11 +24,16 @@
   }
 }
 .v-enter {
-  animation: v-rise 260ms cubic-bezier(0.23, 1, 0.32, 1);
+  animation: v-rise 260ms var(--ease-out);
 }
 /* A fresh reading arrives at the top of a log. */
 .v-row-enter {
-  animation: v-drop 240ms cubic-bezier(0.23, 1, 0.32, 1);
+  animation: v-drop 240ms var(--ease-out);
+}
+/* A thing hanging from an edge drops from it: the harbour list from its
+   trigger, the chart's banner from the neatline above it. */
+.v-drop {
+  animation: v-drop 180ms var(--ease-out);
 }
 
 /* ------------------------------------------------ cards */
@@ -47,7 +52,7 @@
 button.v-card {
   cursor: pointer;
   transition:
-    transform 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 140ms var(--ease-out),
     border-color 160ms ease,
     background-color 160ms ease,
     box-shadow 160ms ease;
@@ -108,7 +113,11 @@ button.v-card:active {
   height: 100%;
   background: theme(colors.chart.600);
   transform-origin: left center;
-  animation: growx 700ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+/* The meters draw once per reading ([data-fresh] on the section), never on a
+   later mount of the same reading. */
+[data-fresh] .v-factor-fill {
+  animation: growx var(--draw) var(--ease-out);
 }
 .v-factor-value {
   display: block;
@@ -182,17 +191,26 @@ button.v-card:active {
 }
 
 /* ------------------------------------------------ drafted skeletons */
-/* Loading is a sheet still being drafted: pencil construction boxes
-   with the hatch crawling through them, never a spinner. */
+/* Loading is a sheet still being drafted: pencil construction boxes with the
+   hatch crawling through them, never a spinner. The hatch is a layer one tile
+   wider than its box and travels by transform, so the compositor moves it and
+   nothing repaints (as .wave-rule does in index.css). */
 @keyframes v-draft {
   to {
-    background-position-x: 12px;
+    transform: translate3d(12px, 0, 0);
   }
 }
 .v-draft {
+  position: relative;
   display: block;
+  overflow: hidden;
   border: 1px dashed var(--rule);
   border-radius: 2px;
+}
+.v-draft::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 -12px;
   background-image: repeating-linear-gradient(
     -45deg,
     theme(colors.ink.900 / 7%) 0 1px,
@@ -214,7 +232,9 @@ button.v-card:active {
   display: block;
   height: 100%;
   transform-origin: left center;
-  animation: growx 700ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+[data-fresh] .v-meter-fill {
+  animation: growx var(--draw) var(--ease-out);
 }
 .v-meter-tick {
   position: absolute;
@@ -250,7 +270,7 @@ button.v-card:active {
 }
 .v-sort-mark {
   color: theme(colors.ink.300);
-  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms ease;
+  transition: transform 180ms var(--ease-out), color 160ms ease;
 }
 .v-sort[data-active="true"] .v-sort-mark {
   color: theme(colors.ink.900);
@@ -259,7 +279,7 @@ button.v-card:active {
   transform: rotate(180deg);
 }
 .v-row {
-  transition: background-color 160ms ease;
+  transition: background-color 120ms ease;
 }
 .v-row-warned {
   background-image: repeating-linear-gradient(
@@ -278,9 +298,8 @@ button.v-card:active {
   }
   .v-row:hover {
     background-color: theme(colors.paper.150);
-  }
-  .v-cell-hover:hover {
-    background-color: theme(colors.chart.100 / 45%);
+    /* instant on, soft off: the wash never trails the pointer down the table */
+    transition-duration: 0ms;
   }
 }
 
@@ -328,7 +347,9 @@ button.v-card:active {
   margin-left: -0.5px;
   background: theme(colors.ink.900 / 30%);
   transform-origin: center bottom;
-  animation: v-stem 600ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+[data-fresh] .v-coast-stem {
+  animation: v-stem var(--draw) var(--ease-out);
 }
 @keyframes v-stem {
   from {
@@ -390,9 +411,8 @@ button.v-card:active {
     padding-bottom: 10px;
   }
 }
-.v-option {
-  transition: background-color 140ms ease;
-}
+/* No transition on the option highlight: arrow keys and the pointer move it,
+   and a selection must be where the hand is, not trailing it. */
 .v-option:focus-visible {
   outline-offset: -2px;
 }
@@ -419,13 +439,6 @@ button.v-card:active {
     border-color: theme(colors.risk.extreme);
     color: theme(colors.paper.50);
   }
-  .v-arrow-host:hover .v-arrow {
-    transform: translateX(3px);
-    color: theme(colors.chart.600);
-  }
-}
-.v-arrow {
-  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms ease;
 }
 
 /* ------------------------------------------------ the pipeline */
@@ -478,14 +491,11 @@ button.v-card:active {
 }
 
 /* ------------------------------------------------ the chart's furniture */
-.v-map-key {
-  transform-origin: left bottom;
-}
 .v-map-key-body {
-  animation: v-rise 200ms cubic-bezier(0.23, 1, 0.32, 1);
+  animation: v-rise 200ms var(--ease-out);
 }
 .v-chevron {
-  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 180ms var(--ease-out);
 }
 [aria-expanded="true"] .v-chevron {
   transform: rotate(180deg);
@@ -516,13 +526,14 @@ button.v-card:active {
 @media (prefers-reduced-motion: reduce) {
   .v-enter,
   .v-row-enter,
+  .v-drop,
   .v-map-key-body,
-  .v-coast-stem,
-  .v-factor-fill,
-  .v-meter-fill {
+  [data-fresh] .v-coast-stem,
+  [data-fresh] .v-factor-fill,
+  [data-fresh] .v-meter-fill {
     animation: none;
   }
-  .v-draft,
+  .v-draft::before,
   .v-connector > i,
   .v-countdown {
     animation: none;

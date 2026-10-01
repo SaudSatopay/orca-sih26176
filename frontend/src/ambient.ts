@@ -7,10 +7,14 @@ import { useEffect } from "react";
  * ambient loops, all of them CSS. They belong to the chart, but they must be
  * cheap and polite, so two marks switch them off (the rules are in index.css):
  *
- * - `data-ambient="paused"` on the root element while the tab is hidden;
- * - `data-offscreen` on a looping element while it is outside the viewport.
+ * - `data-ambient="paused"` on the root element while the tab is hidden, as a
+ *   readable mark of what the watcher decided;
+ * - `data-offscreen` on a looping element while it is outside the viewport,
+ *   and on every loop while the tab is hidden.
  *
  * Both only set `animation-play-state`, so a loop picks up where it stopped.
+ * Only loops are paused: entrances and the board's countdown keep their own
+ * time whatever the tab is doing.
  */
 
 /** Every class that carries an infinite loop. */
@@ -20,7 +24,6 @@ export const AMBIENT_SELECTOR = [
   ".wave-rule",
   ".compass-needle",
   ".swim",
-  ".svg-swim",
   ".svg-bob",
   ".svg-ping",
   ".pulse-dot",
@@ -41,9 +44,16 @@ export const AMBIENT_SELECTOR = [
 export function watchAmbientMotion(doc: Document = document): () => void {
   const root = doc.documentElement;
 
+  /** What the observer last said about each loop: true when it is outside the viewport. */
+  const outside = new Map<Element, boolean>();
+  // A loop rests when the tab is hidden or the loop itself is off-screen.
+  const mark = (el: Element) =>
+    el.toggleAttribute("data-offscreen", doc.hidden || outside.get(el) === true);
+
   const onVisibility = () => {
     if (doc.hidden) root.setAttribute("data-ambient", "paused");
     else root.removeAttribute("data-ambient");
+    outside.forEach((_, el) => mark(el));
   };
   onVisibility();
   doc.addEventListener("visibilitychange", onVisibility);
@@ -59,18 +69,21 @@ export function watchAmbientMotion(doc: Document = document): () => void {
     };
   }
 
-  const watched = new Set<Element>();
   const io = new Observer(
     (entries) => {
-      for (const e of entries) e.target.toggleAttribute("data-offscreen", !e.isIntersecting);
+      for (const e of entries) {
+        outside.set(e.target, !e.isIntersecting);
+        mark(e.target);
+      }
     },
     // a little early, so a loop is already moving as it scrolls into view
     { rootMargin: "80px" },
   );
 
   const watch = (el: Element) => {
-    if (watched.has(el)) return;
-    watched.add(el);
+    if (outside.has(el)) return;
+    outside.set(el, false);
+    mark(el);
     io.observe(el);
   };
   const scan = (node: ParentNode) => node.querySelectorAll(AMBIENT_SELECTOR).forEach(watch);
@@ -86,10 +99,10 @@ export function watchAmbientMotion(doc: Document = document): () => void {
       });
       r.removedNodes.forEach((n) => {
         if (n.nodeType !== 1) return;
-        for (const el of watched) {
+        for (const el of [...outside.keys()]) {
           if (n === el || n.contains(el)) {
             io.unobserve(el);
-            watched.delete(el);
+            outside.delete(el);
           }
         }
       });
@@ -101,8 +114,8 @@ export function watchAmbientMotion(doc: Document = document): () => void {
     doc.removeEventListener("visibilitychange", onVisibility);
     mo.disconnect();
     io.disconnect();
-    watched.forEach((el) => el.removeAttribute("data-offscreen"));
-    watched.clear();
+    outside.forEach((_, el) => el.removeAttribute("data-offscreen"));
+    outside.clear();
     root.removeAttribute("data-ambient");
   };
 }

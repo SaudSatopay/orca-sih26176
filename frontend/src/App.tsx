@@ -762,7 +762,7 @@ export default function App() {
 
                   {latest?.risk && (
                     <div
-                      className={busy ? "space-y-2 opacity-60 transition-opacity" : undefined}
+                      className={`transition-opacity duration-200 ${busy ? "space-y-2 opacity-60" : ""}`}
                       aria-busy={busy}
                     >
                       {busy && <p className="label px-1">{ui.stale}</p>}

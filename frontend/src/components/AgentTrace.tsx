@@ -1,4 +1,5 @@
 import type { AgentTrace as Trace, Language } from "../types";
+import { useFirstSight } from "../firstSight";
 import { LABEL, T } from "../i18n/agentTrace";
 import { PHASES, pairs } from "../crew";
 import { alpha, ink, risk } from "../tokens";
@@ -24,6 +25,8 @@ export default function AgentTracePanel({
   elapsed?: number;
   language?: Language;
 }) {
+  // The latency bars draw once per trace, not on every return to the view.
+  const fresh = useFirstSight(`trace:${elapsed ?? 0}:${trace.map((x) => x.latency_ms).join(".")}`);
   if (!trace.length) return null;
   const t = T[language] ?? T.en;
   const labels = LABEL[language] ?? LABEL.en;
@@ -108,7 +111,7 @@ export default function AgentTracePanel({
                     {row.latency_ms > 0 && (
                       <div className="mt-1 h-[2px] overflow-hidden bg-ink-900/[0.07]">
                         <div
-                          className="grow-x h-full bg-chart-500/70"
+                          className={`${fresh ? "grow-x" : ""} h-full bg-chart-500/70`}
                           style={{ width: `${(row.latency_ms / maxLatency) * 100}%` }}
                         />
                       </div>

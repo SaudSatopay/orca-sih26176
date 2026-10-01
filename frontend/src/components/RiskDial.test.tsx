@@ -37,6 +37,23 @@ describe("RiskDial", () => {
     expect(container).toHaveTextContent("/ 100");
   });
 
+  it("opens on its reading under reduced motion: no count to wait for", () => {
+    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("reduce") }));
+    const { container } = render(<RiskDial score={70} category="HIGH" />);
+    expect(container).toHaveTextContent("70/ 100");
+  });
+
+  it("opens on its reading when that reading has been on screen before", () => {
+    const { container } = render(<RiskDial score={70} category="HIGH" fresh={false} />);
+    expect(container).toHaveTextContent("70/ 100");
+  });
+
+  it("moves the arc with the numeral: the arc has no transition of its own", () => {
+    const { container } = render(<RiskDial score={70} category="HIGH" />);
+    const arc = container.querySelector("circle[stroke-dasharray]");
+    expect(arc?.getAttribute("style") ?? "").not.toContain("transition");
+  });
+
   it("lands on the rehearsed 9 and 92 as well", () => {
     const low = render(<RiskDial score={9} category="LOW" />);
     settle();

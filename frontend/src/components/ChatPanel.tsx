@@ -42,6 +42,8 @@ export default function ChatPanel({
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Messages already in the log when it was opened do not rise again.
+  const [atMount] = useState(() => new Set(messages.map((m) => m.id)));
 
   // Bring the newest exchange into view by scrolling the log itself, never the
   // page (the page belongs to the verdict). The question goes to the top of
@@ -139,14 +141,14 @@ export default function ChatPanel({
 
         {messages.map((m) =>
           m.role === "user" ? (
-            <div key={m.id} data-asked className="flex animate-rise flex-col items-end pl-8">
+            <div key={m.id} data-asked className={`flex ${atMount.has(m.id) ? "" : "animate-rise"} flex-col items-end pl-8`}>
               <div className="label mb-1 !text-label">{t.youAsked}</div>
               <p className="rounded-[3px] rounded-br-none bg-ink-900 px-3.5 py-2.5 font-display text-body font-medium leading-snug text-paper-50">
                 {m.text}
               </p>
             </div>
           ) : (
-            <Answer key={m.id} text={m.text} />
+            <Answer key={m.id} text={m.text} arriving={!atMount.has(m.id)} />
           ),
         )}
 
@@ -229,13 +231,14 @@ export default function ChatPanel({
             aria-label={listening ? t.stopListening : t.speak}
             aria-pressed={listening}
             title={listening ? t.stopListening : t.speak}
-            className={`press grid h-10 w-10 shrink-0 place-items-center rounded-[2px] border ${
+            className={`press relative grid h-10 w-10 shrink-0 place-items-center rounded-[2px] border ${
               listening
                 ? "border-risk-extreme bg-risk-extreme text-paper-50"
                 : "border-ink-900 bg-paper-50 text-ink-900 hover:bg-ink-900 hover:text-paper-50"
             }`}
-            style={listening ? { animation: "inkblink 1.2s ease-in-out infinite" } : undefined}
           >
+            {/* the ring carries the listening state; the control stays fully legible */}
+            {listening && <span className="mic-wave" aria-hidden />}
             {listening ? <StopGlyph size={12} /> : <MicGlyph size={17} />}
           </button>
         )}
@@ -254,10 +257,10 @@ export default function ChatPanel({
 }
 
 /** ORCA's side: the verdict sentence, the advice, then the provenance apart. */
-function Answer({ text }: { text: string }) {
+function Answer({ text, arriving }: { text: string; arriving: boolean }) {
   const { lead, body, sources, note } = splitAnswer(text);
   return (
-    <article className="animate-rise pr-4">
+    <article className={`${arriving ? "animate-rise " : ""}pr-4`}>
       <div className="mb-1.5 flex items-center gap-2">
         <CompassMark size={22} className="shrink-0 text-ink-900" />
         <span className="label !text-label !text-ink-700">ORCA</span>

@@ -1,5 +1,6 @@
 import L from "leaflet";
 import * as api from "../api";
+import { flowStep } from "./flowStep";
 import { chance, chart, flow, risk, sst } from "../tokens";
 
 /**
@@ -364,9 +365,14 @@ export class FlowLayer {
     }
     if (!this.watched) return this.mark("paused");
     this.mark("running");
-    const tick = () => {
-      this.step();
+    let last = 0;
+    const tick = (now: number) => {
       this.raf = requestAnimationFrame(tick);
+      // The first frame steps once; after that the field moves by the time that has passed.
+      const k = last ? flowStep(now - last) : 1;
+      if (k === 0) return;
+      last = now;
+      this.step(k);
     };
     this.raf = requestAnimationFrame(tick);
   }
@@ -406,24 +412,25 @@ export class FlowLayer {
     ctx.globalAlpha = 1;
   }
 
-  private step() {
+  /** One step of the field. `k` is the time it covers, in 60 Hz frames. */
+  private step(k = 1) {
     const ctx = this.flowCanvas.getContext("2d");
     if (!ctx || !this.field) return;
 
     // fade existing trails
     ctx.globalCompositeOperation = "destination-in";
-    ctx.fillStyle = "rgba(0,0,0,0.96)";
+    ctx.fillStyle = `rgba(0,0,0,${Math.pow(0.96, k)})`;
     ctx.fillRect(0, 0, this.flowCanvas.width, this.flowCanvas.height);
     ctx.globalCompositeOperation = "source-over";
 
     const wind = this.mode === "wind";
-    const scale = wind ? 0.00042 : 0.0028; // deg per (km/h · frame), tuned by eye
+    const scale = (wind ? 0.00042 : 0.0028) * k; // deg per (km/h · 60 Hz frame), tuned by eye
     const ramp = wind ? WIND_RAMP : CUR_RAMP;
     ctx.lineWidth = 1.15;
 
     for (const p of this.particles) {
       const vec = this.sample(p.lat, p.lon);
-      p.age += 1;
+      p.age += k;
       if (!vec || p.age > p.maxAge) {
         const np = this.randomSeaPoint();
         if (np) {
