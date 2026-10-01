@@ -186,17 +186,26 @@ button.v-card:active {
 }
 
 /* ------------------------------------------------ drafted skeletons */
-/* Loading is a sheet still being drafted: pencil construction boxes
-   with the hatch crawling through them, never a spinner. */
+/* Loading is a sheet still being drafted: pencil construction boxes with the
+   hatch crawling through them, never a spinner. The hatch is a layer one tile
+   wider than its box and travels by transform, so the compositor moves it and
+   nothing repaints (as .wave-rule does in index.css). */
 @keyframes v-draft {
   to {
-    background-position-x: 12px;
+    transform: translate3d(12px, 0, 0);
   }
 }
 .v-draft {
+  position: relative;
   display: block;
+  overflow: hidden;
   border: 1px dashed var(--rule);
   border-radius: 2px;
+}
+.v-draft::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 -12px;
   background-image: repeating-linear-gradient(
     -45deg,
     theme(colors.ink.900 / 7%) 0 1px,
@@ -530,7 +539,7 @@ button.v-card:active {
   [data-fresh] .v-meter-fill {
     animation: none;
   }
-  .v-draft,
+  .v-draft::before,
   .v-connector > i,
   .v-countdown {
     animation: none;

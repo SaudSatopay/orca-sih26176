@@ -48,7 +48,7 @@ function keyframes(): { file: string; name: string; props: string[] }[] {
 const MOVES = new Set(["transform", "opacity", "clip-path", "stroke-dashoffset"]);
 
 /** Keyframes that still break the rule; each is owned by a plan in .missile/checks/motion-it1.md. */
-const PENDING = new Set<string>(["v-draft"]);
+const PENDING = new Set<string>([]);
 
 /** Keyframes of the landing hero while its sequence is being rebuilt. Empty this when it lands. */
 const REBUILDING = new Set<string>([]);
@@ -91,5 +91,10 @@ describe("motion doctrine", () => {
     const css = bare(styles["./index.css"]);
     const reduced = css.slice(css.lastIndexOf("@media (prefers-reduced-motion: reduce)"));
     expect(reduced).not.toMatch(/transform:\s*none\s*!important/);
+  });
+
+  // D (plan 7)
+  it("the pause rule names loops, never every element", () => {
+    expect(bare(styles["./index.css"])).not.toMatch(/\[data-ambient="paused"\]\s*\*/);
   });
 });

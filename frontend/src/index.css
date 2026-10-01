@@ -121,11 +121,10 @@ body::after {
   z-index: 1;
 }
 
-/* The ambient loops are polite: all of them stop while the tab is hidden, and
-   each stops while it is off-screen (src/ambient.ts sets both marks). */
-:root[data-ambient="paused"] *,
-:root[data-ambient="paused"] *::before,
-:root[data-ambient="paused"] *::after,
+/* The ambient loops are polite: each rests while it is off-screen, and all of
+   them rest while the tab is hidden (src/ambient.ts puts the mark on the loops
+   themselves). Only loops are ever paused: an entrance or a countdown keeps
+   its own time, so nothing waits half-drawn for a tab to come back. */
 [data-offscreen],
 [data-offscreen]::before,
 [data-offscreen]::after,
@@ -290,12 +289,6 @@ main:focus-visible {
 .swim {
   animation: swim 3.8s ease-in-out infinite;
 }
-.svg-swim {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: swim 3.8s ease-in-out infinite;
-}
-
 /* Schools crossing the foot of the page, upstream of the drifting swell. */
 @keyframes schoolrun {
   to {
