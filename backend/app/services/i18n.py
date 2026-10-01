@@ -196,6 +196,73 @@ def source_label(code: str, lang: Language) -> str:
     return SOURCE_LABELS_L10N.get(code, {}).get(lang, english)
 
 
+# Species as a fisher names them, keyed by the canonical entries in
+# services/fishing.py. English keeps the local-name-plus-gloss form; Hindi and
+# Marathi print the local name in the reader's own script, with no English
+# gloss — the gloss exists for readers who do not know the local name, and in
+# hi/mr the local name IS the reader's word.
+SPECIES_L10N: Dict[str, Dict[Language, str]] = {
+    "Bangda (Indian mackerel)": {"hi": "बांगड़ा", "mr": "बांगडा"},
+    "Tarli (oil sardine)": {"hi": "तारली", "mr": "तारली"},
+    "Paplet (silver pomfret)": {"hi": "पापलेट", "mr": "पापलेट"},
+    "Surmai (seer fish)": {"hi": "सुरमई", "mr": "सुरमई"},
+    "Bombil (Bombay duck)": {"hi": "बोंबिल", "mr": "बोंबील"},
+    "Hilsa (ilish)": {"hi": "हिल्सा", "mr": "हिलसा"},
+}
+
+
+def species_name(name: str, lang: Language) -> str:
+    return SPECIES_L10N.get(name, {}).get(lang, name)
+
+
+# The fishing model's footnote, shown under the factor meters.
+METHOD_L10N: Dict[Language, str] = {
+    "en": ("Likelihood from chlorophyll, sea-surface temperature, thermal front "
+           "strength, sea state and time of day. Species mix weighted by regional "
+           "occurrence records (OBIS / Map of Life snapshot). "
+           "A likelihood, never a guarantee."),
+    "hi": ("संभावना क्लोरोफ़िल, समुद्र-सतह के तापमान, तापीय मोर्चे की ताक़त, समुद्र की "
+           "हालत और दिन के समय से निकाली गई है। मछलियों का मिश्रण क्षेत्रीय "
+           "उपस्थिति रिकॉर्ड (OBIS / Map of Life स्नैपशॉट) से तौला गया है। "
+           "यह एक संभावना है, कोई वादा नहीं।"),
+    "mr": ("शक्यता क्लोरोफिल, समुद्र-पृष्ठ तापमान, तापीय आघाडीची तीव्रता, समुद्राची "
+           "स्थिती आणि दिवसाच्या वेळेवरून काढली आहे. माशांचे मिश्रण प्रादेशिक "
+           "नोंदींनुसार (OBIS / Map of Life स्नॅपशॉट) तोलले आहे. "
+           "ही एक शक्यता आहे, हमी नाही."),
+}
+
+
+def method_line(lang: Language) -> str:
+    return METHOD_L10N.get(lang, METHOD_L10N["en"])
+
+
+# The trip-economics assumptions, with the numbers handed in so this table can
+# never drift from the model's constants (services/fishing.py).
+ASSUMPTIONS_L10N: Dict[Language, str] = {
+    "en": "Typical motorised FRP boat · {l_per_km} L/km · ₹{price}/L · mixed catch ₹{mixed}/kg",
+    "hi": "आम मोटर वाली FRP नाव · {l_per_km} ली/किमी · ₹{price}/ली · मिली-जुली पकड़ ₹{mixed}/किलो",
+    "mr": "नेहमीची मोटर असलेली FRP होडी · {l_per_km} ली/किमी · ₹{price}/ली · मिश्र मासळी ₹{mixed}/किलो",
+}
+
+
+def assumptions_line(lang: Language, *, l_per_km: float, price: float, mixed: float) -> str:
+    return ASSUMPTIONS_L10N.get(lang, ASSUMPTIONS_L10N["en"]).format(
+        l_per_km=l_per_km, price=f"{price:.0f}", mixed=f"{mixed:.0f}")
+
+
+# A ground's one-line rationale: the same figures in every language.
+RATIONALE_L10N: Dict[Language, str] = {
+    "en": "Chlorophyll {chl} mg/m³ at {sst} °C, {km} km {dir}.",
+    "hi": "क्लोरोफ़िल {chl} mg/m³, {sst} °C पर · {km} किमी {dir}।",
+    "mr": "क्लोरोफिल {chl} mg/m³, {sst} °C ला · {km} किमी {dir}.",
+}
+
+
+def ground_rationale(lang: Language, *, chl, sst, km: int, bearing: Optional[str]) -> str:
+    return RATIONALE_L10N.get(lang, RATIONALE_L10N["en"]).format(
+        chl=chl, sst=sst, km=km, dir=direction(bearing, lang))
+
+
 # The demo geofences (data/geo.py RESTRICTED_ZONES), by their English name.
 ZONE_NAMES: Dict[str, Dict[Language, str]] = {
     "Mumbai Port approach channel": {

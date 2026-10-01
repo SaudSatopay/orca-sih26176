@@ -12,9 +12,25 @@ import type {
 
 const BASE = "/api";
 
+/**
+ * A stalled connection must become the calm offline sheet, not a skeleton
+ * that never resolves: every request gives up after this long and rejects,
+ * which lands in the same catch as a refused one. At sea, slow is normal —
+ * the limit is generous.
+ */
+const TIMEOUT_MS = 15_000;
+
+function timeout(): AbortSignal | undefined {
+  // Older WebViews lack AbortSignal.timeout; there, requests simply wait.
+  return typeof AbortSignal !== "undefined" && "timeout" in AbortSignal
+    ? AbortSignal.timeout(TIMEOUT_MS)
+    : undefined;
+}
+
 async function json<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     headers: { "Content-Type": "application/json" },
+    signal: timeout(),
     ...init,
   });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);

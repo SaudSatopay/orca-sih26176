@@ -19,7 +19,7 @@ from ..data.demo_store import IST, now_ist
 from ..data.geo import (RESTRICTED_ZONES, distance_from_shore_km, haversine_km,
                         nearest_port, point_in_polygon, zone_window_text, zones_near)
 from ..schemas import Location
-from ..services import fishing, plain_language
+from ..services import fishing, i18n, plain_language
 
 router = APIRouter(prefix="/api", tags=["fishing"])
 
@@ -52,7 +52,7 @@ def _safe_window_hours(loc: Location, start: datetime) -> float:
 
 
 def _zone_payload(loc: Location, zones: List[Dict], ambient_sst: Optional[float],
-                  hour: int) -> List[Dict]:
+                  hour: int, lang: str = "en") -> List[Dict]:
     """Score, filter and rank candidate grounds."""
     scored: List[Dict] = []
     for z in zones:
@@ -64,15 +64,17 @@ def _zone_payload(loc: Location, zones: List[Dict], ambient_sst: Optional[float]
         z["probability"] = result["probability"]
         z["rating"] = fishing.rating(result["probability"])
         z["factors"] = result["factors"]
-        z["likely_species"] = fishing.likely_species(
-            z.get("sst_c"), z.get("chlorophyll_mg_m3"), z["distance_km"],
-            lat=z["latitude"], lon=z["longitude"])
+        z["likely_species"] = [
+            i18n.species_name(s, lang)
+            for s in fishing.likely_species(
+                z.get("sst_c"), z.get("chlorophyll_mg_m3"), z["distance_km"],
+                lat=z["latitude"], lon=z["longitude"])
+        ]
         z["confidence"] = round(result["probability"] / 100.0, 2)
         z["value_score"] = fishing.value_score(result["probability"], z["distance_km"])
-        z["rationale"] = (
-            f"Chlorophyll {z.get('chlorophyll_mg_m3')} mg/m³ at {z.get('sst_c')} °C, "
-            f"{round(z['distance_km'])} km {z['bearing']}."
-        )
+        z["rationale"] = i18n.ground_rationale(
+            lang, chl=z.get("chlorophyll_mg_m3"), sst=z.get("sst_c"),
+            km=round(z["distance_km"]), bearing=z.get("bearing"))
         scored.append(z)
 
     # Numbering follows the chance of fish, so "area 1" always means "best
@@ -117,7 +119,7 @@ def fishing_outlook(
 
     # ---- grounds within the radius, today -------------------------------
     candidates = demo_store.pfz_zones(lat, lon, loc.name, now, radius_km=radius_km)
-    zones = _zone_payload(loc, candidates, ambient_sst, now.hour)
+    zones = _zone_payload(loc, candidates, ambient_sst, now.hour, lang)
 
     # ---- best hours to be on the water ----------------------------------
     wave_by_hour: Dict[int, float] = {}
@@ -165,6 +167,11 @@ def fishing_outlook(
                 probability_pct=top_zone["probability"],
                 distance_km=top_zone["distance_km"],
             )
+            # The assumptions sentence in the reader's language, from the same
+            # constants, so the arithmetic stays checkable in any of the three.
+            economics["assumptions"] = i18n.assumptions_line(
+                lang, l_per_km=fishing.FUEL_L_PER_KM,
+                price=fishing.FUEL_PRICE_INR_PER_L, mixed=fishing.MIXED_CATCH_INR_PER_KG)
 
     # ---- two-day outlook -------------------------------------------------
     forecast: List[Dict] = []
@@ -202,7 +209,7 @@ def fishing_outlook(
             "rating": fishing.rating(prob),
             "wave_height_m": round(cond["wave"], 2),
             "wind_speed_kmh": round(cond["wind"], 1),
-            "sea_state": cond["sea_state"],
+            "sea_state": i18n.sea_state(cond["sea_state"], lang),
             "calmer": cond["wave"] < base_wave if offset else True,
             "official_warning": any(a.get("official") for a in day_alerts),
             "best_area_rank": best["rank"] if best else None,
@@ -211,10 +218,12 @@ def fishing_outlook(
 
     # ---- what to avoid, and when ----------------------------------------
     nearby_zones = zones_near(lat, lon, radius_km=radius_km, hour=now.hour)
+    # The reader's name for each zone: the advice sentences quote these, so
+    # localising here keeps Marathi advice from carrying an English zone name.
     closed = [
-        {"name": z["name"], "zone_type": z["zone_type"], "distance_km": z["distance_km"],
-         "window": z.get("window"), "active_now": z.get("active_now"),
-         "severity": z["severity"]}
+        {"name": i18n.zone_name(z["name"], lang), "zone_type": z["zone_type"],
+         "distance_km": z["distance_km"], "window": z.get("window"),
+         "active_now": z.get("active_now"), "severity": z["severity"]}
         for z in nearby_zones
     ]
 
@@ -249,7 +258,7 @@ def fishing_outlook(
             "improves_after": risk.get("window"),
             "wave_height_m": ocean.data.get("wave_height_m"),
             "wind_speed_kmh": weather.data.get("wind_speed_kmh"),
-            "sea_state": ocean.data.get("sea_state"),
+            "sea_state": i18n.sea_state(ocean.data.get("sea_state"), lang),
         },
         "areas": zones,
         "best_window": {"from_hour": best_window[0], "to_hour": best_window[1]} if best_window else None,
@@ -261,8 +270,5 @@ def fishing_outlook(
         "forecast": forecast,
         "advice": advice,
         "mode": weather.mode,
-        "method": ("Likelihood from chlorophyll, sea-surface temperature, thermal front "
-                   "strength, sea state and time of day. Species mix weighted by regional "
-                   "occurrence records (OBIS / Map of Life snapshot). "
-                   "A likelihood, never a guarantee."),
+        "method": i18n.method_line(lang),
     }

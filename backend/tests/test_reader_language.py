@@ -27,7 +27,9 @@ SCENARIOS = [DANGER, CYCLONE, ROUTE, PFZ]
 # Latin-script tokens that may stay in Hindi and Marathi: agencies and other
 # proper nouns, the time zone, and the units written on every chart.
 ALLOWED_LATIN = {"ORCA", "IMD", "INCOIS", "MOSDAC", "ISRO", "OpenStreetMap", "Open-Meteo",
-                 "Marine", "PFZ", "IST", "km", "m", "h", "s", "kmph", "mg", "C", "DEMO", "LIVE"}
+                 "Marine", "PFZ", "IST", "km", "m", "h", "s", "kmph", "mg", "C", "DEMO", "LIVE",
+                 # data-source proper nouns and the boat-class acronym
+                 "OBIS", "Map", "of", "Life", "FRP", "L", "kg"}
 
 
 def latin_words(text: str) -> set:
@@ -265,3 +267,36 @@ def test_risk_agent_defaults_to_english():
                          cyclone={}, gis={}, sources=[], mode="DEMO")
     labels = {f["key"]: f["label"] for f in res.data["factors"]}
     assert labels["wave"] == "Wave height"
+
+
+@pytest.mark.parametrize("lang", ["hi", "mr"])
+def test_fishing_outlook_speaks_the_readers_language(client, lang):
+    en = client.get("/api/fishing", params={"lat": 18.95, "lon": 72.75}).json()
+    loc = client.get("/api/fishing", params={"lat": 18.95, "lon": 72.75, "lang": lang}).json()
+
+    # the figures are the language-free engine, identical in every language
+    assert loc["safety"]["score"] == en["safety"]["score"]
+    assert [z["probability"] for z in loc["areas"]] == [z["probability"] for z in en["areas"]]
+    assert loc["economics"]["profit_inr"] == en["economics"]["profit_inr"]
+
+    # the words are the reader's
+    for z in loc["areas"][:3]:
+        for name in z["likely_species"]:
+            assert_devanagari(name, f"species {name!r}")
+        assert_devanagari(z["rationale"], "rationale")
+        assert_translated(z["rationale"], "rationale")
+    assert_devanagari(loc["method"], "method")
+    assert_translated(loc["method"], "method")
+    assert_devanagari(loc["economics"]["assumptions"], "assumptions")
+    assert_translated(loc["economics"]["assumptions"], "assumptions")
+    for z in loc["avoid"]:
+        assert_devanagari(z["name"], f"closed zone {z['name']!r}")
+
+
+def test_fishing_outlook_english_is_the_engines_wording(client):
+    en = client.get("/api/fishing", params={"lat": 18.95, "lon": 72.75}).json()
+    assert any("(" in s for z in en["areas"] for s in z["likely_species"]), \
+        "English keeps the local-name (gloss) form"
+    assert en["method"].startswith("Likelihood from chlorophyll")
+    assert en["economics"]["assumptions"].startswith("Typical motorised FRP boat")
+    assert any(z["name"] == "Mumbai Port approach channel" for z in en["avoid"])
