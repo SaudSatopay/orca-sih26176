@@ -13,6 +13,7 @@ import type {
   RouteOption,
   ZoneFeature,
 } from "../types";
+import { dashLoop } from "../dash";
 import { RATING_COLOR } from "../risk";
 import { CompassMark } from "./glyphs";
 import { ChevronGlyph } from "./viewGlyphs";
@@ -58,6 +59,11 @@ const startsNarrow = () =>
 const prefersStill = () =>
   typeof window !== "undefined" &&
   !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+/** Gives a running path a loop of a whole number of its own dash periods, so the dashes never jump. */
+function runDashes(layer: L.Path, dashArray: string) {
+  (layer.getElement() as SVGElement | undefined)?.style.setProperty("--dash-loop", String(-dashLoop(dashArray)));
+}
 
 /**
  * Leaflet map presented as a chart sheet: paper margin, tick marks, double
@@ -234,7 +240,7 @@ export default function MarineMap({
 
     // search radius — shows exactly how far ORCA looked for grounds
     if (origin && radiusKm) {
-      L.circle([origin.latitude, origin.longitude], {
+      const reach = L.circle([origin.latitude, origin.longitude], {
         radius: radiusKm * 1000,
         color: chart[500],
         weight: 1.6,
@@ -250,6 +256,7 @@ export default function MarineMap({
           direction: "top",
         })
         .addTo(group);
+      runDashes(reach, "2 7");
     }
 
     // restricted zones — hatched like chart danger areas
@@ -295,13 +302,14 @@ export default function MarineMap({
       const track = s.track ?? [];
       if (track.length > 1) {
         const line = track.map((p) => [p.latitude, p.longitude] as [number, number]);
-        L.polyline(line, {
+        const path = L.polyline(line, {
           color: risk.extreme,
           weight: 2.5,
           opacity: 0.85,
           dashArray: "3 7",
           className: "route-live",
         }).addTo(group);
+        runDashes(path, "3 7");
         track.forEach((p) => {
           L.marker([p.latitude, p.longitude], {
             // The track is read out in the written description; its dots are
@@ -361,11 +369,12 @@ export default function MarineMap({
       const line = r.legs.map((l) => [l.latitude, l.longitude] as [number, number]);
       line.forEach((p) => bounds.push(p));
       const rec = r.recommended;
-      L.polyline(line, {
+      const dashArray = rec ? "12 12" : "2 8";
+      const courseLine = L.polyline(line, {
         color: rec ? risk.low : ink[400],
         weight: rec ? 4 : 2.5,
         opacity: rec ? 0.95 : 0.55,
-        dashArray: rec ? "12 12" : "2 8",
+        dashArray,
         className: rec ? "route-live" : "",
       })
         .bindPopup(
@@ -374,6 +383,7 @@ export default function MarineMap({
             small(esc(r.notes), typePx.label),
         )
         .addTo(group);
+      if (rec) runDashes(courseLine, dashArray);
     });
 
     // fishing grounds as numbered buoys: paper face, rating-coloured ring,

@@ -189,9 +189,12 @@ main:focus-visible {
     opacity: 0;
   }
 }
+/* A dash pattern loops cleanly only over a whole number of its own periods.
+   Each running path carries its distance as --dash-loop (src/dash.ts works it
+   out from the pattern); 48 suits the 12 12 course and the 3 5 drafting ring. */
 @keyframes dashdrift {
   to {
-    stroke-dashoffset: -48;
+    stroke-dashoffset: var(--dash-loop, -48);
   }
 }
 @keyframes needlesway {
