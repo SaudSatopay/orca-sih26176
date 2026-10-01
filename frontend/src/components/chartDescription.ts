@@ -35,6 +35,8 @@ export interface ChartContent {
   geofence: GeofenceAlert[];
   routes: RouteOption[];
   alerts: MarineAlert[];
+  /** A do-not-go day: the grounds are drawn quiet, for reference only. */
+  severe?: boolean;
 }
 
 /** 18.95 → "18.95°N"; −4.2 → "4.20°S". */
@@ -106,6 +108,9 @@ export function describeChart(c: ChartContent, w: ChartWords): string[] {
 
   // Where the fisher already is comes before where he might go.
   for (const g of c.geofence) if (g.inside) out.push(fill(t.inside, { name: g.zone_name }));
+
+  // On a do-not-go day the grounds are reference, not an offer; say so first.
+  if (c.severe && (c.areas.length || c.pfz.length)) out.push(t.severeNote);
 
   // Grounds, best first. Scored grounds take precedence over raw zones,
   // exactly as on the chart.

@@ -552,3 +552,51 @@ button.v-card:active {
     transform: scaleX(0);
   }
 }
+
+/* =====================================================================
+   APPENDED · c3c chart iteration (X7 tile paper, C4/T4 storm plate,
+   M3/PM4 phone furniture, M2 tap confirm). Additive only; nothing above
+   this line is changed.
+   ===================================================================== */
+
+/* X7 — the raster reads as the chart's paper: the tile pane multiplies onto
+   paper-100, so OSM's greens and blues sink into the sheet while labels keep
+   their ink. More specific than the base .leaflet-tile rule in index.css, so
+   it wins regardless of bundle order. */
+.chart-frame .leaflet-container {
+  background: theme(colors.paper.100);
+}
+.chart-frame .leaflet-tile-pane {
+  mix-blend-mode: multiply;
+}
+.chart-frame .leaflet-tile {
+  filter: grayscale(0.6) sepia(0.5) saturate(0.55) contrast(0.92);
+}
+
+/* C4/T4 — the storm plate hangs below the symbol; its pointer flips with it. */
+.leaflet-tooltip-bottom.storm-label::before {
+  border-bottom-color: theme(colors.risk.extreme);
+}
+
+/* M3 — fingers: the popup close and the Symbols toggle reach 44 px, and the
+   M2 confirm button in the tap popup is a full finger target. */
+@media (pointer: coarse) {
+  .leaflet-container a.leaflet-popup-close-button {
+    width: 44px;
+    height: 44px;
+    line-height: 44px;
+    font-size: theme(fontSize.lead);
+  }
+  .v-map-key > button {
+    min-height: 44px;
+  }
+  .v-use-point {
+    min-height: 44px;
+  }
+}
+
+/* PM4 — phone furniture: the compass rose steps down to 44 px. */
+html.phone .v-map-rose {
+  width: 44px;
+  height: 44px;
+}

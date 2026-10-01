@@ -3,6 +3,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import * as api from "../api";
 import { FlowLayer, type FlowMode } from "./FlowLayer";
 import type {
+  CatchRating,
   FishingArea,
   GeofenceAlert,
   Language,
@@ -16,11 +17,11 @@ import type {
 import { dashLoop } from "../dash";
 import { RATING_COLOR } from "../risk";
 import { CompassMark } from "./glyphs";
-import { ChevronGlyph } from "./viewGlyphs";
+import { ChevronGlyph, NoEntryGlyph } from "./viewGlyphs";
 import { RATING_WORD } from "../i18n/fishing";
 import { COURSE, HINT, LEGEND, MAP, ZONE_STATUS, ZONE_TYPE } from "../i18n/marineMap";
-import { alpha, chance, chart, ink, paper, risk, sst, typePx } from "../tokens";
-import { describeChart } from "./chartDescription";
+import { alpha, chart, ink, paper, risk, sst, typePx } from "../tokens";
+import { describeChart, haversineKm } from "./chartDescription";
 import { fill } from "./todayModel";
 import "./views.css";
 
@@ -84,6 +85,19 @@ function runDashes(layer: L.Path, dashArray: string) {
  */
 const NONE: never[] = [];
 
+/**
+ * The chart hint is spent once per session: after the first successful
+ * position check or tap it stays dismissed, even across remounts (PM4).
+ */
+let hintSpent = false;
+
+/** The phone app adds this class before React mounts (main.tsx). */
+const isPhone = () =>
+  typeof document !== "undefined" && document.documentElement.classList.contains("phone");
+
+/** The order the key names ratings in, best first. */
+const RATING_ORDER: CatchRating[] = ["very_good", "good", "fair", "poor"];
+
 export default function MarineMap({
   origin,
   zones,
@@ -94,6 +108,7 @@ export default function MarineMap({
   geofence,
   alerts = NONE,
   language = "en",
+  severe = false,
   onPickLocation,
   focusRank,
   heightPx,
@@ -111,6 +126,11 @@ export default function MarineMap({
   /** Fixed map height (px) — the phone layout sizes the chart to the screen. */
   heightPx?: number;
   language?: Language;
+  /**
+   * A do-not-go day: the buoys render as quiet paper rings with the rank
+   * only — no percentage, no bob — and the key says so (C4').
+   */
+  severe?: boolean;
   /** Tap anywhere on the water to move the fisher's position. */
   onPickLocation?: (lat: number, lon: number) => void;
   focusRank?: number | null;
@@ -127,6 +147,12 @@ export default function MarineMap({
   const [keyOpen, setKeyOpen] = useState(() => !startsNarrow());
   // The key's rise is for the reader opening it, not for the chart mounting.
   const [keyTouched, setKeyTouched] = useState(false);
+  // PM4: the hint retires after the boat or the tap has been used once.
+  const [hintDone, setHintDone] = useState(hintSpent);
+  // A4: when an advisory circle swallows the whole view, the warning moves to
+  // the neatline as a margin note instead of hatching the entire sheet.
+  const [marginNote, setMarginNote] = useState<string | null>(null);
+  const phone = isPhone();
   // The grounds view (a search radius is given) is tall from the first paint,
   // so the sheet does not jump when the grounds arrive.
   const mapHeight = heightPx ?? (areas.length || radiusKm ? 540 : 420);
@@ -139,7 +165,7 @@ export default function MarineMap({
   const description = useMemo(
     () =>
       describeChart(
-        { origin, radiusKm, areas, pfz, zones, geofence, routes, alerts },
+        { origin, radiusKm, areas, pfz, zones, geofence, routes, alerts, severe },
         {
           map: MAP[language] ?? MAP.en,
           zoneType: ZONE_TYPE[language] ?? ZONE_TYPE.en,
@@ -148,7 +174,7 @@ export default function MarineMap({
           rating: RATING_WORD[language] ?? RATING_WORD.en,
         },
       ),
-    [origin, radiusKm, areas, pfz, zones, geofence, routes, alerts, language],
+    [origin, radiusKm, areas, pfz, zones, geofence, routes, alerts, severe, language],
   );
 
   // Leaflet caches the container size, so tell it whenever the height changes.
@@ -219,17 +245,36 @@ export default function MarineMap({
   }, [tx]);
 
   // Tap-to-choose-position. Registered separately so the handler always closes
-  // over the latest callback rather than the one from first render.
+  // over the latest callback rather than the one from first render. On a
+  // coarse pointer a stray tap must not silently re-target the verdict (M2):
+  // the tap opens a small confirm popup; dismissing it does nothing.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !onPickLocation) return;
-    const handler = (e: L.LeafletMouseEvent) =>
-      onPickLocation(+e.latlng.lat.toFixed(4), +e.latlng.lng.toFixed(4));
+    const t = MAP[language] ?? MAP.en;
+    const handler = (e: L.LeafletMouseEvent) => {
+      const go = () => {
+        hintSpent = true;
+        setHintDone(true);
+        onPickLocation(+e.latlng.lat.toFixed(4), +e.latlng.lng.toFixed(4));
+      };
+      if (!window.matchMedia?.("(pointer: coarse)").matches) return go();
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "btn-ink v-use-point";
+      b.textContent = t.usePoint;
+      const pop = L.popup().setLatLng(e.latlng).setContent(b);
+      b.onclick = () => {
+        map.closePopup(pop);
+        go();
+      };
+      pop.openOn(map);
+    };
     map.on("click", handler);
     return () => {
       map.off("click", handler);
     };
-  }, [onPickLocation]);
+  }, [onPickLocation, language]);
 
   // ---- redraw content --------------------------------------------------
   useEffect(() => {
@@ -267,44 +312,83 @@ export default function MarineMap({
       runDashes(reach, "2 7");
     }
 
-    // restricted zones — hatched like chart danger areas
+    // restricted zones — hatched like chart danger areas. A zone the current
+    // scale draws under 24 px on screen is close to invisible on the one
+    // sheet meant to show it (T4, PM1): it gets a 24 px no-entry marker at
+    // its centroid, above every buoy, shown and hidden as the zoom changes.
+    const noEntry: { marker: L.Marker; ring: [number, number][] }[] = [];
     zones.forEach((z) => {
       const ring = z.geometry.coordinates[0].map(([lon, lat]) => [lat, lon] as [number, number]);
       const severity = z.properties.severity in ZONE_COLOR ? z.properties.severity : "critical";
       const color = ZONE_COLOR[severity];
+      const popupHtml =
+        `<b>${esc(z.properties.name)}</b><br/>` +
+        `${esc(zoneType[z.properties.zone_type] ?? zoneType.other)} · ` +
+        `<b style="font-family:inherit;font-size:inherit">${esc(
+          zoneStatus[severity as "critical" | "warning" | "info"],
+        )}</b><br/>` +
+        small(esc(z.properties.note));
       L.polygon(ring, {
         color,
         weight: 2,
         dashArray: "9 5",
         className: `zone-hatch-${severity}`,
       })
-        .bindPopup(
-          `<b>${esc(z.properties.name)}</b><br/>` +
-            `${esc(zoneType[z.properties.zone_type] ?? zoneType.other)} · ` +
-            `<b style="font-family:inherit;font-size:inherit">${esc(
-              zoneStatus[severity as "critical" | "warning" | "info"],
-            )}</b><br/>` +
-            small(esc(z.properties.note)),
-        )
+        .bindPopup(popupHtml)
         .addTo(group);
+
+      if (!ring.length) return;
+      const cLat = ring.reduce((s, p) => s + p[0], 0) / ring.length;
+      const cLon = ring.reduce((s, p) => s + p[1], 0) / ring.length;
+      // The same mark as NoEntryGlyph, drawn for a divIcon: a ring with a
+      // bar, on a paper disc so it reads against any tile.
+      const marker = L.marker([cLat, cLon], {
+        zIndexOffset: 1200,
+        title: `${z.properties.name}: ${zoneStatus[severity as "critical" | "warning" | "info"]}`,
+        icon: L.divIcon({
+          className: "",
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+          html: `<div style="width:24px;height:24px;border-radius:50%;background:${paper[50]};
+                   box-shadow:0 2px 6px ${alpha(ink[900], 0.4)};display:grid;place-items:center">
+                   <svg viewBox="0 0 20 20" width="22" height="22" fill="none" aria-hidden="true">
+                     <circle cx="10" cy="10" r="7.6" stroke="${risk.extreme}" stroke-width="2"/>
+                     <path d="M5.4 10 H14.6" stroke="${risk.extreme}" stroke-width="2.6" stroke-linecap="round"/>
+                   </svg>
+                 </div>`,
+        }),
+      }).bindPopup(popupHtml);
+      noEntry.push({ marker, ring });
     });
 
     // official warnings with geometry — the storm is DRAWN, not just recited
+    const advisories: { circle: L.Circle; lat: number; lon: number; km: number; headline: string }[] = [];
     alerts.forEach((al) => {
       const s = al.storm;
       if (!s) return;
       const isCyclone = al.type === "cyclone_warning";
 
-      // warning area, hatched like every danger area on this chart
-      L.circle([s.latitude, s.longitude], {
+      // Warning area, hatched like every danger area on this chart. The
+      // hatch lives on the class and the inline fill is zero, so when the
+      // circle swallows the whole view the class can come off and leave the
+      // edge alone (A4) — the hatch never buries land and labels.
+      const warnCircle = L.circle([s.latitude, s.longitude], {
         radius: s.radius_km * 1000,
         color: risk.extreme,
         weight: 2,
         opacity: 0.9,
         dashArray: "10 6",
+        fillOpacity: 0,
         className: "zone-hatch-critical",
         interactive: false,
       }).addTo(group);
+      advisories.push({
+        circle: warnCircle,
+        lat: s.latitude,
+        lon: s.longitude,
+        km: s.radius_km,
+        headline: al.headline,
+      });
 
       // past + forecast track with timestamped position dots
       const track = s.track ?? [];
@@ -357,10 +441,13 @@ export default function MarineMap({
                    </div>`,
           }),
         })
-          .bindTooltip(esc(al.headline), {
+          // The plate hangs below the symbol with the storm TYPE only, so it
+          // no longer covers the boat and the buoys at the default fit (C4,
+          // T4); the full headline lives in the popup.
+          .bindTooltip(esc(t.cyclone), {
             permanent: true,
-            direction: "top",
-            offset: [0, -32],
+            direction: "bottom",
+            offset: [0, 34],
             className: "storm-label",
           })
           .bindPopup(
@@ -396,34 +483,94 @@ export default function MarineMap({
 
     // fishing grounds as numbered buoys: paper face, rating-coloured ring,
     // rank set in the chart's serif, probability as a sounding beneath it.
+    // A leading buoy moored on top of the boat, or of a better-ranked buoy,
+    // resolves by a small offset, never an overlap (T4, PM3): the mark is
+    // pushed away from what it collides with, re-judged when the zoom moves.
+    type Moored = { latitude: number; longitude: number; half: number };
+    const buoyAnchor = (size: number, lat: number, lon: number, neighbours: Moored[]) => {
+      const anchor: [number, number] = [size / 2, size / 2];
+      const pSelf = map.latLngToContainerPoint([lat, lon]);
+      for (const n of neighbours) {
+        const pOther = map.latLngToContainerPoint([n.latitude, n.longitude]);
+        const vx = pSelf.x - pOther.x || -1;
+        const vy = pSelf.y - pOther.y || -1;
+        const dist = Math.hypot(vx, vy);
+        const needed = size / 2 + n.half + 3;
+        if (dist >= needed) continue;
+        const push = needed - dist;
+        anchor[0] -= (vx / dist) * push;
+        anchor[1] -= (vy / dist) * push;
+      }
+      return anchor;
+    };
+    const anchored: {
+      marker: L.Marker;
+      size: number;
+      lat: number;
+      lon: number;
+      html: string;
+      neighbours: Moored[];
+      at: [number, number];
+    }[] = [];
     if (areas.length) {
       areas.forEach((a) => {
         const best = a.rank === 1;
-        const size = best ? 46 : 38;
-        const color = RATING_COLOR[a.rating];
+        const top3 = a.rank <= 3;
+        // PM3/T4: the chart ranks what the plan ranks — 1 to 3 at full
+        // weight, the rest at 28 px with the number only.
+        const size = best ? 46 : top3 ? 38 : 28;
+        // C4': a do-not-go day draws quiet paper rings, rank only, no bob.
+        const color = severe ? paper[200] : RATING_COLOR[a.rating];
         const focused = focusRank === a.rank;
-        const title = `${fill(t.areaTitle, { rank: a.rank })}: ${fill(t.chance, { p: a.probability })}`;
-        L.marker([a.latitude, a.longitude], {
-          zIndexOffset: best ? 500 : 0,
+        const title = severe
+          ? fill(t.areaTitle, { rank: a.rank })
+          : `${fill(t.areaTitle, { rank: a.rank })}: ${fill(t.chance, { p: a.probability })}`;
+        const neighbours: Moored[] = top3
+          ? [
+              ...(origin ? [{ ...origin, half: 17 }] : []),
+              ...areas
+                .filter((b) => b.rank < a.rank && b.rank <= 3)
+                .map((b) => ({ ...b, half: b.rank === 1 ? 23 : 19 })),
+            ]
+          : [];
+        const anchor = buoyAnchor(size, a.latitude, a.longitude, neighbours);
+        const showChance = !severe && top3;
+        const html = `<div${severe ? "" : ` class="bob"`} style="position:relative;width:${size}px;height:${size}px;
+                        animation-delay:-${((a.rank * 7) % 10) / 3}s">
+                     ${focused ? `<div style="position:absolute;inset:-8px;border-radius:50%;
+                        border:2px solid ${severe ? ink[500] : color};animation:ping2 1.6s cubic-bezier(0,0,.2,1) infinite"></div>` : ""}
+                     <div class="buoy" style="position:absolute;inset:0;border-radius:50%;background:${paper[50]};
+                       border:${best ? 4 : top3 ? 3.5 : 3}px solid ${color};display:flex;flex-direction:column;
+                       align-items:center;justify-content:center;line-height:1;gap:1px;
+                       box-shadow:0 ${severe ? "1px 4px" : "3px 10px"} ${alpha(ink[900], severe ? 0.22 : 0.4)};color:${severe ? ink[500] : ink[900]}">
+                       <span style="font:${best ? `800 ${typePx.lead}px` : `700 ${typePx.body}px`} ${SERIF}">${a.rank}</span>${
+                         showChance
+                           ? `<span style="font:600 ${typePx.label}px ${MONO};color:${ink[500]}">${a.probability}%</span>`
+                           : ""
+                       }
+                     </div>
+                   </div>`;
+        const buoy = L.marker([a.latitude, a.longitude], {
+          zIndexOffset: best ? 500 : top3 ? 250 : 0,
           title,
           icon: L.divIcon({
             className: "",
             iconSize: [size, size],
-            iconAnchor: [size / 2, size / 2],
-            html: `<div class="bob" style="position:relative;width:${size}px;height:${size}px;
-                        animation-delay:-${((a.rank * 7) % 10) / 3}s">
-                     ${focused ? `<div style="position:absolute;inset:-8px;border-radius:50%;
-                        border:2px solid ${color};animation:ping2 1.6s cubic-bezier(0,0,.2,1) infinite"></div>` : ""}
-                     <div class="buoy" style="position:absolute;inset:0;border-radius:50%;background:${paper[50]};
-                       border:${best ? 4 : 3.5}px solid ${color};display:flex;flex-direction:column;
-                       align-items:center;justify-content:center;line-height:1;gap:1px;
-                       box-shadow:0 3px 10px ${alpha(ink[900], 0.4)};color:${ink[900]}">
-                       <span style="font:${best ? `800 ${typePx.lead}px` : `700 ${typePx.body}px`} ${SERIF}">${a.rank}</span>
-                       <span style="font:600 ${typePx.label}px ${MONO};color:${ink[500]}">${a.probability}%</span>
-                     </div>
-                   </div>`,
+            iconAnchor: anchor,
+            html,
           }),
-        })
+        });
+        if (neighbours.length)
+          anchored.push({
+            marker: buoy,
+            size,
+            lat: a.latitude,
+            lon: a.longitude,
+            html,
+            neighbours,
+            at: anchor,
+          });
+        buoy
           .bindPopup(
             `<b>${esc(fill(t.areaTitle, { rank: a.rank }))}</b> · ${esc(fill(t.chance, { p: a.probability }))}<br/>` +
               `${Math.round(a.distance_km)} km ${esc(a.bearing)}<br/>` +
@@ -439,7 +586,8 @@ export default function MarineMap({
     } else {
       pfz.forEach((z) => {
         const best = z.rank === 1;
-        const size = best ? 40 : 32;
+        // The same hierarchy as the scored grounds: ranks past 3 step back.
+        const size = best ? 40 : z.rank <= 3 ? 32 : 28;
         const color = best ? risk.low : chart[500];
         const pct = Math.round(z.confidence * 100);
         L.marker([z.latitude, z.longitude], {
@@ -499,25 +647,135 @@ export default function MarineMap({
         .bindPopup(`<b>${esc(origin.name)}</b><br/>${esc(t.dragMe)}`)
         .addTo(group);
 
-      boat.on("dragstart", () => setDragging(true));
-      boat.on("dragend", async () => {
-        setDragging(false);
+      // One probe for every way of moving the boat (W5): the drag and the
+      // arrow keys end in the same position check.
+      const probeAt = async () => {
         const { lat, lng } = boat.getLatLng();
         try {
           setProbe(await api.checkPosition(+lat.toFixed(4), +lng.toFixed(4), language));
+          hintSpent = true;
+          setHintDone(true);
         } catch {
           setProbe(null);
         }
+      };
+
+      boat.on("dragstart", () => setDragging(true));
+      boat.on("dragend", () => {
+        setDragging(false);
+        void probeAt();
       });
+
+      // The marker is focusable but was nameless and pointer-only: it gets a
+      // real name and answers the arrow keys, about 2 km a press.
+      const el = boat.getElement();
+      if (el) {
+        el.setAttribute("role", "button");
+        el.setAttribute("aria-label", fill(t.boat, { place: origin.name }));
+        const KEY_STEP = 0.02; // degrees — about 2 km
+        el.addEventListener("keydown", (e: KeyboardEvent) => {
+          const d = (
+            {
+              ArrowUp: [1, 0],
+              ArrowDown: [-1, 0],
+              ArrowLeft: [0, -1],
+              ArrowRight: [0, 1],
+            } as Record<string, [number, number]>
+          )[e.key];
+          if (!d) return;
+          e.preventDefault();
+          e.stopPropagation(); // or Leaflet pans the map instead
+          const p = boat.getLatLng();
+          boat.setLatLng([p.lat + d[0] * KEY_STEP, p.lng + d[1] * KEY_STEP]);
+          void probeAt();
+        });
+      }
 
       boatRef.current = boat;
       bounds.push([origin.latitude, origin.longitude]);
     }
 
+    // ---- what the current scale shows (T4/PM1, A4) ---------------------
+    // The on-screen size of a ring of positions, in px, at the current view.
+    const sizeOnScreen = (ring: [number, number][]) => {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (const [la, lo] of ring) {
+        const p = map.latLngToContainerPoint([la, lo]);
+        minX = Math.min(minX, p.x);
+        maxX = Math.max(maxX, p.x);
+        minY = Math.min(minY, p.y);
+        maxY = Math.max(maxY, p.y);
+      }
+      return Math.max(maxX - minX, maxY - minY);
+    };
+    const updateNoEntry = () => {
+      for (const { marker, ring } of noEntry) {
+        const tiny = sizeOnScreen(ring) < 24;
+        if (tiny && !group.hasLayer(marker)) group.addLayer(marker);
+        else if (!tiny && group.hasLayer(marker)) group.removeLayer(marker);
+      }
+    };
+    // True when every corner of the view sits inside the warning circle.
+    const viewInside = (lat: number, lon: number, km: number) => {
+      const b = map.getBounds();
+      const ne = b.getNorthEast();
+      const sw = b.getSouthWest();
+      return (
+        [
+          [ne.lat, ne.lng],
+          [ne.lat, sw.lng],
+          [sw.lat, ne.lng],
+          [sw.lat, sw.lng],
+        ] as [number, number][]
+      ).every(([la, lo]) => haversineKm(lat, lon, la, lo) <= km);
+    };
+    const updateAdvisories = () => {
+      let note: string | null = null;
+      for (const a of advisories) {
+        const swallowed = viewInside(a.lat, a.lon, a.km);
+        (a.circle.getElement() as SVGElement | undefined)?.classList.toggle(
+          "zone-hatch-critical",
+          !swallowed,
+        );
+        if (swallowed && !note) note = fill(t.advisoryMargin, { headline: a.headline });
+      }
+      setMarginNote(note);
+    };
+    // The pixel space moved under the buoys: re-judge their collisions.
+    const updateBuoyAnchors = () => {
+      for (const b of anchored) {
+        const at = buoyAnchor(b.size, b.lat, b.lon, b.neighbours);
+        if (Math.abs(at[0] - b.at[0]) + Math.abs(at[1] - b.at[1]) < 1) continue;
+        b.at = at;
+        b.marker.setIcon(
+          L.divIcon({ className: "", iconSize: [b.size, b.size], iconAnchor: at, html: b.html }),
+        );
+      }
+    };
+    const onScaleChange = () => {
+      updateNoEntry();
+      updateAdvisories();
+      updateBuoyAnchors();
+    };
+    map.on("zoomend moveend", onScaleChange);
+    onScaleChange();
+
     const animate = !prefersStill();
-    if (bounds.length > 1) map.fitBounds(L.latLngBounds(bounds).pad(0.22), { animate });
-    else if (origin) map.setView([origin.latitude, origin.longitude], 10, { animate });
-  }, [origin, zones, pfz, areas, routes, radiusKm, focusRank, alerts, language]);
+    // A redraw while a tapped ground holds the view must not stampede the
+    // fit back out (A2'); the focus effect below owns the camera then.
+    const focusHeld = focusRank != null && areas.some((a) => a.rank === focusRank);
+    if (!focusHeld) {
+      if (bounds.length > 1) map.fitBounds(L.latLngBounds(bounds).pad(0.22), { animate });
+      else if (origin) map.setView([origin.latitude, origin.longitude], 10, { animate });
+    }
+
+    return () => {
+      map.off("zoomend moveend", onScaleChange);
+    };
+  }, [origin, zones, pfz, areas, routes, radiusKm, focusRank, alerts, language, severe]);
 
   // Fly to a ground when the user taps its card in the list.
   useEffect(() => {
@@ -553,6 +811,43 @@ export default function MarineMap({
 
   const keyRow = "flex items-center gap-2 py-0.5 text-label font-medium text-ink-700";
 
+  const flowControl = (
+    <div role="radiogroup" aria-labelledby={`${keyId}-flow`} className="flex gap-1">
+      {FLOW_MODES.map((m, i) => (
+        <button
+          key={m}
+          ref={(el) => {
+            flowButtons.current[i] = el;
+          }}
+          type="button"
+          role="radio"
+          aria-checked={flowMode === m}
+          tabIndex={flowMode === m ? 0 : -1}
+          onClick={() => setFlowMode(m)}
+          onKeyDown={(e) => onFlowKey(e, i)}
+          className="v-seg v-press px-1.5 py-0.5 font-mono text-label font-bold"
+        >
+          {legend[m]}
+        </button>
+      ))}
+    </div>
+  );
+
+  // The key names exactly what the current chart draws (T4), never a fixed
+  // list: the ratings present among the buoys, the marks actually plotted.
+  const ratingWord = RATING_WORD[language] ?? RATING_WORD.en;
+  const drawnRatings = severe ? [] : RATING_ORDER.filter((r) => areas.some((a) => a.rating === r));
+  const pfzDrawn = !areas.length && pfz.length > 0;
+  const keyFacts = {
+    severeRing: severe && areas.length > 0,
+    pfzBest: pfzDrawn && pfz.some((z) => z.rank === 1),
+    pfzOther: pfzDrawn && pfz.some((z) => z.rank !== 1),
+    noEntry: zones.length > 0,
+    radius: !!(origin && radiusKm),
+    course: routes.length > 0,
+    storm: alerts.some((a) => a.storm),
+  };
+
   return (
     <div className="chart-sheet min-w-0">
       <div className="chart-frame" data-key={keyOpen ? "open" : "closed"}>
@@ -573,40 +868,25 @@ export default function MarineMap({
           aria-label={origin ? fill(tx.mapLabel, { place: origin.name }) : tx.mapLabelBare}
         />
 
-        {/* compass rose, printed on the water */}
+        {/* compass rose, printed on the water (44 px on the phone, PM4) */}
         <CompassMark
           size={62}
-          className="pointer-events-none absolute right-3 top-3 z-[500] text-ink-800 opacity-70"
+          className="v-map-rose pointer-events-none absolute right-3 top-3 z-[500] text-ink-800 opacity-70"
         />
 
-        {/* the sea in motion — flow layer control */}
-        <div className="absolute left-3 top-[92px] z-[500] rounded-[2px] border border-ink-700/50 bg-paper-50/95 px-2 pb-2 pt-1.5 shadow-md">
-          <div
-            id={`${keyId}-flow`}
-            className="mb-1 font-mono text-label font-bold uppercase tracking-[0.16em] text-ink-500"
-          >
-            {legend.flow}
+        {/* the sea in motion — its own box on the console; folded inside the
+            key body on the phone, where chart furniture must stay scarce */}
+        {!phone && (
+          <div className="absolute left-3 top-[92px] z-[500] rounded-[2px] border border-ink-700/50 bg-paper-50/95 px-2 pb-2 pt-1.5 shadow-md">
+            <div
+              id={`${keyId}-flow`}
+              className="mb-1 font-mono text-label font-bold uppercase tracking-[0.16em] text-ink-500"
+            >
+              {legend.flow}
+            </div>
+            {flowControl}
           </div>
-          <div role="radiogroup" aria-labelledby={`${keyId}-flow`} className="flex gap-1">
-            {FLOW_MODES.map((m, i) => (
-              <button
-                key={m}
-                ref={(el) => {
-                  flowButtons.current[i] = el;
-                }}
-                type="button"
-                role="radio"
-                aria-checked={flowMode === m}
-                tabIndex={flowMode === m ? 0 : -1}
-                onClick={() => setFlowMode(m)}
-                onKeyDown={(e) => onFlowKey(e, i)}
-                className="v-seg v-press px-1.5 py-0.5 font-mono text-label font-bold"
-              >
-                {legend[m]}
-              </button>
-            ))}
-          </div>
-        </div>
+        )}
 
         {/* symbols legend, as a chart's key: folds away so it never hides the sea */}
         <div className="v-map-key absolute bottom-3 left-3 z-[500] rounded-[2px] border border-ink-700/50 bg-paper-50/95 shadow-md">
@@ -627,28 +907,62 @@ export default function MarineMap({
             </span>
           </button>
           <div id={keyId} hidden={!keyOpen} className={`${keyTouched ? "v-map-key-body " : ""}px-3 pb-2`}>
-            {[
-              [risk.low, legend.veryGood],
-              [chance.some, legend.some],
-            ].map(([c, label]) => (
-              <div key={label} className={keyRow}>
-                <span className="h-2.5 w-2.5 rounded-full border-2 bg-paper-50" style={{ borderColor: c }} />
-                {label}
+            {keyFacts.severeRing && (
+              <div className={keyRow}>
+                <span
+                  className="h-2.5 w-2.5 rounded-full border-2 bg-paper-50"
+                  style={{ borderColor: paper[200] }}
+                />
+                {legend.severeDay}
+              </div>
+            )}
+            {drawnRatings.map((r) => (
+              <div key={r} className={keyRow}>
+                <span
+                  className="h-2.5 w-2.5 rounded-full border-2 bg-paper-50"
+                  style={{ borderColor: RATING_COLOR[r] }}
+                />
+                {ratingWord[r]}
               </div>
             ))}
-            <div className={keyRow}>
-              <svg width="10" height="10" aria-hidden>
-                <rect x="0.5" y="0.5" width="9" height="9" fill="url(#hatch-critical)" stroke={risk.extreme} strokeWidth="1" />
-              </svg>
-              {legend.noEntry}
-            </div>
-            <div className={keyRow}>
-              <svg width="12" height="6" aria-hidden>
-                <line x1="0" y1="3" x2="12" y2="3" stroke={risk.low} strokeWidth="2" strokeDasharray="4 2.5" />
-              </svg>
-              {legend.course}
-            </div>
-            {alerts.some((a) => a.storm) && (
+            {keyFacts.pfzBest && (
+              <div className={keyRow}>
+                <span className="h-2.5 w-2.5 rounded-full border-2 bg-paper-50" style={{ borderColor: risk.low }} />
+                {legend.veryGood}
+              </div>
+            )}
+            {keyFacts.pfzOther && (
+              <div className={keyRow}>
+                <span className="h-2.5 w-2.5 rounded-full border-2 bg-paper-50" style={{ borderColor: chart[500] }} />
+                {legend.some}
+              </div>
+            )}
+            {keyFacts.noEntry && (
+              <div className={keyRow}>
+                <svg width="10" height="10" aria-hidden>
+                  <rect x="0.5" y="0.5" width="9" height="9" fill="url(#hatch-critical)" stroke={risk.extreme} strokeWidth="1" />
+                </svg>
+                <NoEntryGlyph size={11} className="-ml-1 shrink-0 text-risk-extreme" />
+                {legend.noEntry}
+              </div>
+            )}
+            {keyFacts.radius && (
+              <div className={keyRow}>
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden>
+                  <circle cx="5.5" cy="5.5" r="4.5" stroke={chart[500]} strokeWidth="1.4" strokeDasharray="2 2.4" />
+                </svg>
+                {legend.radius}
+              </div>
+            )}
+            {keyFacts.course && (
+              <div className={keyRow}>
+                <svg width="12" height="6" aria-hidden>
+                  <line x1="0" y1="3" x2="12" y2="3" stroke={risk.low} strokeWidth="2" strokeDasharray="4 2.5" />
+                </svg>
+                {legend.course}
+              </div>
+            )}
+            {keyFacts.storm && (
               <div className={keyRow}>
                 <svg width="11" height="11" viewBox="0 0 56 56" fill="none" aria-hidden>
                   <path d="M28 5 A 23 23 0 0 1 51 28" stroke={risk.extreme} strokeWidth="9" strokeLinecap="round" />
@@ -656,6 +970,20 @@ export default function MarineMap({
                   <circle cx="28" cy="28" r="12" fill={risk.extreme} />
                 </svg>
                 {legend.storm}
+              </div>
+            )}
+            {phone && (
+              <div
+                className="mt-1 border-t pt-1.5"
+                style={{ borderColor: "var(--rule-faint)" }}
+              >
+                <div
+                  id={`${keyId}-flow`}
+                  className="mb-1 font-mono text-label font-bold uppercase tracking-[0.16em] text-ink-500"
+                >
+                  {legend.flow}
+                </div>
+                {flowControl}
               </div>
             )}
             {flowMode !== "off" && (
@@ -676,10 +1004,22 @@ export default function MarineMap({
           </div>
         </div>
 
-        {/* drag hint */}
-        {origin && !probe && !dragging && (
+        {/* position hint — retires for the session after the first use */}
+        {origin && !probe && !dragging && !hintDone && (
           <div className="v-map-hint pointer-events-none absolute bottom-3 right-3 z-[500] max-w-[62%] rounded-[2px] border border-ink-700/40 bg-paper-50/95 px-2.5 py-1.5 text-label font-medium text-ink-700 shadow-md">
             {HINT[language] ?? HINT.en}
+          </div>
+        )}
+
+        {/* A4: the warning as a margin note when its area swallows the view */}
+        {marginNote && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-3 z-[500] flex justify-center px-3">
+            <div
+              role="status"
+              className="max-w-[72%] rounded-[2px] border border-risk-extreme bg-paper-50/95 px-3 py-1.5 text-center font-mono text-label font-bold uppercase tracking-[0.1em] text-risk-extreme shadow-md"
+            >
+              {marginNote}
+            </div>
           </div>
         )}
 
