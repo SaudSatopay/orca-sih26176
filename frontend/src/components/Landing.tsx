@@ -6,6 +6,7 @@ import { L10N } from "../i18n/landing";
 import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
 import GlassLoupe from "../effects/GlassLoupe";
+import InkCartouche from "../effects/InkWordmark";
 import { countContexts } from "../effects/ledger";
 
 // With ?fxdebug=1 the page counts the WebGL contexts it opens (effects/ledger.ts).
@@ -352,6 +353,11 @@ export default function Landing({
             ))}
           </div>
         </div>
+      </Reveal>
+
+      {/* the closing cartouche — the folio's title block, wet ink behind the gate */}
+      <Reveal delay={940}>
+        <InkCartouche language={language} />
       </Reveal>
 
       {/* footer */}

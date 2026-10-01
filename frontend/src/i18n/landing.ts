@@ -21,6 +21,8 @@ export const L10N: Record<
     stats: string[];
     cards: { kicker: string; title: string; lines: string[] }[];
     phases: { t: string; n: string }[];
+    /** Under the closing cartouche's wordmark: the name written out. */
+    folioTagline: string;
     footer: string;
   }
 > = {
@@ -84,6 +86,7 @@ export const L10N: Record<
       { t: "Decide", n: "weighted model + safety floors that only raise" },
       { t: "Explain", n: "plain words, with sources, spoken back" },
     ],
+    folioTagline: "Marine Ecosystem Reasoning · Collaborative Agents",
     footer:
       "Demo / simulated data is always labelled · ORCA is decision support — never a replacement for an official advisory",
   },
@@ -147,6 +150,7 @@ export const L10N: Record<
       { t: "तय करो", n: "भारित मॉडल + नियम जो सिर्फ़ जोखिम बढ़ाते हैं" },
       { t: "समझाओ", n: "सीधी भाषा, स्रोतों के साथ, बोलकर भी" },
     ],
+    folioTagline: "समुद्री पारिस्थितिकी तर्क · सहयोगी एजेंट",
     footer:
       "नक़ली/डेमो डेटा पर हमेशा लेबल · ORCA निर्णय-सहायक है — आधिकारिक सलाह का विकल्प कभी नहीं",
   },
@@ -210,6 +214,7 @@ export const L10N: Record<
       { t: "ठरवा", n: "भारित मॉडेल + फक्त धोका वाढवणारे नियम" },
       { t: "समजावा", n: "सोपी भाषा, स्रोतांसह, बोलूनही" },
     ],
+    folioTagline: "सागरी परिसंस्था तर्क · सहयोगी एजंट",
     footer:
       "नमुना/डेमो डेटावर नेहमी लेबल · ORCA निर्णय-सहाय्यक आहे — अधिकृत सल्ल्याचा पर्याय कधीही नाही",
   },
