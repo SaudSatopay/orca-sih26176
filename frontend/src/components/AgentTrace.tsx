@@ -1,14 +1,7 @@
 import type { AgentTrace as Trace, Language } from "../types";
 import { LABEL, T } from "../i18n/agentTrace";
+import { PHASES, pairs } from "../crew";
 import { alpha, ink, risk } from "../tokens";
-
-/** The graph, as it actually executes. */
-const PHASES: { key: string; agents: string[] }[] = [
-  { key: "understand", agents: ["intent"] },
-  { key: "gather", agents: ["weather", "ocean", "pfz", "cyclone", "gis"] },
-  { key: "decide", agents: ["risk", "route"] },
-  { key: "explain", agents: ["explanation"] },
-];
 
 const STATUS_DOT: Record<Trace["status"], string> = {
   ok: risk.low,
@@ -34,6 +27,7 @@ export default function AgentTracePanel({
   if (!trace.length) return null;
   const t = T[language] ?? T.en;
   const labels = LABEL[language] ?? LABEL.en;
+  const statusName = pairs(t.status);
 
   const byName = new Map(trace.map((x) => [x.agent, x]));
   const maxLatency = Math.max(...trace.map((x) => x.latency_ms), 1);
@@ -45,9 +39,9 @@ export default function AgentTracePanel({
   })).filter((p) => p.rows.length);
 
   return (
-    <div className="panel overflow-hidden">
+    <section className="panel overflow-hidden">
       <div className="hd">
-        <span className="label">{t.crew}</span>
+        <h2 className="label">{t.crew}</h2>
         <span className="font-mono text-label tabular-nums text-ink-400">
           {trace.length} {t.agents} · {elapsed ?? trace.reduce((s, x) => s + x.latency_ms, 0)}{" "}
           {t.total}
@@ -58,7 +52,7 @@ export default function AgentTracePanel({
         {ran.map((phase) => (
           <div key={phase.key}>
             <div className="mb-1.5 flex items-baseline gap-2">
-              <span className="font-display text-body font-bold text-ink-900">{phase.title}</span>
+              <h3 className="font-display text-body font-bold text-ink-900">{phase.title}</h3>
               <span className="text-label italic text-ink-400">{phase.note}</span>
               {phase.key === "gather" && phase.rows.length > 1 && (
                 <span className="ml-auto border border-chart-500/50 bg-chart-100/50 px-2 py-0.5 font-mono text-micro font-bold tracking-wide text-chart-700">
@@ -70,7 +64,7 @@ export default function AgentTracePanel({
             <div
               className={
                 phase.key === "gather"
-                  ? "space-y-1 border-l-2 border-chart-500/40 pl-2.5"
+                  ? "space-y-1 border-l border-chart-500/50 pl-2.5"
                   : "space-y-1"
               }
             >
@@ -93,23 +87,28 @@ export default function AgentTracePanel({
                   >
                     <div className="flex items-center gap-2 text-readout">
                       <span
+                        aria-hidden
                         className="h-2 w-2 shrink-0 rotate-45"
                         style={{ background: STATUS_DOT[row.status] }}
                       />
+                      <span className="sr-only">{statusName[row.status] ?? row.status}:</span>
                       <span className="w-[96px] shrink-0 font-semibold text-ink-900">
                         {labels[row.agent] ?? row.agent}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-ink-500">
+                      <span
+                        className="min-w-0 flex-1 truncate text-ink-500"
+                        title={row.summary || undefined}
+                      >
                         {row.summary || "—"}
                       </span>
                       <span className="shrink-0 font-mono text-label tabular-nums text-ink-400">
-                        {row.latency_ms}ms
+                        {row.latency_ms} ms
                       </span>
                     </div>
                     {row.latency_ms > 0 && (
                       <div className="mt-1 h-[2px] overflow-hidden bg-ink-900/[0.07]">
                         <div
-                          className="grow-x h-full bg-chart-500/70 transition-all duration-500"
+                          className="grow-x h-full bg-chart-500/70"
                           style={{ width: `${(row.latency_ms / maxLatency) * 100}%` }}
                         />
                       </div>
@@ -123,11 +122,11 @@ export default function AgentTracePanel({
       </div>
 
       <p
-        className="border-t px-4 py-2.5 text-label italic leading-relaxed text-ink-400"
+        className="border-t px-4 py-2.5 text-readout leading-relaxed text-ink-500"
         style={{ borderColor: "var(--rule-faint)" }}
       >
-        {t.note}
+        <span className="block max-w-[78ch]">{t.note}</span>
       </p>
-    </div>
+    </section>
   );
 }

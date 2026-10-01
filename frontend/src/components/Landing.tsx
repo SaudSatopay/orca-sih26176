@@ -138,7 +138,10 @@ export default function Landing({
 
   return (
     <main className="mx-auto flex min-h-full max-w-[1240px] flex-col px-5 py-5">
-      <div className="sea-drift" aria-hidden />
+      {/* the <i> is the far swell layer (index.css): three layers, each on its own transform */}
+      <div className="sea-drift" aria-hidden>
+        <i />
+      </div>
       <div className="fish-drift" aria-hidden />
 
       {/* top strip */}

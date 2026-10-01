@@ -1,9 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as api from "./api";
+import { useAmbientMotion } from "./ambient";
 import AgentTracePanel from "./components/AgentTrace";
 import AuthorityPanel from "./components/AuthorityPanel";
 import ChatPanel from "./components/ChatPanel";
 import ConditionsStrip from "./components/ConditionsStrip";
+import CrewWorking from "./components/CrewWorking";
+import ErrorBoundary from "./components/ErrorBoundary";
+import EvidenceLedger from "./components/EvidenceLedger";
 import FishingPanel from "./components/FishingPanel";
 import {
   ChartDefs,
@@ -20,8 +24,10 @@ import LocationPicker, { type PickedLocation } from "./components/LocationPicker
 import MarineMap from "./components/MarineMap";
 import PFZList from "./components/PFZList";
 import RiskCard from "./components/RiskCard";
+import ScenarioDeck from "./components/ScenarioDeck";
 import SystemPanel from "./components/SystemPanel";
 import RiskTimeline from "./components/RiskTimeline";
+import { useDocumentMeta } from "./documentMeta";
 import type {
   ChatMessage,
   ChatResponse,
@@ -30,8 +36,19 @@ import type {
   Location,
   ZoneFeature,
 } from "./types";
-import { SCENARIOS, TAB_LABEL, UI, type AppTab } from "./i18n/app";
+import {
+  LANG_NAME,
+  LANG_SHORT,
+  MODE_LABEL,
+  SCENARIOS,
+  TAB_LABEL,
+  UI,
+  VIEW_TITLE,
+  type AppTab,
+} from "./i18n/app";
+import { CATEGORY } from "./i18n/riskCard";
 import { TOUR } from "./i18n/tour";
+import { useFittedHeight, useMediaQuery, usePageTop } from "./layout";
 import { PORTS } from "./ports";
 import { RISK_COLOR } from "./risk";
 import { SPEECH_LOCALE } from "./speech";
@@ -41,6 +58,14 @@ import { ink, risk } from "./tokens";
 const SESSION = "demo";
 const RADIUS_KM = 100;
 const DEFAULT_PORT = PORTS[0]; // Mumbai — used only if location is unavailable
+const LANGUAGES: Language[] = ["en", "hi", "mr"];
+const TABS: AppTab[] = ["home", "ask", "authority", "system"];
+/** From here up the Ask sheet has two columns and a sticky one. */
+const TWO_COLUMNS = "(min-width: 1024px)";
+/** Today's plan needs more room beside the chart, so it pairs up a little later. */
+const TODAY_COLUMNS = "(min-width: 1100px)";
+/** The sheet's bottom gutter at that width (Tailwind `lg:p-6`). */
+const GUTTER = 24;
 
 /** "landing" is the front door; every deep link (?tab, ?demo, ?tour, ?at) skips it. */
 type Tab = AppTab | "landing";
@@ -58,6 +83,8 @@ export default function App() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [latest, setLatest] = useState<ChatResponse | null>(null);
   const [busy, setBusy] = useState(false);
+  /** The question /api/chat could not answer, kept so it can be sent again. */
+  const [unanswered, setUnanswered] = useState<string | null>(null);
   const [langChoice, setLangChoice] = useState<Language | null>(BOOT.lang);
   const [detected, setDetected] = useState<Language>("en");
   const language = langChoice ?? detected;
@@ -65,13 +92,12 @@ export default function App() {
   const [mode, setMode] = useState<string>("DEMO");
   const [switching, setSwitching] = useState(false);
   const [speak, setSpeak] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // ---- fisher's own position + outlook ----
   // ?at=lat,lon pins the starting position (demos, judge-tap re-creation);
   // it must win over geolocation, so GPS is skipped entirely when present.
   const [place, setPlace] = useState<PickedLocation | null>(
-    BOOT.at ? { ...BOOT.at, label: "Selected point", source: "map" } : null,
+    BOOT.at ? { ...BOOT.at, label: "", source: "map" } : null,
   );
   const [outlook, setOutlook] = useState<FishingOutlook | null>(null);
   // Which request the outlook on screen answers. "Loading" and the focused
@@ -97,6 +123,41 @@ export default function App() {
   // reply that was asked for under an older number is stale and is dropped.
   const conversation = useRef(0);
 
+  // ---- the document and the sheet ----
+  const ui = UI[language] ?? UI.en;
+  const inConsole = tab !== "landing";
+  useDocumentMeta(language, inConsole ? (VIEW_TITLE[language] ?? VIEW_TITLE.en)[tab] : null);
+  useAmbientMotion();
+
+  // The console's ground is a fixed layer (index.css, `.sheet-ground`); the
+  // mark tells the body to stand down so the two never double up.
+  useEffect(() => {
+    if (!inConsole) return;
+    document.documentElement.dataset.surface = "console";
+    return () => {
+      delete document.documentElement.dataset.surface;
+    };
+  }, [inConsole]);
+
+  // From 1024 px the left column is sticky and exactly as tall as the room
+  // under the title block, so the page scrolls as one sheet and nothing
+  // scrolls inside anything else.
+  const askColumns = useMediaQuery(TWO_COLUMNS);
+  const todayColumns = useMediaQuery(TODAY_COLUMNS);
+  const twoColumns = tab === "home" ? todayColumns : askColumns;
+  const sheetRef = useRef<HTMLDivElement>(null);
+  const sheetTop = usePageTop(sheetRef, tab);
+  const stickyHeight = twoColumns ? `calc(100dvh - ${sheetTop + GUTTER}px)` : undefined;
+  const mapSlotRef = useRef<HTMLDivElement>(null);
+  const todayMapHeight = useFittedHeight(
+    mapSlotRef,
+    ".leaflet-container",
+    // only once the column itself has been sized to the room under the header
+    todayColumns && tab === "home" && sheetTop > 0,
+    280,
+    680,
+  );
+
   // ---------------------------------------------------- outlook on position
   useEffect(() => {
     if (!place) return;
@@ -116,12 +177,13 @@ export default function App() {
   }, [place, language]);
 
   // ------------------------------------------------------------- chat
-  const send = async (text: string) => {
+  const send = async (text: string, again = false) => {
     const mine = conversation.current;
     const stale = () => mine !== conversation.current;
-    setError(null);
+    setUnanswered(null);
     setBusy(true);
-    setMessages((m) => [...m, { id: `${Date.now()}-u`, role: "user", text }]);
+    // A retry answers the question already on screen; it is not asked twice.
+    if (!again) setMessages((m) => [...m, { id: `${Date.now()}-u`, role: "user", text }]);
     try {
       const res = await api.ask({
         message: text,
@@ -136,7 +198,9 @@ export default function App() {
         ...m,
         { id: `${Date.now()}-o`, role: "orca", text: res.answer, response: res },
       ]);
-      if (speak) {
+      // Speech needs a gesture first: a deep link that asks by itself stays
+      // silent rather than lean on a browser allowance that is going away.
+      if (speak && navigator.userActivation?.hasBeenActive !== false) {
         try {
           const u = new SpeechSynthesisUtterance(res.answer.split(". ").slice(0, 2).join(". "));
           u.lang = SPEECH_LOCALE[res.language] ?? SPEECH_LOCALE.en;
@@ -147,17 +211,11 @@ export default function App() {
           /* TTS unavailable — non-fatal */
         }
       }
-    } catch (e) {
+    } catch {
       if (stale()) return;
-      setError(String(e));
-      setMessages((m) => [
-        ...m,
-        {
-          id: `${Date.now()}-e`,
-          role: "orca",
-          text: "I could not reach the ORCA backend. Is it running on port 8000?",
-        },
-      ]);
+      // The last answer stays where it is; the conversation says what failed
+      // and offers the same question again.
+      setUnanswered(text);
     } finally {
       if (!stale()) setBusy(false);
     }
@@ -206,11 +264,22 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tourOn, tourStep, tourPaused]);
 
+  // Escape closes what is open; the tour is the one thing the shell opens.
+  useEffect(() => {
+    if (!tourOn) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setTourOn(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [tourOn]);
+
   const startTour = async () => {
     const mine = ++conversation.current;
     await api.resetSession(SESSION).catch(() => {});
     if (mine !== conversation.current) return;
     setBusy(false);
+    setUnanswered(null);
     setMessages([]);
     setLatest(null);
     setLangChoice(null);
@@ -244,7 +313,7 @@ export default function App() {
           setPlace({
             latitude: +pos.coords.latitude.toFixed(4),
             longitude: +pos.coords.longitude.toFixed(4),
-            label: "Your location",
+            label: "",
             source: "gps",
           }),
         fallback,
@@ -284,16 +353,24 @@ export default function App() {
   };
 
   const pickLocation = useCallback((lat: number, lon: number) => {
-    setPlace({ latitude: lat, longitude: lon, label: "Selected point", source: "map" });
+    setPlace({ latitude: lat, longitude: lon, label: "", source: "map" });
   }, []);
 
   const suggestions = useMemo(() => latest?.suggestions ?? [], [latest]);
   const tabLabels = TAB_LABEL[language] ?? TAB_LABEL.en;
-  const ui = UI[language] ?? UI.en;
+  const modeLabel = (MODE_LABEL[language] ?? MODE_LABEL.en)[mode] ?? mode;
+  const bands = CATEGORY[language] ?? CATEGORY.en;
+
+  // A position found by GPS or tapped on the chart is named in the reader's
+  // language, at render, so switching language renames it.
+  const shownPlace = useMemo(
+    () => (place ? { ...place, label: place.label || (place.source === "gps" ? ui.yourLocation : ui.selectedPoint) } : null),
+    [place, ui.yourLocation, ui.selectedPoint],
+  );
 
   const homeOrigin: Location | null = place
     ? {
-        name: outlook?.location.name ?? place.label,
+        name: outlook?.location.name ?? shownPlace?.label ?? "",
         latitude: place.latitude,
         longitude: place.longitude,
         state: outlook?.location.state ?? null,
@@ -316,35 +393,75 @@ export default function App() {
     );
   }
 
+  const cell = "flex flex-1 flex-col justify-center border-l px-5 py-3 xl:flex-none";
+  const cellRule = { borderColor: "var(--rule-faint)" };
+  const outlookFailed = place != null && !loadingOutlook && !outlook;
+  const readings = [
+    {
+      k: ui.safety,
+      v: outlook ? `${outlook.safety.score}` : "—",
+      s: outlook ? (bands[outlook.safety.category] ?? outlook.safety.category) : "",
+      color: outlook ? RISK_COLOR[outlook.safety.category] : undefined,
+    },
+    { k: ui.waves, v: outlook ? `${outlook.safety.wave_height_m ?? "—"}` : "—", s: "m" },
+    {
+      k: ui.wind,
+      v: outlook ? `${Math.round(outlook.safety.wind_speed_kmh ?? 0)}` : "—",
+      s: "km/h",
+    },
+    {
+      k: ui.areas,
+      v: outlook ? `${outlook.areas.length}` : "—",
+      s: ui.inRadius.replace("{km}", String(outlook?.radius_km ?? RADIUS_KM)),
+    },
+  ];
+
   return (
-    <div className="mx-auto flex min-h-full max-w-[1580px] flex-col gap-4 p-4 lg:p-6">
+    <div
+      data-sheet-root
+      className="relative mx-auto flex min-h-full max-w-[1580px] flex-col gap-4 p-4 lg:p-6"
+    >
+      <a href="#sheet" className="skip-link">
+        {ui.skip}
+      </a>
       <ChartDefs />
-      <div className="sea-drift" aria-hidden />
+      <div className="sheet-ground" aria-hidden />
+      <div className="sea-drift" aria-hidden>
+        <i />
+      </div>
       <div className="fish-drift" aria-hidden />
 
       {/* ---------------- title block, drafted like a chart's cartouche ---------------- */}
       <header className="panel rule-double">
         <div className="flex flex-wrap items-stretch">
-          {/* identity — clicking it returns to the front page */}
+          {/* identity — pressing it returns to the front page */}
           <button
             onClick={() => setTab("landing")}
-            title="Back to the front page"
-            className="flex items-center gap-4 py-3.5 pl-5 pr-6 text-left"
+            title={ui.frontPage}
+            className="cell-press flex min-w-0 flex-1 items-center gap-4 py-3.5 pl-5 pr-6 text-left"
           >
             <CompassMark size={46} className="shrink-0 text-ink-900" />
-            <div>
-              <h1 className="font-display text-display font-black leading-none tracking-tight text-ink-900">
+            <span className="min-w-0">
+              <span
+                translate="no"
+                className="block font-display text-display font-black leading-none tracking-tight text-ink-900"
+              >
                 ORCA
-              </h1>
-              <p className="mt-1 font-mono text-micro font-semibold uppercase tracking-[0.18em] text-chart-600">
-                Marine EcOsystem Reasoning · Collaborative Agents
-              </p>
-            </div>
+              </span>
+              <span className="mt-1 block font-mono text-micro font-semibold uppercase tracking-[0.18em] text-chart-600">
+                {ui.tagline}
+              </span>
+              <span className="sr-only">. {ui.frontPage}</span>
+            </span>
           </button>
 
-          {/* title-block cells */}
-          <div className="ml-auto flex flex-wrap items-stretch">
-            <div className="hidden flex-col justify-center border-l px-5 py-3 sm:flex" style={{ borderColor: "var(--rule-faint)" }}>
+          {/* title-block cells: one row beside the name from 1280 px, a row of
+              their own under it below that */}
+          <div
+            className="flex basis-full items-stretch border-t xl:basis-auto xl:border-t-0"
+            style={cellRule}
+          >
+            <div className={`${cell} hidden border-l-0 md:flex xl:border-l`} style={cellRule}>
               <span className="label">{ui.chartNo}</span>
               <span className="mt-1 font-mono text-body font-bold text-ink-800">SIH26176</span>
             </div>
@@ -352,59 +469,77 @@ export default function App() {
             <button
               onClick={toggleMode}
               disabled={switching}
-              title="Switch between cached demo data and live public providers"
-              className="group flex flex-col justify-center border-l px-5 py-3 text-left transition hover:bg-paper-150 disabled:opacity-50"
-              style={{ borderColor: "var(--rule-faint)" }}
+              title={ui.modeHint}
+              className={`${cell} cell-press text-left max-md:border-l-0 disabled:opacity-60`}
+              style={cellRule}
             >
               <span className="label">{ui.dataEdition}</span>
               <span
-                className={`mt-1 font-mono text-body font-bold ${
+                className={`mt-1 flex items-center gap-1.5 font-mono text-body font-bold ${
                   mode === "LIVE" ? "text-risk-low" : "text-risk-high"
                 }`}
               >
-                {switching ? "…" : mode}
-                <span className="ml-1.5 text-ink-400 transition group-hover:text-ink-700">⇄</span>
+                {switching ? ui.modeSwitching : modeLabel}
+                <svg width="14" height="12" viewBox="0 0 14 12" className="text-ink-400" aria-hidden>
+                  <path
+                    d="M1 3.5 H12 M9.5 1 L12 3.5 L9.5 6 M13 8.5 H2 M4.5 6 L2 8.5 L4.5 11"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </span>
+              <span className="sr-only">. {ui.modeHint}</span>
             </button>
 
             <button
               onClick={() => setSpeak((v) => !v)}
-              title="Speak answers aloud"
-              className="flex flex-col justify-center border-l px-5 py-3 text-left transition hover:bg-paper-150"
-              style={{ borderColor: "var(--rule-faint)" }}
+              aria-pressed={speak}
+              title={ui.voiceHint}
+              className={`${cell} cell-press text-left`}
+              style={cellRule}
             >
               <span className="label">{ui.voice}</span>
-              <span className="mt-1 flex items-center gap-1.5 font-mono text-body font-bold text-ink-800">
-                {speak ? <SpeakerGlyph /> : <SpeakerOffGlyph className="text-ink-300" />}
-                {speak ? "ON" : "OFF"}
+              <span className="mt-1 flex items-center gap-1.5 font-mono text-body font-bold uppercase text-ink-800">
+                {speak ? <SpeakerGlyph /> : <SpeakerOffGlyph className="text-ink-400" />}
+                {speak ? ui.voiceOn : ui.voiceOff}
               </span>
+              <span className="sr-only">. {ui.voiceHint}</span>
             </button>
 
-            <div
-              className="flex flex-col justify-center border-l px-4 py-3"
-              style={{ borderColor: "var(--rule-faint)" }}
-            >
-              <span className="label">{ui.lang}</span>
+            <div className={`${cell} !px-4`} style={cellRule} role="group" aria-label={ui.lang}>
+              <span className="label" aria-hidden>
+                {ui.lang}
+              </span>
               <span className="mt-1 flex gap-1">
-                {(["en", "hi", "mr"] as Language[]).map((l) => (
+                {LANGUAGES.map((l) => (
                   <button
                     key={l}
                     onClick={() => setLangChoice(l)}
-                    className={`rounded-[2px] border px-1.5 py-0.5 font-mono text-label font-bold transition ${
+                    aria-pressed={language === l}
+                    title={LANG_NAME[l]}
+                    lang={l}
+                    className={`press rounded-[2px] border px-1.5 py-0.5 font-mono text-label font-bold ${
                       language === l
                         ? "border-ink-900 bg-ink-900 text-paper-50"
-                        : "text-ink-400 hover:text-ink-800"
+                        : "text-ink-500 hover:bg-paper-150 hover:text-ink-900"
                     }`}
                     style={language === l ? undefined : { borderColor: "var(--rule)" }}
                   >
-                    {l === "en" ? "EN" : l === "hi" ? "हिं" : "मरा"}
+                    <span aria-hidden>{LANG_SHORT[l]}</span>
+                    <span className="sr-only">{LANG_NAME[l]}</span>
                   </button>
                 ))}
               </span>
             </div>
 
-            <div className="flex items-center border-l px-4" style={{ borderColor: "var(--rule-faint)" }}>
-              <button onClick={() => (tourOn ? setTourOn(false) : startTour())} className="btn-ink">
+            <div className="flex items-center border-l px-4 py-3" style={cellRule}>
+              <button
+                onClick={() => (tourOn ? setTourOn(false) : startTour())}
+                className="btn-ink whitespace-nowrap"
+              >
                 {tourOn ? <StopGlyph size={11} /> : <PlayGlyph size={11} />}
                 {tourOn ? ui.stopTour : ui.tour}
               </button>
@@ -414,19 +549,32 @@ export default function App() {
 
         {/* folio tabs */}
         <nav
-          className="flex items-end gap-6 border-t px-5"
-          style={{ borderColor: "var(--rule-faint)" }}
+          aria-label={ui.views}
+          className="flex items-end gap-6 overflow-x-auto border-t px-5"
+          style={cellRule}
         >
-          {(["home", "ask", "authority", "system"] as AppTab[]).map((x) => (
-            <button
+          {TABS.map((x) => (
+            // Real links: each sheet has an address, so it can be opened in a
+            // new tab or copied. A plain press swaps the sheet in place.
+            <a
               key={x}
-              onClick={() => setTab(x)}
+              href={`?tab=${x}`}
+              onClick={(e) => {
+                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                e.preventDefault();
+                setTab(x);
+                window.history.replaceState(null, "", `?tab=${x}`);
+              }}
+              aria-current={tab === x ? "page" : undefined}
               className={`tab mt-2 ${tab === x ? "tab-on" : ""}`}
             >
               {tabLabels[x]}
-            </button>
+            </a>
           ))}
-          <span className="label ml-auto hidden pb-2.5 !tracking-[0.12em] !text-chart-500 md:block">
+          <span
+            className="label ml-auto hidden shrink-0 pb-2.5 !tracking-[0.12em] !text-chart-600 md:block"
+            aria-hidden
+          >
             {ui.marginalia}
           </span>
         </nav>
@@ -444,252 +592,328 @@ export default function App() {
         />
       )}
 
-      {error && (
-        <div className="panel hatch-danger flex items-center gap-3 border-signal/60 px-4 py-2.5 text-small text-risk-extreme">
-          <WarnGlyph size={15} className="shrink-0" />
-          <span>
-            {error} — start the backend with{" "}
-            <code className="font-mono font-bold">uvicorn app.main:app --port 8000</code>
-          </span>
-        </div>
-      )}
+      {/* One short rise per view change: transform only, so nothing on the
+          sheet is ever invisible while it runs (or if it never does). */}
+      <main
+        id="sheet"
+        key={tab}
+        tabIndex={-1}
+        className="flex min-h-0 flex-1 animate-rise flex-col gap-4"
+      >
+        <h1 className="sr-only">{(VIEW_TITLE[language] ?? VIEW_TITLE.en)[tab]}</h1>
 
-      {/* ================= HOME : location + today's plan ================= */}
-      {tab === "home" && (
-        <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1.35fr_minmax(370px,1fr)]">
-          <div className="space-y-4">
-            <LocationPicker current={place} language={language} onPick={setPlace} />
+        {/* ================= TODAY : location + today's plan ================= */}
+        {tab === "home" && (
+          <ErrorBoundary language={language}>
+            <div
+              ref={sheetRef}
+              className="grid gap-4 min-[1100px]:grid-cols-[minmax(0,1.35fr)_minmax(400px,1fr)] min-[1100px]:items-start"
+            >
+              {/* The chart column stays with the reader while the plan scrolls.
+                  It is as tall as the room under the title block; on a short
+                  window it keeps a floor so the chart stays a chart, and the
+                  whole column is in view once the page has scrolled a little. */}
+              <div
+                className="flex min-w-0 flex-col gap-4 min-[1100px]:sticky min-[1100px]:top-4 min-[1100px]:min-h-[min(calc(100dvh-2rem),640px)]"
+                style={{ height: stickyHeight }}
+              >
+                <LocationPicker current={shownPlace} language={language} onPick={setPlace} />
 
-            <MarineMap
-              origin={homeOrigin}
-              zones={zones}
-              pfz={[]}
-              areas={outlook?.areas ?? []}
-              radiusKm={outlook?.radius_km ?? RADIUS_KM}
-              routes={outlook?.routes ?? []}
-              geofence={[]}
-              language={language}
-              onPickLocation={pickLocation}
-              focusRank={focusRank}
-            />
-
-            {outlook && (
-              <div className="panel grid grid-cols-2 sm:grid-cols-4">
-                {[
-                  {
-                    k: ui.safety,
-                    v: `${outlook.safety.score}`,
-                    s: outlook.safety.category,
-                    color: RISK_COLOR[outlook.safety.category],
-                  },
-                  {
-                    k: ui.waves,
-                    v: `${outlook.safety.wave_height_m ?? "—"}`,
-                    s: "m",
-                  },
-                  {
-                    k: ui.wind,
-                    v: `${Math.round(outlook.safety.wind_speed_kmh ?? 0)}`,
-                    s: "km/h",
-                  },
-                  {
-                    k: ui.areas,
-                    v: `${outlook.areas.length}`,
-                    s: ui.inRadius.replace("{km}", String(outlook.radius_km)),
-                  },
-                ].map((x, i) => (
-                  <div
-                    key={x.k}
-                    className={`group px-4 py-3 transition-colors hover:bg-chart-100/40 ${i > 0 ? "border-l" : ""}`}
-                    style={{ borderColor: "var(--rule-faint)" }}
-                  >
-                    <div className="label truncate">{x.k}</div>
+                <dl
+                  className="panel grid shrink-0 grid-cols-2 sm:grid-cols-4"
+                  aria-busy={loadingOutlook}
+                >
+                  {readings.map((x, i) => (
                     <div
-                      className={`mt-1 font-mono text-figure font-bold tabular-nums leading-none text-ink-900 ${
-                        x.color ? "" : "transition-colors group-hover:text-chart-600"
-                      }`}
-                      style={x.color ? { color: x.color } : undefined}
+                      key={x.k}
+                      className={`min-w-0 px-4 py-3 ${i > 0 ? "sm:border-l" : ""} ${
+                        i % 2 ? "max-sm:border-l" : ""
+                      } ${i > 1 ? "max-sm:border-t" : ""}`}
+                      style={cellRule}
                     >
-                      {x.v}
-                      <span className={`ml-1.5 text-label font-semibold ${x.color ? "" : "opacity-70"}`}>
-                        {x.s}
-                      </span>
+                      <dt className="label truncate">{x.k}</dt>
+                      <dd
+                        className="mt-1 truncate font-mono text-figure font-bold tabular-nums leading-none text-ink-900"
+                        style={x.color ? { color: x.color } : undefined}
+                      >
+                        {x.v}
+                        <span
+                          className={`ml-1.5 text-label font-semibold ${x.color ? "" : "text-ink-500"}`}
+                        >
+                          {x.s}
+                        </span>
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+
+                <div ref={mapSlotRef} className="min-h-0 min-[1100px]:flex-1">
+                  {/* The chart is drawn once its height is known, so it is laid
+                      out a single time at the size it will keep. */}
+                  {todayColumns && todayMapHeight === undefined ? (
+                    <div className="chart-sheet h-full" aria-hidden />
+                  ) : (
+                    <ErrorBoundary language={language}>
+                      <MarineMap
+                        origin={homeOrigin}
+                        zones={zones}
+                        pfz={[]}
+                        areas={outlook?.areas ?? []}
+                        radiusKm={outlook?.radius_km ?? RADIUS_KM}
+                        routes={outlook?.routes ?? []}
+                        geofence={[]}
+                        language={language}
+                        onPickLocation={pickLocation}
+                        focusRank={focusRank}
+                        heightPx={todayMapHeight}
+                      />
+                    </ErrorBoundary>
+                  )}
+                </div>
+              </div>
+
+              <div className="min-w-0 space-y-4">
+                {loadingOutlook && !outlook && (
+                  <div
+                    className="panel flex items-center gap-3 p-6 text-prose leading-5 text-ink-500"
+                    role="status"
+                  >
+                    <span className="wave-rule w-12 shrink-0" aria-hidden />
+                    {ui.readingSea}
+                  </div>
+                )}
+                {outlookFailed && (
+                  <div role="alert" className="panel-tint hatch-danger p-5">
+                    <div className="flex items-start gap-3">
+                      <WarnGlyph size={18} className="mt-0.5 shrink-0 text-risk-extreme" />
+                      <div className="min-w-0">
+                        <h2 className="font-display text-lead font-bold text-ink-900">
+                          {ui.outlookFailTitle}
+                        </h2>
+                        <p className="mt-1 max-w-[52ch] text-body leading-relaxed text-ink-700">
+                          {ui.outlookFailBody}
+                        </p>
+                        <button
+                          className="btn-line mt-3"
+                          onClick={() => place && setPlace({ ...place })}
+                        >
+                          {ui.outlookRetry}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                ))}
+                )}
+                {outlook && (
+                  <FishingPanel
+                    data={outlook}
+                    language={language}
+                    onSelectArea={(rank) => setFocus({ rank, place, language })}
+                  />
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          </ErrorBoundary>
+        )}
 
-          <div className="space-y-4 lg:h-[calc(100vh-235px)] lg:overflow-y-auto lg:pr-1">
-            {loadingOutlook && !outlook && (
-              <div className="panel p-6 text-center text-prose leading-5 italic text-ink-400">
-                {ui.readingSea}
-              </div>
-            )}
-            {outlook && (
-              <FishingPanel
-                data={outlook}
-                language={language}
-                onSelectArea={(rank) => setFocus({ rank, place, language })}
-              />
-            )}
-          </div>
-        </div>
-      )}
+        {/* ================= ASK : the answer leads ================= */}
+        {tab === "ask" && (
+          <ErrorBoundary language={language}>
+            <ScenarioDeck
+              language={language}
+              open={messages.length === 0 && !latest && !busy}
+              busy={busy}
+              onRun={runScenario}
+            />
 
-      {/* ================= ASK : the conversational view ================= */}
-      {tab === "ask" && (
-        <>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="label mr-1">{ui.scenarios}</span>
-            {SCENARIOS.map((s) => (
-              <button
-                key={s.id}
-                onClick={() => runScenario(s.ask)}
-                disabled={busy}
-                title={s.ask}
-                className="chip disabled:cursor-not-allowed disabled:opacity-40"
+            <div ref={sheetRef} className="ask-sheet">
+              <div
+                data-area="talk"
+                className="min-w-0 lg:sticky lg:top-4 lg:min-h-[min(calc(100dvh-2rem),440px)]"
+                style={{ height: stickyHeight }}
               >
-                <span className="grid w-[18px] shrink-0 place-items-center rounded-full bg-ink-900 font-display text-label font-bold leading-none text-paper-50" style={{ height: 18 }}>
-                  {s.n}
-                </span>
-                <span className="font-semibold">{s.label[language] ?? s.label.en}</span>
-                <span className="font-mono text-label uppercase tracking-wide opacity-75">{s.hint}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(350px,1fr)_1.6fr]">
-            <div className="min-h-[540px] lg:h-[calc(100vh-280px)]">
-              <ChatPanel
-                messages={messages}
-                busy={busy}
-                language={language}
-                suggestions={suggestions}
-                onSend={send}
-                onLanguage={setLangChoice}
-              />
-            </div>
-
-            <div className="space-y-4 lg:h-[calc(100vh-280px)] lg:overflow-y-auto lg:pr-1">
-              {latest && <ConditionsStrip res={latest} language={latest.language} />}
-
-              <MarineMap
-                origin={latest?.intent.location ?? null}
-                zones={zones}
-                pfz={latest?.pfz ?? []}
-                routes={latest?.routes ?? []}
-                geofence={latest?.geofence ?? []}
-                alerts={latest?.alerts ?? []}
-                language={language}
-              />
-
-              {latest?.risk && (
-                <RiskCard
-                  risk={latest.risk}
-                  evidence={latest.evidence}
-                  language={latest.language}
+                <ChatPanel
+                  messages={messages}
+                  busy={busy}
+                  failed={unanswered !== null}
+                  language={language}
+                  suggestions={suggestions}
+                  onSend={send}
+                  onRetry={() => unanswered && send(unanswered, true)}
                 />
-              )}
+              </div>
 
-              {latest && (
-                <RiskTimeline location={latest.intent.location} language={latest.language} />
-              )}
+              <div className="ask-answer">
+                {/* the verdict: first in the column, first on a narrow sheet */}
+                <div data-area="verdict" className="min-w-0 space-y-4">
+                  {busy && <CrewWorking language={language} />}
 
-              {latest && latest.alerts.length > 0 && (
-                <div className="panel hatch-danger overflow-hidden border-risk-extreme/60">
-                  <div className="hd border-risk-extreme/25">
-                    <span className="label flex items-center gap-2 !text-risk-extreme">
-                      <WarnGlyph size={13} /> {ui.warnings}
-                    </span>
-                  </div>
-                  <div className="px-4 py-3.5">
-                    {latest.alerts.map((a, i) => (
-                      <div key={i} className="mb-3 last:mb-0">
-                        <div className="font-display text-lead font-bold leading-snug text-risk-extreme">
-                          {a.headline}
-                        </div>
-                        <div className="mt-1 text-small leading-relaxed text-ink-700">
-                          {a.detail}
-                        </div>
-                        <div className="mt-1 font-mono text-label uppercase tracking-wide text-ink-400">
-                          {a.source} · {a.severity}
-                          {a.valid_till ? ` · ${ui.validTill} ${a.valid_till}` : ""}
-                        </div>
+                  {latest?.risk && (
+                    <div
+                      className={busy ? "space-y-2 opacity-60 transition-opacity" : undefined}
+                      aria-busy={busy}
+                    >
+                      {busy && <p className="label px-1">{ui.stale}</p>}
+                      <RiskCard
+                        risk={latest.risk}
+                        evidence={latest.evidence}
+                        language={latest.language}
+                      />
+                    </div>
+                  )}
+
+                  {!latest && !busy && (
+                    <div
+                      className="panel-tint flex items-center gap-5 border-dashed p-5"
+                      style={{ borderColor: "var(--rule-strong)" }}
+                    >
+                      <svg width="76" height="76" viewBox="0 0 76 76" className="shrink-0" aria-hidden>
+                        <circle
+                          cx="38"
+                          cy="38"
+                          r="30"
+                          fill="none"
+                          stroke={ink[300]}
+                          strokeWidth="5"
+                          strokeDasharray="3 5"
+                        />
+                        <circle cx="38" cy="38" r="36.5" fill="none" stroke={ink[300]} strokeWidth="0.8" />
+                      </svg>
+                      <div className="min-w-0">
+                        <h2 className="font-display text-heading font-bold leading-snug text-ink-900">
+                          {ui.pendingTitle}
+                        </h2>
+                        <p className="mt-1 max-w-[62ch] text-body leading-relaxed text-ink-700">
+                          {ui.pendingBody}
+                        </p>
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              )}
 
-              {latest && <PFZList zones={latest.pfz} language={latest.language} />}
+                <ErrorBoundary language={language}>
+                  <MarineMap
+                    origin={latest?.intent.location ?? null}
+                    zones={zones}
+                    pfz={latest?.pfz ?? []}
+                    routes={latest?.routes ?? []}
+                    geofence={latest?.geofence ?? []}
+                    alerts={latest?.alerts ?? []}
+                    language={language}
+                  />
+                </ErrorBoundary>
 
-              {latest && latest.routes.length > 0 && (
-                <div className="panel overflow-hidden">
-                  <div className="hd">
-                    <span className="label">{ui.courses}</span>
-                  </div>
-                  <div className="space-y-2 px-4 py-3.5">
-                    {latest.routes.map((r) => (
-                      <div
-                        key={r.name}
-                        className={`rounded-[2px] border px-3.5 py-3 ${
-                          r.recommended ? "border-risk-low/70 bg-risk-low/[0.06]" : "bg-paper-100"
-                        }`}
-                        style={r.recommended ? undefined : { borderColor: "var(--rule)" }}
-                      >
-                        <div className="flex items-baseline justify-between gap-3">
-                          <span className="flex items-center gap-2.5 font-display text-prose font-bold text-ink-900">
-                            {/* course symbology, drawn as plotted */}
-                            <svg width="26" height="8" aria-hidden>
-                              <line
-                                x1="1"
-                                y1="4"
-                                x2="25"
-                                y2="4"
-                                stroke={r.recommended ? risk.low : ink[400]}
-                                strokeWidth="2"
-                                strokeDasharray={r.recommended ? "7 4" : "2 4"}
-                              />
-                            </svg>
-                            {r.name}
-                            {r.recommended && (
-                              <span className="stamp !px-1.5 !py-0.5 !text-micro text-risk-low">
-                                {ui.recommended}
-                              </span>
-                            )}
-                          </span>
-                          <span className="shrink-0 font-mono text-readout tabular-nums text-ink-500">
-                            {r.distance_km} km · {Math.round(r.eta_minutes)} min
-                          </span>
+                {latest && <ConditionsStrip res={latest} language={latest.language} />}
+
+                {latest && latest.alerts.length > 0 && (
+                  <section className="panel hatch-danger overflow-hidden border-risk-extreme/60">
+                    <div className="hd border-risk-extreme/25">
+                      <h2 className="label flex items-center gap-2 !text-risk-extreme">
+                        <WarnGlyph size={13} /> {ui.warnings}
+                      </h2>
+                    </div>
+                    <div className="space-y-3 px-4 py-3.5">
+                      {latest.alerts.map((a, i) => (
+                        <div key={i} className="max-w-[78ch]">
+                          <h3 className="font-display text-lead font-bold leading-snug text-risk-extreme">
+                            {a.headline}
+                          </h3>
+                          <p className="mt-1 text-small leading-relaxed text-ink-700">{a.detail}</p>
+                          <p className="mt-1 font-mono text-label uppercase tracking-wide text-ink-500">
+                            {a.source} · {a.severity}
+                            {a.valid_till ? ` · ${ui.validTill} ${a.valid_till}` : ""}
+                          </p>
                         </div>
-                        <div className="mt-1 pl-[36px] text-readout leading-relaxed text-ink-500">
-                          {r.notes}
+                      ))}
+                    </div>
+                  </section>
+                )}
+
+                {latest && (
+                  <RiskTimeline location={latest.intent.location} language={latest.language} />
+                )}
+
+                {latest && <PFZList zones={latest.pfz} language={latest.language} />}
+
+                {latest && latest.routes.length > 0 && (
+                  <section className="panel overflow-hidden">
+                    <div className="hd">
+                      <h2 className="label">{ui.courses}</h2>
+                    </div>
+                    <div className="space-y-2 px-4 py-3.5">
+                      {latest.routes.map((r) => (
+                        <div
+                          key={r.name}
+                          className={`rounded-[2px] border px-3.5 py-3 ${
+                            r.recommended ? "border-risk-low/70 bg-risk-low/[0.06]" : "bg-paper-100"
+                          }`}
+                          style={r.recommended ? undefined : { borderColor: "var(--rule)" }}
+                        >
+                          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+                            <h3 className="flex items-center gap-2.5 font-display text-prose font-bold text-ink-900">
+                              {/* course symbology, drawn as plotted */}
+                              <svg width="26" height="8" className="shrink-0" aria-hidden>
+                                <line
+                                  x1="1"
+                                  y1="4"
+                                  x2="25"
+                                  y2="4"
+                                  stroke={r.recommended ? risk.low : ink[400]}
+                                  strokeWidth="2"
+                                  strokeDasharray={r.recommended ? "7 4" : "2 4"}
+                                />
+                              </svg>
+                              {r.name}
+                              {r.recommended && (
+                                <span className="stamp !px-1.5 !py-0.5 !text-micro text-risk-low">
+                                  {ui.recommended}
+                                </span>
+                              )}
+                            </h3>
+                            <span className="shrink-0 font-mono text-readout tabular-nums text-ink-500">
+                              {r.distance_km} km · {Math.round(r.eta_minutes)} min
+                            </span>
+                          </div>
+                          <p className="mt-1 max-w-[78ch] pl-[36px] text-readout leading-relaxed text-ink-500">
+                            {r.notes}
+                          </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                      ))}
+                    </div>
+                  </section>
+                )}
 
-              {latest && (
-                <AgentTracePanel trace={latest.trace} elapsed={latest.elapsed_ms} language={latest.language} />
-              )}
+                {latest && <EvidenceLedger evidence={latest.evidence} language={latest.language} />}
 
-              {latest && (
-                <p className="px-1 pb-2 font-mono text-label leading-relaxed text-ink-400">
-                  {latest.disclaimer}
-                </p>
-              )}
+                {latest && (
+                  <AgentTracePanel
+                    trace={latest.trace}
+                    elapsed={latest.elapsed_ms}
+                    language={latest.language}
+                  />
+                )}
+
+                {latest && (
+                  <p className="max-w-[78ch] px-1 pb-2 font-mono text-label leading-relaxed text-ink-500">
+                    {latest.disclaimer}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        </>
-      )}
+          </ErrorBoundary>
+        )}
 
-      {tab === "authority" && <AuthorityPanel language={language} />}
+        {tab === "authority" && (
+          <ErrorBoundary language={language}>
+            <AuthorityPanel language={language} />
+          </ErrorBoundary>
+        )}
 
-      {tab === "system" && <SystemPanel mode={mode} language={language} />}
+        {tab === "system" && (
+          <ErrorBoundary language={language}>
+            <SystemPanel mode={mode} language={language} />
+          </ErrorBoundary>
+        )}
+      </main>
     </div>
   );
 }

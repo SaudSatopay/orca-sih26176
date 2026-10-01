@@ -21,6 +21,11 @@ export const LABEL: Record<Language, Record<string, string>> = {
 export const T: Record<Language, Record<string, string>> = {
   en: {
     crew: "Agent crew",
+    working: "The crew is reading the sea",
+    workingSub: "Each specialist reports in. The risk engine waits for all of them before it decides.",
+    called: "called",
+    waiting: "standing by",
+    status: "ok:reported|degraded:partial|failed:failed|skipped:not needed",
     agents: "agents",
     total: "ms total",
     concurrent: "CONCURRENT",
@@ -32,6 +37,11 @@ export const T: Record<Language, Record<string, string>> = {
   },
   hi: {
     crew: "एजेंट टीम",
+    working: "टीम समुद्र पढ़ रही है",
+    workingSub: "हर विशेषज्ञ अपनी रिपोर्ट देता है। रिस्क इंजन सबका इंतज़ार करके ही फ़ैसला करता है।",
+    called: "बुलाया गया",
+    waiting: "तैयार",
+    status: "ok:रिपोर्ट मिली|degraded:अधूरी|failed:विफल|skipped:ज़रूरत नहीं",
     agents: "एजेंट",
     total: "ms कुल",
     concurrent: "एक साथ",
@@ -43,6 +53,11 @@ export const T: Record<Language, Record<string, string>> = {
   },
   mr: {
     crew: "एजंट टीम",
+    working: "टीम समुद्र वाचत आहे",
+    workingSub: "प्रत्येक तज्ज्ञ आपला अहवाल देतो. रिस्क इंजिन सर्वांची वाट पाहूनच निर्णय घेते.",
+    called: "बोलावले",
+    waiting: "तयार",
+    status: "ok:अहवाल मिळाला|degraded:अपूर्ण|failed:अयशस्वी|skipped:गरज नाही",
     agents: "एजंट",
     total: "ms एकूण",
     concurrent: "एकाच वेळी",
