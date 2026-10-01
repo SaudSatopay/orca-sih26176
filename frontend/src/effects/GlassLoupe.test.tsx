@@ -85,3 +85,37 @@ describe("the chart loupe, with the effect off", () => {
     expect(document.querySelector("iframe")).toBeNull();
   });
 });
+
+describe("what made the first trial fail stays out", () => {
+  const sources = import.meta.glob<string>(
+    ["./glass*.{ts,tsx}", "./GlassLoupe.tsx", "../vendor/liquid-glass/index.js", "../vendor/liquid-glass/index.d.ts"],
+    { eager: true, query: "?raw", import: "default" },
+  );
+
+  it("reads the glass sources", () => {
+    expect(Object.keys(sources).length).toBeGreaterThanOrEqual(6);
+  });
+
+  it("html2canvas is gone and does not come back", () => {
+    // The headers may name it only to say it is banned; importing it is the offence.
+    const imports = /from ['"]html2canvas['"]|import\(['"]html2canvas|require\(['"]html2canvas/;
+    for (const [file, text] of Object.entries(sources)) {
+      expect(imports.test(text), `${file} imports html2canvas`).toBe(false);
+    }
+  });
+
+  it("the vendored module writes nothing to the console", () => {
+    const vendor = Object.entries(sources).find(([f]) => f.endsWith("liquid-glass/index.js"));
+    expect(vendor).toBeDefined();
+    expect(vendor![1]).not.toMatch(/console\./);
+  });
+
+  it("a lens draws once: the module can lose its context and copy a still", () => {
+    const vendor = Object.entries(sources).find(([f]) => f.endsWith("liquid-glass/index.js"))![1];
+    expect(vendor).toMatch(/WEBGL_lose_context/);
+    expect(vendor).toMatch(/copyStill/);
+    // No animation loop: a still is rendered on demand only.
+    expect(vendor).not.toMatch(/requestAnimationFrame/);
+    expect(vendor).not.toMatch(/addEventListener\(\s*['"]scroll/);
+  });
+});
