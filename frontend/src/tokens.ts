@@ -21,14 +21,18 @@ export const paper = {
   400: "#B9A67C", // aged edge
 } as const;
 
-/** Marine ink. 300 is decoration only: it does not pass AA as text on paper. */
+/**
+ * Marine ink. 400 is the lightest ink that may carry text: 4.51:1 on paper-100
+ * and 4.88:1 on paper-50 (it was #5D7386, 4.26:1 on the sheet). 300 is
+ * decoration only — rules and quiet icons — at 2.9:1.
+ */
 export const ink = {
   900: "#12212D", // headings, primary buttons
   800: "#1B2F3E",
   700: "#263B4D", // body text
   500: "#42596D", // secondary text
-  400: "#5D7386", // labels
-  300: "#82949F", // rules, quiet icons
+  400: "#5A6F81", // labels, placeholders, inactive tabs
+  300: "#82949F", // rules, quiet icons; never text
 } as const;
 
 /** Shallow-water teal, the one accent. */

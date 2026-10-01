@@ -172,7 +172,7 @@ export default function FishingPanel({
               ))}
             </div>
 
-            <p className="mt-2 font-mono text-[8.5px] uppercase tracking-[0.14em] text-ink-300">
+            <p className="mt-2 font-mono text-[8.5px] uppercase tracking-[0.14em] text-ink-400">
               {t.barsCaption}
             </p>
 
@@ -219,7 +219,9 @@ export default function FishingPanel({
                       }`}
                     >
                       {x.v}
-                      <span className="ml-1 text-[10.5px] font-semibold opacity-65">{x.u}</span>
+                      <span className={`ml-1 text-[10.5px] font-semibold ${x.hero ? "" : "opacity-70"}`}>
+                        {x.u}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -301,7 +303,7 @@ export default function FishingPanel({
                   }`}
                 >
                   {x.v}
-                  {x.s && <span className="ml-1 text-[10px] font-semibold opacity-60">{x.s}</span>}
+                  {x.s && <span className="ml-1 text-[10px] font-semibold opacity-70">{x.s}</span>}
                 </div>
               </div>
             ))}

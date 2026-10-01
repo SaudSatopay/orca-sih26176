@@ -258,7 +258,7 @@ export default function SystemPanel({
             <div>{t.law2}</div>
             <div>{t.law3}</div>
           </div>
-          <p className="max-w-[380px] text-[11.5px] italic leading-relaxed text-ink-600">
+          <p className="max-w-[380px] text-[11.5px] italic leading-relaxed text-ink-700">
             <LockGlyph size={12} className="mr-1 inline text-risk-extreme" />
             {t.lawNote}
           </p>
@@ -394,7 +394,7 @@ export default function SystemPanel({
                   className="text-ink-300 transition-all group-hover:translate-x-0.5 group-hover:text-chart-600"
                 />
               </div>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-ink-600">{x.d}</p>
+              <p className="mt-1.5 text-[12px] leading-relaxed text-ink-700">{x.d}</p>
             </div>
           ))}
         </div>

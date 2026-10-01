@@ -115,7 +115,7 @@ export default function ChatPanel({
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[88%] animate-rise ${m.role === "user" ? "text-right" : ""}`}>
-              <div className="label mb-1 !text-[8.5px] !tracking-[0.2em] !text-ink-300">
+              <div className="label mb-1 !text-[8.5px] !tracking-[0.2em]">
                 {m.role === "user" ? (T[language] ?? T.en).you : "ORCA"}
               </div>
               <div

@@ -540,7 +540,7 @@ export default function MarineMap({
         <span className="font-mono text-[8.5px] font-semibold uppercase tracking-[0.18em] text-ink-400">
           {(LEGEND[language] ?? LEGEND.en).marginL}
         </span>
-        <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-300">
+        <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-400">
           {(LEGEND[language] ?? LEGEND.en).marginR}
         </span>
       </div>

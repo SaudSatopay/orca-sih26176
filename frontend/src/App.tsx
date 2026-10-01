@@ -361,7 +361,7 @@ export default function App() {
                 }`}
               >
                 {switching ? "…" : mode}
-                <span className="ml-1.5 text-ink-300 transition group-hover:text-ink-700">⇄</span>
+                <span className="ml-1.5 text-ink-400 transition group-hover:text-ink-700">⇄</span>
               </span>
             </button>
 
@@ -509,7 +509,9 @@ export default function App() {
                       style={x.color ? { color: x.color } : undefined}
                     >
                       {x.v}
-                      <span className="ml-1.5 text-[10px] font-semibold opacity-60">{x.s}</span>
+                      <span className={`ml-1.5 text-[10px] font-semibold ${x.color ? "" : "opacity-70"}`}>
+                        {x.s}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -551,7 +553,7 @@ export default function App() {
                   {s.n}
                 </span>
                 <span className="font-semibold">{s.label[language] ?? s.label.en}</span>
-                <span className="font-mono text-[10px] uppercase tracking-wide opacity-60">{s.hint}</span>
+                <span className="font-mono text-[10px] uppercase tracking-wide opacity-75">{s.hint}</span>
               </button>
             ))}
           </div>

@@ -466,7 +466,7 @@ body::after {
   /* Folio tabs: the underline draws itself from the left; hovering an
      inactive tab previews it in chart teal. */
   .tab {
-    @apply relative px-1 pb-2.5 pt-1 font-mono text-[11.5px] font-bold uppercase tracking-[0.14em] text-ink-300;
+    @apply relative px-1 pb-2.5 pt-1 font-mono text-[11.5px] font-bold uppercase tracking-[0.14em] text-ink-400;
     transition: color 0.2s ease;
   }
   .tab::after {
@@ -494,7 +494,7 @@ body::after {
   }
 
   .field {
-    @apply w-full rounded-[2px] border px-3.5 py-2.5 text-[13.5px] text-ink-800 outline-none transition placeholder:text-ink-300;
+    @apply w-full rounded-[2px] border px-3.5 py-2.5 text-[13.5px] text-ink-800 outline-none transition placeholder:text-ink-400;
     border-color: var(--rule);
     background: var(--paper-bright);
   }

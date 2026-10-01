@@ -112,7 +112,7 @@ export default function LocationPicker({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t.search}
-            className="w-full border-b bg-transparent px-4 py-3 text-[13px] text-ink-800 outline-none placeholder:text-ink-300"
+            className="w-full border-b bg-transparent px-4 py-3 text-[13px] text-ink-800 outline-none placeholder:text-ink-400"
             style={{ borderColor: "var(--rule)" }}
           />
           <div className="max-h-64 overflow-y-auto py-1">
@@ -134,7 +134,7 @@ export default function LocationPicker({
               >
                 <span className="text-[13px] font-semibold text-ink-900">{p.name}</span>
                 <span className="text-[11px] text-ink-400">{p.state}</span>
-                <span className="ml-auto font-mono text-[9.5px] tabular-nums text-ink-300">
+                <span className="ml-auto font-mono text-[9.5px] tabular-nums text-ink-400">
                   {p.lat.toFixed(2)}°N {p.lon.toFixed(2)}°E
                 </span>
               </button>
