@@ -88,7 +88,7 @@ describe("type scale", () => {
 
   it("is handed to Tailwind in pixels", () => {
     expect(fontSize.label).toBe("10px");
-    expect(fontSize.hero).toBe("76px");
+    expect(fontSize.hero).toBe("48px");
     expect(Object.keys(fontSize)).toEqual(Object.keys(typePx));
   });
 });

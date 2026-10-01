@@ -16,6 +16,8 @@ export const L10N: Record<
     watchLive: string;
     pipelineTitle: string;
     indexTitle: string;
+    sheetWord: string;
+    languageLabel: string;
     stats: string[];
     cards: { kicker: string; title: string; lines: string[] }[];
     phases: { t: string; n: string }[];
@@ -35,6 +37,8 @@ export const L10N: Record<
     watchLive: "watch it run live →",
     pipelineTitle: "How ORCA decides",
     indexTitle: "Index of sheets",
+    sheetWord: "Sheet",
+    languageLabel: "Language",
     stats: ["Agents in the crew", "Landing centres", "Official warnings", "Languages", "Data edition"],
     cards: [
       {
@@ -96,6 +100,8 @@ export const L10N: Record<
     watchLive: "इसे चलते हुए देखें →",
     pipelineTitle: "ORCA फ़ैसला कैसे करता है",
     indexTitle: "शीटों की सूची",
+    sheetWord: "शीट",
+    languageLabel: "भाषा",
     stats: ["टीम के एजेंट", "लैंडिंग सेंटर", "आधिकारिक चेतावनियाँ", "भाषाएँ", "डेटा संस्करण"],
     cards: [
       {
@@ -157,6 +163,8 @@ export const L10N: Record<
     watchLive: "हे चालताना पाहा →",
     pipelineTitle: "ORCA निर्णय कसा घेते",
     indexTitle: "शीटांची सूची",
+    sheetWord: "शीट",
+    languageLabel: "भाषा",
     stats: ["टीममधील एजंट", "लँडिंग सेंटर", "अधिकृत इशारे", "भाषा", "डेटा आवृत्ती"],
     cards: [
       {

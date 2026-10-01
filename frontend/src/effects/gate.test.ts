@@ -1,0 +1,72 @@
+import { describe, expect, it } from "vitest";
+import {
+  ALL_EFFECTS,
+  CONTEXTS,
+  DEFAULT_EFFECTS,
+  WEBGL_CAP,
+  allowedEffects,
+  requestedEffects,
+  type EffectEnv,
+} from "./gate";
+
+const desktop: EffectEnv = {
+  search: "?fx=all",
+  wide: true,
+  finePointer: true,
+  reducedMotion: false,
+  reducedTransparency: false,
+  saveData: false,
+  webgl: true,
+};
+
+describe("which landing effects may run", () => {
+  it("reads the ?fx= switch", () => {
+    expect(requestedEffects("")).toBeNull();
+    expect(requestedEffects("?tab=home")).toBeNull();
+    expect(requestedEffects("?fx=none")).toEqual([]);
+    expect(requestedEffects("?fx=all")).toEqual(ALL_EFFECTS);
+    expect(requestedEffects("?fx=relief,sea")).toEqual(["sea", "relief"]);
+    expect(requestedEffects("?fx=SEA")).toEqual(["sea"]);
+    expect(requestedEffects("?fx=nonsense")).toEqual([]);
+  });
+
+  it("gives a phone, a tablet and a touch laptop the poster", () => {
+    expect(allowedEffects({ ...desktop, wide: false })).toEqual([]);
+    expect(allowedEffects({ ...desktop, finePointer: false })).toEqual([]);
+  });
+
+  it("gives reduced motion, data saver and no-WebGL the poster", () => {
+    expect(allowedEffects({ ...desktop, reducedMotion: true })).toEqual([]);
+    expect(allowedEffects({ ...desktop, saveData: true })).toEqual([]);
+    expect(allowedEffects({ ...desktop, webgl: false })).toEqual([]);
+  });
+
+  it("keeps glass opaque under reduced transparency and leaves the rest alone", () => {
+    const got = allowedEffects({ ...desktop, reducedTransparency: true });
+    expect(got).not.toContain("glass");
+    expect(got).toContain("sea");
+  });
+
+  it("never exceeds the WebGL context cap, whatever is asked for", () => {
+    const got = allowedEffects(desktop);
+    const contexts = got.reduce((n, name) => n + CONTEXTS[name], 0);
+    expect(contexts).toBeLessThanOrEqual(WEBGL_CAP);
+    expect(WEBGL_CAP).toBe(3);
+  });
+
+  it("runs only what was asked for, in priority order", () => {
+    expect(allowedEffects({ ...desktop, search: "?fx=glass,sea" })).toEqual(["sea", "glass"]);
+    expect(allowedEffects({ ...desktop, search: "?fx=none" })).toEqual([]);
+  });
+
+  it("with no switch, runs exactly the shipped set", () => {
+    expect(allowedEffects({ ...desktop, search: "" })).toEqual(
+      ALL_EFFECTS.filter((name) => DEFAULT_EFFECTS.includes(name)),
+    );
+  });
+
+  it("ships nothing that would break the cap on its own", () => {
+    const shipped = DEFAULT_EFFECTS.reduce((n, name) => n + CONTEXTS[name], 0);
+    expect(shipped).toBeLessThanOrEqual(WEBGL_CAP);
+  });
+});

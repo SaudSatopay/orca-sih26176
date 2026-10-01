@@ -118,8 +118,8 @@ export const typePx = {
   numeral: 26, // large soundings, the landing tagline, return-by
   display: 30, // the ORCA wordmark, the phone's score
   tile: 34, // the authority board's totals
-  dial: 38, // the risk dial numeral
-  hero: 76, // the landing wordmark
+  dial: 38, // the risk dial numeral, the landing wordmark
+  hero: 48, // the landing claim, the largest text in the product
 } as const;
 
 export type TypeStep = keyof typeof typePx;

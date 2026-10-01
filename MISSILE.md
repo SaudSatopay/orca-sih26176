@@ -1,6 +1,6 @@
 # Missile log: orca
 
-status: stage=4 iteration=0 verdict=CONTINUE updated=2026-10-01T11:30:00Z
+status: stage=4 iteration=1 verdict=CONTINUE updated=2026-10-01T11:27:54.892Z
 mode: full flight, second stage (`/missile go`, 1 Oct 2026)
 branch: missile/20261001
 url: https://orca-psi-one.vercel.app
@@ -84,19 +84,19 @@ Real, coherent and distinctive; extracted into DESIGN.md. Debts: tokens split ac
 ## Scoreboard
 
 <!-- scoreboard:start -->
-| dimension | baseline | target |
-|---|---|---|
-| first_impression | 7 | 9+ |
-| design_system | 7 | 9+ |
-| layout | 6 | 9+ |
-| motion | 6 | 9+ |
-| ux_completeness | 6 | 9+ |
-| accessibility | 6 | 9+ |
-| performance | 4 | 9+ |
-| code_health | 5 | 9+ |
-| story | 7 | 9+ |
-| shipped | 4 | 9+ |
-| **mean** | 5.8 | 9.5+ |
+| dimension | baseline | it1 | target |
+|---|---|---|---|
+| first_impression | 7 | 8 | 9+ |
+| design_system | 7 | 8 | 9+ |
+| layout | 6 | 7 | 9+ |
+| motion | 6 | 7 | 9+ |
+| ux_completeness | 6 | 7 | 9+ |
+| accessibility | 6 | 8 | 9+ |
+| performance | 4 | 8 | 9+ |
+| code_health | 5 | 8 | 9+ |
+| story | 7 | 8 | 9+ |
+| shipped | 4 | 6 | 9+ |
+| **mean** | 5.8 | 7.5 | 9.5+ |
 <!-- scoreboard:end -->
 
 ## Plan
@@ -192,6 +192,19 @@ Order: foundations, then ship a preview early, then tokens and accessibility, th
   - [M] shipped: Add a single-port Dockerfile (FastAPI serving the built frontend), deploy to a public host, put the URL in the README and tag v0.1.0 (Dockerfile, README.md, backend/app)
   - [M] code_health: Add typecheck, lint and test scripts with ESLint and three Vitest tests on the demo path, an ErrorBoundary around the map and chat, and a .env.example (frontend/package.json, frontend/eslint.config.js, frontend/src/App.tsx, .env.example)
   - [M] first_impression: Replace the small landing vignette with the real Today map and verdict at hero scale, cut the hero to one primary and one secondary button, and relabel the phone 'BE BACK BY 00:07' so it cannot read as a clock error (frontend/src/components/Landing.tsx, frontend/src/components/MobileApp.tsx)
+
+### Iteration 1 · 2026-10-01T11:27:54.892Z
+- mean 7.5, min 6, verdict **CONTINUE**
+- url: http://localhost:8000
+- screens: /, /?tab=home, /?tab=ask, /?demo=safe, /?demo=danger, /?demo=cyclone, /?demo=pfz, /?demo=route, /?tab=authority, /?tab=system, phone app Today/Map/Ask
+- next fixes:
+  - [S] shipped: Promote the current build to the public alias orca-psi-one.vercel.app, verify it in incognito at 1440 and 390 with screenshots, push the branch and tag the release (vercel.json, README.md)
+  - [S] ux_completeness: On the phone Today screen, when the risk is EXTREME or an official warning is active, replace 'Best time / Be back by' and the fishing grounds with a single 'No safe window today' line; replace 'deg C' and 'mg/m3' in backend strings (frontend/src/components/MobileApp.tsx, backend/app/services/i18n.py, backend/app/services/fishing.py, backend/app/agents/ocean_agent.py, backend/app/api/fishing.py)
+  - [S] motion: Compress the hero load sequence to finish within 1.0 s with the verdict stamp landing by 0.6 s, and remove decorative infinite loops from the console tabs (frontend/src/components/hero.css, frontend/src/components/HeroChart.tsx, frontend/src/index.css)
+  - [M] layout: Balance the Today columns at 1440 (move 'Best places to fish' and 'Your trip' under the chart), un-clip the Authority warning column at 768, and stop truncating landing stat labels and crew names at 768 and 1024 (frontend/src/App.tsx, frontend/src/components/AuthorityPanel.tsx, frontend/src/components/Landing.tsx, frontend/src/components/HeroChart.tsx, frontend/src/components/views.css)
+  - [M] ux_completeness: Render the desktop chat answer as a verdict line plus a three-item reason list, name the location by nearest harbour instead of 'Selected point', print the return time as on the phone, and translate the remaining English fragments in Hindi and Marathi (frontend/src/components/ChatPanel.tsx, frontend/src/answer.ts, frontend/src/components/LocationPicker.tsx, backend/app/services/i18n.py)
+  - [S] performance: Reserve the verdict panel and form heights in the Ask view so the chart sheet does not shift when the answer arrives (CLS 0.165 on /?demo=danger, target under 0.05), and ask for geolocation only on button press (frontend/src/App.tsx, frontend/src/components/RiskCard.tsx, frontend/src/components/ChatPanel.tsx)
+  - [S] accessibility: Add AA-safe text variants of risk.moderate, chance.good and chance.some to the tokens, use ink-500 on tinted cells, move focus to the view heading after navigation, and name the vessel marker (frontend/src/tokens.ts, frontend/src/App.tsx, frontend/src/components/MarineMap.tsx)
 
 <!-- iterations:end -->
 

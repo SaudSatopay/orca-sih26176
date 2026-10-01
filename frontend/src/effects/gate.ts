@@ -1,0 +1,118 @@
+/**
+ * Which landing effects may run in this browser.
+ *
+ * The effects are decoration on the desktop landing. They are never the
+ * content: each one sits on top of a poster that is already the finished
+ * design, and this gate decides whether the poster is all the visitor gets.
+ *
+ * Rules (MISSILE.md, "Rules for the effects"):
+ *   - the phone app gets none of them (they are not even in its chunk graph;
+ *     this gate is the second lock for a narrow or touch-first desktop window);
+ *   - reduced motion and reduced transparency get the poster;
+ *   - at most three live WebGL contexts on the landing;
+ *   - everything works with no network: an effect loads nothing but its own
+ *     chunk from this origin.
+ *
+ * Pure functions over a snapshot of the environment, so the rules are tested
+ * without a browser.
+ */
+
+export type EffectName = "sea" | "relief" | "glass";
+
+/** In priority order: when the context cap bites, later ones lose. */
+export const ALL_EFFECTS: readonly EffectName[] = ["sea", "relief", "glass"];
+
+/** Live WebGL contexts each effect holds while it runs. */
+export const CONTEXTS: Record<EffectName, number> = { sea: 1, relief: 1, glass: 1 };
+
+export const WEBGL_CAP = 3;
+
+/**
+ * The effects that passed their trial and ship switched on. An effect that
+ * is not listed here only runs when a `?fx=` query asks for it by name.
+ */
+export const DEFAULT_EFFECTS: readonly EffectName[] = [];
+
+export interface EffectEnv {
+  /** `location.search` */
+  search: string;
+  /** A window wide enough for the desktop landing's two-column hero. */
+  wide: boolean;
+  /** A mouse or trackpad, with hover. */
+  finePointer: boolean;
+  reducedMotion: boolean;
+  reducedTransparency: boolean;
+  /** The visitor asked the browser to save data. */
+  saveData: boolean;
+  webgl: boolean;
+}
+
+/**
+ * `?fx=none` switches everything off, `?fx=all` asks for every effect, and
+ * `?fx=sea,relief` for those two. No `fx` at all means "the shipped set".
+ */
+export function requestedEffects(search: string): readonly EffectName[] | null {
+  const raw = new URLSearchParams(search).get("fx");
+  if (raw == null) return null;
+  const want = raw.split(",").map((s) => s.trim().toLowerCase());
+  if (want.includes("none")) return [];
+  if (want.includes("all")) return ALL_EFFECTS;
+  return ALL_EFFECTS.filter((name) => want.includes(name));
+}
+
+/** The effects that may run, in priority order, inside the context cap. */
+export function allowedEffects(env: EffectEnv): EffectName[] {
+  if (!env.wide || !env.finePointer || env.reducedMotion || env.saveData || !env.webgl) return [];
+  const wanted = requestedEffects(env.search) ?? DEFAULT_EFFECTS;
+  const out: EffectName[] = [];
+  let contexts = 0;
+  for (const name of ALL_EFFECTS) {
+    if (!wanted.includes(name)) continue;
+    // Glass over an opaque fallback is the reduced-transparency answer.
+    if (name === "glass" && env.reducedTransparency) continue;
+    if (contexts + CONTEXTS[name] > WEBGL_CAP) continue;
+    contexts += CONTEXTS[name];
+    out.push(name);
+  }
+  return out;
+}
+
+let webglProbe: boolean | null = null;
+
+/** One throwaway context, released at once, to learn whether WebGL works. */
+function hasWebGL(): boolean {
+  if (webglProbe != null) return webglProbe;
+  try {
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
+    webglProbe = !!gl;
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+  } catch {
+    webglProbe = false;
+  }
+  return webglProbe;
+}
+
+export function readEffectEnv(): EffectEnv {
+  const mq = (q: string) => typeof window !== "undefined" && !!window.matchMedia?.(q).matches;
+  const nav = typeof navigator !== "undefined" ? (navigator as Navigator & { connection?: { saveData?: boolean } }) : null;
+  const search = typeof window !== "undefined" ? window.location.search : "";
+  // Do not open a WebGL context just to learn that nothing was asked for.
+  const anyWanted = (requestedEffects(search) ?? DEFAULT_EFFECTS).length > 0;
+  return {
+    search,
+    wide: mq("(min-width: 1024px)"),
+    finePointer: mq("(hover: hover) and (pointer: fine)"),
+    reducedMotion: mq("(prefers-reduced-motion: reduce)"),
+    reducedTransparency: mq("(prefers-reduced-transparency: reduce)"),
+    saveData: !!nav?.connection?.saveData,
+    webgl: anyWanted && typeof document !== "undefined" ? hasWebGL() : false,
+  };
+}
+
+/** Read once per page load: the answer does not change while the page is open. */
+let cached: EffectName[] | null = null;
+export function effectsHere(): EffectName[] {
+  cached ??= allowedEffects(readEffectEnv());
+  return cached;
+}

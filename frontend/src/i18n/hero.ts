@@ -8,6 +8,11 @@ export const HERO: Record<
   Language,
   {
     sheet: string;
+    /** The three rehearsed questions, as this reader would ask them. */
+    ask: Record<SceneId, string>;
+    /** The language each question is asked in. */
+    askLang: Record<SceneId, Language>;
+    planner: string;
     asks: string;
     crew: string;
     crewRan: (n: number) => string;
@@ -35,6 +40,14 @@ export const HERO: Record<
 > = {
   en: {
     sheet: "One question, start to finish",
+    ask: {
+      route: "Give me the safest route to the nearest fishing zone",
+      // English readers see the product's signature case as it happens: asked in Marathi.
+      danger: "मी उद्या सकाळी ६ वाजता मासेमारीला जाऊ शकतो का?",
+      cyclone: "Is there a cyclone near Paradip?",
+    },
+    askLang: { route: "en", danger: "mr", cyclone: "en" },
+    planner: "Planner",
     asks: "A fisher asks",
     crew: "The crew reports",
     crewRan: (n) => `${n} of 10 needed`,
@@ -68,6 +81,13 @@ export const HERO: Record<
   },
   hi: {
     sheet: "एक सवाल, शुरू से आख़िर तक",
+    ask: {
+      route: "नज़दीकी मछली क्षेत्र तक सबसे सुरक्षित रास्ता बताओ",
+      danger: "क्या मैं कल सुबह 6 बजे समुद्र में जा सकता हूँ?",
+      cyclone: "क्या पारादीप के पास चक्रवात है?",
+    },
+    askLang: { route: "hi", danger: "hi", cyclone: "hi" },
+    planner: "योजनाकार",
     asks: "मछुआरा पूछता है",
     crew: "टीम की रिपोर्ट",
     crewRan: (n) => `10 में से ${n} की ज़रूरत`,
@@ -101,6 +121,13 @@ export const HERO: Record<
   },
   mr: {
     sheet: "एक प्रश्न, सुरुवातीपासून शेवटपर्यंत",
+    ask: {
+      route: "जवळच्या मासेमारी क्षेत्रापर्यंत सर्वात सुरक्षित मार्ग दाखवा",
+      danger: "मी उद्या सकाळी ६ वाजता मासेमारीला जाऊ शकतो का?",
+      cyclone: "पारादीपजवळ चक्रीवादळ आहे का?",
+    },
+    askLang: { route: "mr", danger: "mr", cyclone: "mr" },
+    planner: "नियोजक",
     asks: "मच्छीमार विचारतो",
     crew: "टीमचा अहवाल",
     crewRan: (n) => `10 पैकी ${n} लागले`,

@@ -1,9 +1,21 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { lazy, useEffect, useState, type ReactNode } from "react";
 import * as api from "../api";
 import type { Language } from "../types";
 import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph } from "./glyphs";
 import { L10N } from "../i18n/landing";
 import HeroChart from "./HeroChart";
+import ReliefSection from "./ReliefSection";
+import { EffectSlot } from "../effects/EffectSlot";
+import GlassLoupe from "../effects/GlassLoupe";
+import { countContexts } from "../effects/ledger";
+import "../effects/sea.css";
+
+// The effects are separate chunks, fetched only when a slot mounts them
+// (effects/gate.ts decides whether this browser gets anything but the poster).
+const SeaGradient = lazy(() => import("../effects/SeaGradient"));
+
+// With ?fxdebug=1 the page counts the WebGL contexts it opens (effects/ledger.ts).
+countContexts();
 
 /** Honour the OS "reduce motion" setting — those users get the finished page. */
 function prefersStill(): boolean {
@@ -139,27 +151,52 @@ export default function Landing({
   return (
     <main className="mx-auto flex min-h-full max-w-[1240px] flex-col px-5 py-5">
       {/* the <i> is the far swell layer (index.css): three layers, each on its own transform */}
-      <div className="sea-drift" aria-hidden>
-        <i />
-      </div>
-      <div className="fish-drift" aria-hidden />
+      {/* the sea at the foot of the sheet: the CSS swell is the poster */}
+      <EffectSlot
+        name="sea"
+        Effect={SeaGradient}
+        eager
+        effectClassName="sea-live"
+        poster={
+          <>
+            <div className="sea-drift" aria-hidden>
+              <i />
+            </div>
+            <div className="fish-drift" aria-hidden />
+          </>
+        }
+      />
 
-      {/* top strip */}
+      {/* top strip: the mark and its name, the phone edition, the language */}
       <Reveal>
-        <div className="flex items-center gap-3">
-          <CompassMark size={30} className="text-ink-900" />
-          <span className="font-mono text-label font-bold uppercase tracking-[0.2em] text-chart-600">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span className="flex items-center gap-2.5">
+            <CompassMark size={34} className="text-ink-900" />
+            <span className="font-display text-display font-black leading-none tracking-tight text-ink-900">
+              ORCA
+            </span>
+          </span>
+          <span className="font-mono text-label font-bold uppercase tracking-[0.2em] text-chart-700">
             SIH26176 · ISRO · Smart India Hackathon 2026
           </span>
-          <span className="ml-auto flex gap-1">
+          {/* full reload on purpose: phone vs console is decided at boot */}
+          <a
+            href={`/?m=1&lang=${language}`}
+            className="ml-auto inline-flex items-center gap-2 font-mono text-readout font-semibold uppercase tracking-[0.1em] text-chart-700 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
+          >
+            <PhoneGlyph size={14} /> {t.ctaPhone}
+          </a>
+          <span className="flex gap-1" role="group" aria-label={t.languageLabel}>
             {(["en", "hi", "mr"] as Language[]).map((l) => (
               <button
                 key={l}
                 onClick={() => onLanguage(l)}
-                className={`rounded-[2px] border px-2 py-1 font-mono text-readout font-bold transition ${
+                aria-pressed={language === l}
+                lang={l}
+                className={`rounded-[2px] border px-2 py-1 font-mono text-readout font-bold transition-colors ${
                   language === l
                     ? "border-ink-900 bg-ink-900 text-paper-50"
-                    : "text-ink-400 hover:text-ink-800"
+                    : "text-ink-500 hover:text-ink-900"
                 }`}
                 style={language === l ? undefined : { borderColor: "var(--rule)" }}
               >
@@ -174,14 +211,8 @@ export default function Landing({
       <div className="mt-9 grid items-center gap-x-12 gap-y-9 lg:mt-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
         <div>
           <Reveal delay={60}>
-            <p className="font-display text-hero font-black leading-none tracking-tight text-ink-900">
-              ORCA
-            </p>
-            <div className="wave-rule mt-3 max-w-[360px]" />
-          </Reveal>
-          <Reveal delay={140}>
             <h1
-              className="mt-6 max-w-[520px] font-display text-dial font-semibold leading-[1.12] text-ink-900"
+              className="max-w-[520px] font-display text-hero font-semibold leading-[1.06] tracking-tight text-ink-900"
               style={{ textWrap: "balance" }}
             >
               {t.tag1}
@@ -190,31 +221,27 @@ export default function Landing({
               <span className="text-chart-600">{t.tag2b}</span>
               {t.tag2c}
             </h1>
+            <div className="wave-rule mt-6 max-w-[360px]" />
             <p
-              className="mt-5 max-w-[470px] text-lead leading-relaxed text-ink-500"
+              className="mt-6 max-w-[470px] text-lead leading-relaxed text-ink-500"
               style={{ textWrap: "pretty" }}
             >
               {t.sub}
             </p>
           </Reveal>
 
-          <Reveal delay={220}>
+          <Reveal delay={160}>
             <div className="mt-8 flex flex-wrap items-center gap-3">
-              <button onClick={() => onEnter("home")} className="btn-ink group !px-6 !py-3">
-                {t.openOrca}
-                <CourseArrow size={13} className="transition-transform group-hover:translate-x-1" />
-              </button>
+              <GlassLoupe id="open">
+                <button onClick={() => onEnter("home")} className="btn-ink group !px-6 !py-3">
+                  {t.openOrca}
+                  <CourseArrow size={13} className="transition-transform group-hover:translate-x-1" />
+                </button>
+              </GlassLoupe>
               <button onClick={onTour} className="btn-line !px-5 !py-3">
                 <PlayGlyph size={11} /> {t.ctaTour}
               </button>
             </div>
-            {/* full reload on purpose: phone vs console is decided at boot */}
-            <a
-              href={`/?m=1&lang=${language}`}
-              className="mt-5 inline-flex items-center gap-2 font-mono text-readout font-semibold uppercase tracking-[0.1em] text-chart-700 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
-            >
-              <PhoneGlyph size={14} /> {t.ctaPhone}
-            </a>
           </Reveal>
         </div>
 
@@ -225,14 +252,14 @@ export default function Landing({
 
       {/* live stats strip */}
       <Reveal delay={420}>
-        <div className="panel mt-10 grid grid-cols-2 sm:grid-cols-5">
+        <div className="panel mt-14 grid grid-cols-2 sm:grid-cols-5">
           {stats.map((x, i) => (
             <div
               key={x.k}
               className={`group px-4 py-3.5 transition-colors hover:bg-chart-100/40 ${i > 0 ? "border-l" : ""}`}
               style={{ borderColor: "var(--rule-faint)" }}
             >
-              <div className="label truncate !text-micro">{x.k}</div>
+              <div className="label min-h-[2lh] !text-micro leading-tight sm:min-h-0 lg:whitespace-nowrap">{x.k}</div>
               <div
                 className={`mt-1 font-mono text-figure font-bold tabular-nums leading-none transition-colors ${
                   x.warn ? "text-risk-extreme" : "text-ink-900 group-hover:text-chart-600"
@@ -245,6 +272,8 @@ export default function Landing({
         </div>
       </Reveal>
 
+      <ReliefSection language={language} />
+
       {/* the index of sheets — four ways in, set like a chart catalogue */}
       <Reveal delay={420}>
         <nav aria-label={t.indexTitle} className="panel rule-double mt-5 overflow-hidden">
@@ -256,26 +285,30 @@ export default function Landing({
               <li key={cardTabs[i]} className={i > 0 ? "border-t" : ""} style={{ borderColor: "var(--rule-faint)" }}>
                 <button
                   onClick={() => onEnter(cardTabs[i])}
-                  className="sheet-row group grid w-full grid-cols-[2.5rem_minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 px-4 py-4 text-left md:grid-cols-[2.5rem_minmax(0,17rem)_minmax(0,1fr)_auto]"
+                  className="sheet-row group grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-x-6 gap-y-2 px-4 py-4 text-left md:grid-cols-[minmax(0,17rem)_minmax(0,1fr)_auto] md:items-center"
                 >
-                  <span className="sounding text-headline leading-none text-chart-600">{i + 1}</span>
+                  {/* the sheet number rides in the label, above the title: one column, never beside it */}
                   <span className="min-w-0">
                     <span className="label flex items-center gap-2">
+                      <span className="text-chart-700">
+                        {t.sheetWord} {i + 1}
+                      </span>
+                      <span aria-hidden>·</span>
                       {c.kicker}
                       {i === 0 && <FishGlyph size={15} className="swim text-chart-500" />}
                     </span>
-                    <span className="mt-1 block font-display text-heading font-bold leading-snug text-ink-900">
+                    <span className="mt-1.5 block font-display text-heading font-bold leading-snug text-ink-900">
                       {c.title}
                     </span>
                   </span>
-                  <span className="col-span-2 col-start-2 min-w-0 text-small leading-relaxed text-ink-700 md:col-span-1 md:col-start-3">
+                  <span className="col-span-2 row-start-2 min-w-0 text-small leading-relaxed text-ink-700 md:col-span-1 md:col-start-2 md:row-start-1">
                     {c.lines.map((l) => (
                       <span key={l} className="block">
                         {l}
                       </span>
                     ))}
                   </span>
-                  <span className="col-start-3 row-start-1 inline-flex items-center gap-1.5 self-center font-mono text-readout font-bold uppercase tracking-[0.1em] text-chart-700 md:col-start-4">
+                  <span className="col-start-2 row-start-1 inline-flex items-center gap-1.5 whitespace-nowrap font-mono text-readout font-bold uppercase tracking-[0.1em] text-chart-700 md:col-start-3">
                     {t.openWord}
                     <CourseArrow size={13} className="sheet-row-arrow" />
                   </span>
@@ -315,7 +348,7 @@ export default function Landing({
                 {i < 3 && (
                   <CourseArrow
                     size={13}
-                    className="absolute -right-1.5 top-1/2 hidden -translate-y-1/2 text-ink-300 transition-all group-hover:translate-x-0.5 group-hover:text-chart-600 sm:block"
+                    className="absolute -right-1.5 top-1/2 hidden -translate-y-1/2 text-ink-300 transition-[transform,color] group-hover:translate-x-0.5 group-hover:text-chart-600 sm:block"
                   />
                 )}
               </div>
