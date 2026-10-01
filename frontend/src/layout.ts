@@ -27,7 +27,11 @@ export function usePageTop(ref: RefObject<HTMLElement | null>, watch?: unknown):
     const el = ref.current;
     if (!el) return;
     const measure = () => {
-      const next = Math.round(el.getBoundingClientRect().top + window.scrollY);
+      // The offset chain, not getBoundingClientRect: the rect reads the sheet
+      // 8 px low while <main> is mid-rise, and the wrong height then sticks.
+      let next = 0;
+      for (let n: HTMLElement | null = el; n; n = n.offsetParent as HTMLElement | null)
+        next += n.offsetTop + (n === el ? 0 : n.clientTop);
       setTop((prev) => (prev === next ? prev : next));
     };
     measure();

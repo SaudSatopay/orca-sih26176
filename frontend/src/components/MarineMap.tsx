@@ -403,7 +403,7 @@ export default function MarineMap({
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2],
             html: `<div class="bob" style="position:relative;width:${size}px;height:${size}px;
-                        animation-delay:${((a.rank * 7) % 10) / 3}s">
+                        animation-delay:-${((a.rank * 7) % 10) / 3}s">
                      ${focused ? `<div style="position:absolute;inset:-8px;border-radius:50%;
                         border:2px solid ${color};animation:ping2 1.6s cubic-bezier(0,0,.2,1) infinite"></div>` : ""}
                      <div class="buoy" style="position:absolute;inset:0;border-radius:50%;background:${paper[50]};
@@ -440,7 +440,7 @@ export default function MarineMap({
             className: "",
             iconSize: [size, size],
             iconAnchor: [size / 2, size / 2],
-            html: `<div class="bob" style="width:${size}px;height:${size}px;animation-delay:${((z.rank * 7) % 10) / 3}s">
+            html: `<div class="bob" style="width:${size}px;height:${size}px;animation-delay:-${((z.rank * 7) % 10) / 3}s">
                      <div class="buoy" style="width:100%;height:100%;border-radius:50%;background:${paper[50]};
                        border:${best ? 4 : 3}px solid ${color};display:grid;place-items:center;
                        color:${ink[900]};font:${best ? `800 ${typePx.lead}px` : `700 ${typePx.body}px`} ${SERIF};
@@ -611,7 +611,7 @@ export default function MarineMap({
               setKeyTouched(true);
               setKeyOpen((v) => !v);
             }}
-            className="flex w-full items-center justify-between gap-3 px-3 py-1.5 font-mono text-label font-bold uppercase tracking-[0.16em] text-ink-500"
+            className="cell-press flex w-full items-center justify-between gap-3 px-3 py-1.5 font-mono text-label font-bold uppercase tracking-[0.16em] text-ink-500"
           >
             {legend.symbols}
             <span className="rotate-180 text-ink-700">
@@ -681,7 +681,7 @@ export default function MarineMap({
           <div className="pointer-events-none absolute inset-x-0 top-3 z-[500] flex justify-center px-3">
             <div
               role="status"
-              className={`v-enter pointer-events-auto max-w-[78%] rounded-[2px] px-3.5 py-2 text-body font-semibold text-paper-50 shadow-lg ${banner.style}`}
+              className={`v-drop pointer-events-auto max-w-[78%] rounded-[2px] px-3.5 py-2 text-body font-semibold text-paper-50 shadow-lg ${banner.style}`}
             >
               <div>{banner.text}</div>
               {banner.sub && <div className="mt-0.5 font-mono text-label font-normal">{banner.sub}</div>}

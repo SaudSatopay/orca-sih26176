@@ -110,9 +110,17 @@ export default function RiskCard({
                   </span>
                 </div>
                 <div className="mt-1 h-[3px] overflow-hidden bg-ink-900/10">
+                  {/* Length by transform so a follow-up answer retargets the
+                      bar instead of snapping it; the grow-x entrance ends at
+                      the element's own scaleX, so the two compose. */}
                   <div
                     className={`${fresh ? "grow-x" : ""} h-full`}
-                    style={{ width: `${(f.contribution / max) * 100}%`, background: color }}
+                    style={{
+                      transform: `scaleX(${f.contribution / max})`,
+                      transformOrigin: "left center",
+                      transition: "transform 400ms var(--ease-out)",
+                      background: color,
+                    }}
                   />
                 </div>
                 {f.detail && (

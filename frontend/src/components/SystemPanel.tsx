@@ -255,7 +255,10 @@ export default function SystemPanel({
                   >
                     <span
                       className="pulse-dot !h-[6px] !w-[6px]"
-                      style={{ background: chart[500], color: chart[500], animationDelay: `${j * 0.3}s` }}
+                      // The delay must reach the ::after that carries the ping:
+                      // custom properties inherit into pseudo-elements, and a
+                      // negative delay starts each dot mid-cycle, out of phase.
+                      style={{ background: chart[500], color: chart[500], "--pulse-delay": `${-j * 0.3}s` } as CSSProperties}
                       aria-hidden
                     />
                     {a}

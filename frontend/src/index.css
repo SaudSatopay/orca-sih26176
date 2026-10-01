@@ -333,6 +333,8 @@ main:focus-visible {
   border-radius: 9999px;
   border: 1.5px solid currentColor;
   animation: ping2 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  /* a row of dots pings out of step: each host sets its own --pulse-delay */
+  animation-delay: var(--pulse-delay, 0s);
 }
 .pulse-dot--still::after {
   animation: none;
@@ -349,6 +351,27 @@ main:focus-visible {
   transform-box: fill-box;
   transform-origin: center;
   animation: ping2 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* While the console listens, a ring leaves the stop button like a ripple from
+   a buoy. Transform and opacity only; the button itself never fades. */
+@keyframes mic-wave {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+.mic-wave {
+  position: absolute;
+  inset: -1px;
+  border: 2px solid theme(colors.risk.extreme);
+  border-radius: 2px;
+  pointer-events: none;
+  animation: mic-wave 1.8s var(--ease-out) infinite;
 }
 
 /* ------------------------------------------------------------------

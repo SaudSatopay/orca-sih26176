@@ -231,13 +231,14 @@ export default function ChatPanel({
             aria-label={listening ? t.stopListening : t.speak}
             aria-pressed={listening}
             title={listening ? t.stopListening : t.speak}
-            className={`press grid h-10 w-10 shrink-0 place-items-center rounded-[2px] border ${
+            className={`press relative grid h-10 w-10 shrink-0 place-items-center rounded-[2px] border ${
               listening
                 ? "border-risk-extreme bg-risk-extreme text-paper-50"
                 : "border-ink-900 bg-paper-50 text-ink-900 hover:bg-ink-900 hover:text-paper-50"
             }`}
-            style={listening ? { animation: "inkblink 1.2s ease-in-out infinite" } : undefined}
           >
+            {/* the ring carries the listening state; the control stays fully legible */}
+            {listening && <span className="mic-wave" aria-hidden />}
             {listening ? <StopGlyph size={12} /> : <MicGlyph size={17} />}
           </button>
         )}

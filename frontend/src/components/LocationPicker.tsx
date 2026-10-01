@@ -207,7 +207,7 @@ export default function LocationPicker({
 
       {open && (
         <div
-          className="v-enter absolute left-3 right-3 top-full z-[700] mt-2 overflow-hidden rounded-[3px] border shadow-xl"
+          className="v-drop absolute left-3 right-3 top-full z-[700] mt-2 overflow-hidden rounded-[3px] border shadow-xl"
           style={{ borderColor: "var(--rule-strong)", background: "var(--paper-bright)" }}
         >
           <input
