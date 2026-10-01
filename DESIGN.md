@@ -1,6 +1,6 @@
 # ORCA — design system: the living nautical chart
 
-Extracted from the shipped code on 1 October 2026 (`frontend/tailwind.config.js`, `frontend/src/index.css`, the components). This file is the single source of truth for visual decisions. The system below is kept; the last two sections list its debts and the additions proposed for it.
+Extracted from the shipped code on 1 October 2026 and kept current through the missile flight. This file is the single source of truth for visual decisions; `frontend/src/tokens.ts` is the single source of the values. Tailwind reads that file, `index.css` derives its custom properties from it, and canvas, Leaflet and SVG code import it. No component spells a colour or a pixel size literally (a test enforces the colours).
 
 ## The idea
 
@@ -17,7 +17,7 @@ Audience feeling in one word: **trust**.
 | Surface | `paper-150` / `200` / `300` / `400` | `#EFE6CF` `#E6DABD` `#D6C7A2` `#B9A67C` | tints, aged edges |
 | Ink | `ink-900` | `#12212D` | headings, primary buttons |
 | Ink | `ink-800` / `700` | `#1B2F3E` `#263B4D` | body text |
-| Ink | `ink-500` / `400` | `#42596D` `#5D7386` | secondary text, labels |
+| Ink | `ink-500` / `400` | `#42596D` `#5A6F81` | secondary text, labels (400 is the lightest ink that may carry text: 4.51:1 on the sheet) |
 | Ink | `ink-300` | `#82949F` | decoration only (fails AA as text on paper) |
 | Accent | `chart-500` | `#2A7391` | the one accent: focus ring, links, the sea, signals |
 | Accent | `chart-700` / `600` / `300` / `100` | `#174F68` `#1E5F7A` `#7FA9BC` `#D8E7EB` | accent steps |
@@ -26,6 +26,10 @@ Audience feeling in one word: **trust**.
 | Semantic | `risk-moderate` | `#A17000` | MODERATE |
 | Semantic | `risk-high` | `#BF4E12` | HIGH |
 | Semantic | `risk-extreme` | `#AF2318` | EXTREME, official warnings |
+| Chance of fish | `chance-good` / `some` / `poor` | `#63862B` `#B08000` `#9C5F44` | ground ratings below "very good" (which is `risk-low`) |
+| Sea temperature | `sst-cold` / `cool` / `mild` / `warm` / `hot` | `#3E7A99` `#2F8A7D` `#7E9A4A` `#B08532` `#BF6A1F` | the chart's temperature shade and its legend |
+| Flow | `flow-calm` | `#8FB0C0` | slowest wind or current in the particle field |
+| Sea | `sea` | `#CFE0E6` | map background behind tiles |
 | Rules | `--rule-faint` / `--rule` / `--rule-strong` | ink at 14 / 28 / 55 percent | hairlines, panel borders, neatlines |
 
 Proportion: paper carries about 70 percent, ink about 25, chart teal and the risk colours share the rest. Risk colours are status only and never decorate.
@@ -39,6 +43,30 @@ Proportion: paper carries about 70 percent, ink about 25, chart teal and the ris
 | Mono | Spline Sans Mono Variable | labels (10 px, uppercase, tracking 0.16em), buttons, instrument readouts |
 
 All four are self-hosted through `@fontsource-variable` imports in `main.tsx`; nothing loads from a font CDN.
+
+### Type scale
+
+One named scale; components never use a literal pixel size.
+
+| Step | px | Role |
+|---|---|---|
+| `micro` | 9 | table heads, stamps, chart margin notes |
+| `label` | 10 | the mono label, captions, hints, timestamps |
+| `readout` | 11 | buttons, folio tabs, mono readouts |
+| `small` | 12 | chips, dense lists, alert detail |
+| `body` | 13 | conversation, advice, fields, tables |
+| `prose` | 14 | lead-ins, row figures |
+| `lead` | 15 | lead lines, small panel headings |
+| `subtitle` | 16 | panel titles, phone body copy |
+| `title` | 17 | row titles, the LISTEN button |
+| `heading` | 19 | card headings, the advice headline, the hero question |
+| `figure` | 21 | instrument figures, the verdict line |
+| `headline` | 24 | section headlines, a ground's chance of fish |
+| `numeral` | 26 | large soundings, return-by |
+| `display` | 30 | the console wordmark, the phone score |
+| `tile` | 34 | authority board totals |
+| `dial` | 38 | the risk dial numeral, the landing thesis |
+| `hero` | 76 | the landing wordmark |
 
 ## Shape, surface, depth
 
@@ -73,33 +101,30 @@ All four are self-hosted through `@fontsource-variable` imports in `main.tsx`; n
 - At 640 px and below, a separate phone app renders (`MobileApp.tsx`): three bottom tabs, one verdict circle, one LISTEN button, tap-to-hear cards.
 - Content gutter 24 px on the console, 120 px on the landing at 1440.
 
-## Signature moment (spec for the next flight)
+## Signature moment: the chart answers
 
-**The chart answers.** Lives in the landing hero, replacing the small static course illustration.
+Built in `HeroChart.tsx`, `HeroSea.tsx`, `hero.css`. It is the landing hero and the only orchestrated sequence in the product.
 
-1. At rest (and with JavaScript off, or reduced motion): the finished chart as a static SVG poster, with the course plotted, the no-go area hatched and the verdict stamp already down. The hero is complete at rest.
-2. On load, once: a question types itself in the fisher's language (about 600 ms), the ten agent names tick in along the neatline (stagger 50 ms), the course draws itself around the hatched area (stroke-dashoffset, 700 ms), and the verdict stamps (`stampIn`). Total under 2.5 s, transform and stroke only.
-3. After that: the sea under the chart moves, using the existing `FlowLayer` particle field, lazy-loaded after first paint and paused when off-screen.
-4. Interaction: the three scenario chips (safe, danger, cyclone) replay the sequence with that scenario's real numbers from `/api/scenarios`. Response to a tap under 100 ms.
-5. Budget: no new dependency, under 10 percent of the Lighthouse performance budget, works at 390 px on the phone app's first screen as the verdict circle's entrance.
+1. **Poster first.** The sheet's base styles are the finished state: question written, crew ticked, course plotted, verdict stamped. The numbers are the rehearsed scenarios' measured results. If no animation runs, or under reduced motion, the hero is simply complete.
+2. **The sequence**, once per question, about 2.3 s: the question writes itself (620 ms, clip-path) → the ten crew names tick in 45 ms apart, with real latencies → the course draws around the hatched naval area (820 ms, stroke-dashoffset through a mask, so the dashes keep running afterwards) → the buoys land → the verdict stamps (420 ms, the house stamp overshoot) → the three "why" bars draw. Transform, opacity, clip-path and stroke only.
+3. **Three rehearsed questions** as tabs (arrow keys move between them): the safest course off Mumbai (28, go with care), the Marathi 6 AM question under an IMD warning (70, do not go), the cyclone off Paradip (92, do not launch). Each replays the sequence.
+4. **Live.** 400 ms after a question is shown, the real pipeline is asked the same thing and its score, top three factors and agent latencies replace the poster's in place. In the LIVE data edition the poster stays and is labelled a rehearsed scenario.
+5. **The sea.** A lazy 2.4 KB canvas of about 240 motes advected along the wind (a vortex for the cyclone), drawn in chart teal with fading trails, kept off the land by the same path the SVG draws. Device pixel ratio capped at 1.5, 40 frames a second at most, paused off-screen and on a hidden tab, never mounted under reduced motion.
+6. **Cost.** No dependency. Landing Lighthouse performance stayed at 98 after it was added.
+
+Easing for the whole product: entrances `cubic-bezier(0.23, 1, 0.32, 1)`, on-screen movement `cubic-bezier(0.77, 0, 0.175, 1)`. Hover effects are gated to fine pointers; pressed states run 100 to 160 ms.
 
 ## Banned here
 
 Gradient text, purple or indigo, glass panels, emoji as icons, radii above 3 px on rectangles, drop shadows heavier than the panel shadow, a second accent, bounce or overshoot outside the stamp, scroll-triggered effects inside the app, any animation that starts from opacity 0 on safety data.
 
-## Debts in the current system
+## Settled during the flight
 
-1. **Three token sources.** The palette lives in `tailwind.config.js`, again as 8 custom properties in `index.css`, and again as about 110 literal hex values inside components (`MarineMap.tsx` 32, `Landing.tsx` 26, `SystemPanel.tsx` 10, `RiskTimeline.tsx` 10).
-2. **Off-palette values** in components: `#B08000`, `#63862B`, `#7E9A4A`, `#BF6A1F`, `#B08532`, `#2F8A7D`, `#3E7A99`, `#8FB0C0`, `#9C5F44`. Each needs a token or a merge into an existing one.
-3. **Contrast.** `ink-300` on paper is about 2.9:1 and is used for inactive tabs and placeholder text; Lighthouse reports 17 failing elements on the Ask view.
-4. **No type scale.** Sizes are literal (`text-[10px]`, `text-[11.5px]`, `text-[13.5px]`).
-5. **Many always-on loops** against a budget of one orchestrated moment, and a fixed full-screen grain layer at z-index 2000.
-6. `<html lang>` stays `en` when the interface switches to Hindi or Marathi.
+- One token source (`tokens.ts`); the nine off-palette values are named tokens; `ink-400` darkened to pass AA on the sheet; `ink-300` no longer carries text.
+- A named type scale replaced about 220 literal sizes.
+- The landing's three equal feature cards became an index of sheets: a catalogue list with whole-row targets.
 
-## Proposed additions (never a replacement)
+## Still open
 
-1. One token source: CSS custom properties in `index.css` (`--paper-50` … `--risk-extreme`), with `tailwind.config.js` reading them, and a small `tokens.ts` export for canvas and Leaflet code that needs colours in JavaScript.
-2. Fold the off-palette values into named tokens (`chance-good`, `chance-some`, `sst-cool`, `sst-warm`).
-3. Fix contrast at the token: darken the text use of `ink-300` to `ink-400`, keep `ink-300` for decoration.
-4. A named type scale (label, readout, body, lead, title, display) replacing the literal sizes.
-5. A motion budget: ambient loops pause when off-screen and on hidden tabs; the landing gets the one orchestrated sequence above.
+- Ambient loops are many; they must pause off-screen and on hidden tabs.
+- `risk-moderate`, `chance-good` and `chance-some` are under 4.5:1 as small text on paper. The risk palette is protected, so small text in those colours is set in ink with the colour carried by a mark beside it.
