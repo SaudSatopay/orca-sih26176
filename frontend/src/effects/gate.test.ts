@@ -30,9 +30,11 @@ describe("which landing effects may run", () => {
     expect(requestedEffects("?fx=nonsense")).toEqual([]);
   });
 
-  it("gives a phone, a tablet and a touch laptop the poster", () => {
-    expect(allowedEffects({ ...desktop, wide: false })).toEqual([]);
-    expect(allowedEffects({ ...desktop, finePointer: false })).toEqual([]);
+  it("gives a narrow or touch window the poster by default, but an explicit ?fx= is a demand", () => {
+    expect(allowedEffects({ ...desktop, search: "", wide: false })).toEqual([]);
+    expect(allowedEffects({ ...desktop, search: "", finePointer: false })).toEqual([]);
+    expect(allowedEffects({ ...desktop, wide: false })).toEqual(ALL_EFFECTS);
+    expect(allowedEffects({ ...desktop, finePointer: false })).toEqual(ALL_EFFECTS);
   });
 
   it("gives reduced motion, data saver and no-WebGL the poster", () => {

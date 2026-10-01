@@ -77,8 +77,15 @@ export function requestedEffects(search: string): readonly EffectName[] | null {
 
 /** The effects that may run, in priority order, inside the context cap. */
 export function allowedEffects(env: EffectEnv): EffectName[] {
-  if (!env.wide || !env.finePointer || env.reducedMotion || env.saveData || !env.webgl) return [];
-  const wanted = requestedEffects(env.search) ?? DEFAULT_EFFECTS;
+  // Hard refusals first: these are the reader's own settings and the
+  // machine's ability, and no query overrides them.
+  if (env.reducedMotion || env.saveData || !env.webgl) return [];
+  const asked = requestedEffects(env.search);
+  // The width and pointer rules are heuristics for who gets decoration by
+  // DEFAULT. An explicit `?fx=` is a demand — a demo in a narrow pane, a
+  // judge's projector — and walks past them.
+  if (asked == null && (!env.wide || !env.finePointer)) return [];
+  const wanted = asked ?? DEFAULT_EFFECTS;
   const out: EffectName[] = [];
   let contexts = 0;
   for (const name of ALL_EFFECTS) {
