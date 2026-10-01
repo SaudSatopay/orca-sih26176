@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
+import { RISK_BANDS, RISK_COLOR } from "../risk";
 import type { RiskCategory } from "../types";
-
-export const RISK_COLOR: Record<RiskCategory, string> = {
-  LOW: "#1D7A50",
-  MODERATE: "#A17000",
-  HIGH: "#BF4E12",
-  EXTREME: "#AF2318",
-};
 
 /**
  * The risk gauge, drawn like a ship's instrument: a fine tick ring, an ink
@@ -72,11 +66,8 @@ export default function RiskDial({
   });
 
   // Band thresholds marked on the ring, as an instrument prints its red-lines.
-  const thresholds = [
-    { v: 25, col: RISK_COLOR.LOW },
-    { v: 50, col: RISK_COLOR.MODERATE },
-    { v: 79, col: RISK_COLOR.HIGH },
-  ].map(({ v, col }) => {
+  const thresholds = RISK_BANDS.slice(0, -1).map(({ max: v, category }) => {
+    const col = RISK_COLOR[category];
     const a = (v / 100) * 2 * Math.PI - Math.PI / 2;
     return {
       x1: c + (c - 8) * Math.cos(a),

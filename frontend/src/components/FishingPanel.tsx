@@ -1,130 +1,7 @@
-import type { CatchRating, FishingOutlook, Language } from "../types";
+import type { FishingOutlook, Language } from "../types";
 import { FishGlyph, SchoolGlyph, WarnGlyph } from "./glyphs";
-
-/** Rating colours tuned for chart paper — inky enough to read as drafted. */
-export const RATING_COLOR: Record<CatchRating, string> = {
-  very_good: "#1D7A50",
-  good: "#63862B",
-  fair: "#B08000",
-  poor: "#9C5F44",
-};
-
-const RATING_WORD: Record<Language, Record<CatchRating, string>> = {
-  en: { very_good: "Very good", good: "Good", fair: "Some chance", poor: "Low chance" },
-  hi: { very_good: "बहुत अच्छा", good: "अच्छा", fair: "कुछ उम्मीद", poor: "कम उम्मीद" },
-  mr: { very_good: "खूप चांगली", good: "चांगली", fair: "थोडी शक्यता", poor: "कमी शक्यता" },
-};
-
-const T: Record<Language, Record<string, string>> = {
-  en: {
-    advice: "What you should do",
-    areas: "Best places to fish",
-    within: "within",
-    away: "away",
-    chance: "chance of fish",
-    trip: "Your trip",
-    stay: "Stay there",
-    travel: "Travel each way",
-    total: "Whole trip",
-    hours: "hours",
-    min: "min",
-    bestTime: "Best time to fish",
-    avoid: "Stay out of these areas",
-    closedNow: "closed now",
-    closedBetween: "closed",
-    always: "always closed",
-    forecast: "Next days",
-    today: "Today",
-    tomorrow: "Tomorrow",
-    dayAfter: "Day after",
-    bestAt: "best around",
-    notWorth: "Not enough safe time today for this trip.",
-    likely: "Likely",
-    likelyNote:
-      "indicative — SST/chlorophyll bands × regional occurrence records (OBIS / Map of Life). Never a promise",
-    returnBy: "Be back before",
-    returnWhy: "waves reach about",
-    econ: "What the trip is worth",
-    fuel: "Fuel",
-    catch: "Expected catch",
-    revenue: "Revenue",
-    profit: "Profit estimate",
-    econNote: "Planning estimate — never a promise.",
-    barsCaption: "Bars: chlorophyll · SST band · front · sea state · time of day",
-  },
-  hi: {
-    advice: "आपको क्या करना चाहिए",
-    areas: "मछली पकड़ने की सबसे अच्छी जगहें",
-    within: "के अंदर",
-    away: "दूर",
-    chance: "मछली की उम्मीद",
-    trip: "आपकी यात्रा",
-    stay: "वहाँ रुकें",
-    travel: "एक तरफ़ का सफ़र",
-    total: "पूरी यात्रा",
-    hours: "घंटे",
-    min: "मिनट",
-    bestTime: "मछली पकड़ने का सबसे अच्छा समय",
-    avoid: "इन जगहों से दूर रहें",
-    closedNow: "अभी बंद",
-    closedBetween: "बंद",
-    always: "हमेशा बंद",
-    forecast: "अगले दिन",
-    today: "आज",
-    tomorrow: "कल",
-    dayAfter: "परसों",
-    bestAt: "सबसे अच्छा समय",
-    notWorth: "आज इतना सुरक्षित समय नहीं है।",
-    likely: "संभावित",
-    likelyNote:
-      "तापमान-क्लोरोफिल + क्षेत्रीय उपस्थिति रिकॉर्ड (OBIS) से अनुमान — मछली की गारंटी नहीं",
-    returnBy: "इससे पहले लौट आएँ",
-    returnWhy: "लहरें लगभग इतनी हो जाएँगी",
-    econ: "यात्रा से कितना मिलेगा",
-    fuel: "ईंधन",
-    catch: "अनुमानित मछली",
-    revenue: "आमदनी",
-    profit: "अनुमानित मुनाफ़ा",
-    econNote: "योजना के लिए अनुमान — कोई वादा नहीं।",
-    barsCaption: "पट्टियाँ: क्लोरोफिल · तापमान · फ्रंट · समुद्र · समय",
-  },
-  mr: {
-    advice: "तुम्ही काय करावे",
-    areas: "मासेमारीसाठी सर्वोत्तम जागा",
-    within: "च्या आत",
-    away: "अंतरावर",
-    chance: "मासे मिळण्याची शक्यता",
-    trip: "तुमची फेरी",
-    stay: "तिथे थांबा",
-    travel: "एका बाजूचा प्रवास",
-    total: "संपूर्ण फेरी",
-    hours: "तास",
-    min: "मिनिटे",
-    bestTime: "मासेमारीसाठी सर्वोत्तम वेळ",
-    avoid: "या जागांपासून दूर राहा",
-    closedNow: "आत्ता बंद",
-    closedBetween: "बंद",
-    always: "नेहमी बंद",
-    forecast: "पुढील दिवस",
-    today: "आज",
-    tomorrow: "उद्या",
-    dayAfter: "परवा",
-    bestAt: "सर्वोत्तम वेळ",
-    notWorth: "आज पुरेसा सुरक्षित वेळ नाही.",
-    likely: "शक्यता",
-    likelyNote:
-      "तापमान-क्लोरोफिल + प्रादेशिक उपस्थिती नोंदी (OBIS) वरून अंदाज — माशांची हमी नाही",
-    returnBy: "या वेळेआधी परत या",
-    returnWhy: "लाटा सुमारे इतक्या होतील",
-    econ: "फेरीतून किती मिळेल",
-    fuel: "इंधन",
-    catch: "अपेक्षित मासे",
-    revenue: "उत्पन्न",
-    profit: "अंदाजे नफा",
-    econNote: "नियोजनासाठी अंदाज — हमी नाही.",
-    barsCaption: "पट्ट्या: क्लोरोफिल · तापमान · फ्रंट · समुद्र · वेळ",
-  },
-};
+import { RATING_WORD, T } from "../i18n/fishing";
+import { RATING_COLOR } from "../risk";
 
 /** The five documented model factors, in reading order, with tooltip labels. */
 const FACTOR_ORDER: { key: string; label: string }[] = [
@@ -229,7 +106,7 @@ export default function FishingPanel({
                       </span>
                       {a.recommended && (
                         <span className="stamp !px-1.5 !py-0.5 !text-[8.5px] text-risk-low">
-                          {language === "mr" ? "सुचवलेली" : language === "hi" ? "सुझाई गई" : "Best trip"}
+                          {t.bestTrip}
                         </span>
                       )}
                     </div>
@@ -368,11 +245,7 @@ export default function FishingPanel({
                   style={{ borderColor: "var(--rule-faint)" }}
                 >
                   <WarnGlyph size={13} className="shrink-0" />
-                  {language === "mr"
-                    ? "हवामानामुळे वेळ कमी आहे — लवकर परत या."
-                    : language === "hi"
-                      ? "मौसम के कारण समय कम है — जल्दी लौटें।"
-                      : "Weather shortens your window — come back earlier."}
+                  {t.weatherShortens}
                 </p>
               )}
             </>

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { Language } from "../types";
 import { CrosshairGlyph } from "./glyphs";
+import { T } from "../i18n/locationPicker";
+import { PORTS } from "../ports";
 
 export interface PickedLocation {
   latitude: number;
@@ -8,56 +10,6 @@ export interface PickedLocation {
   label: string;
   source: "gps" | "map" | "port" | "default";
 }
-
-/** Landing centres a fisher can pick without typing coordinates. */
-export const PORTS: { name: string; state: string; lat: number; lon: number }[] = [
-  { name: "Mumbai", state: "Maharashtra", lat: 18.922, lon: 72.8347 },
-  { name: "Ratnagiri", state: "Maharashtra", lat: 16.9902, lon: 73.312 },
-  { name: "Panaji (Goa)", state: "Goa", lat: 15.4909, lon: 73.8278 },
-  { name: "Veraval", state: "Gujarat", lat: 20.907, lon: 70.3679 },
-  { name: "Kochi", state: "Kerala", lat: 9.9312, lon: 76.2673 },
-  { name: "Chennai", state: "Tamil Nadu", lat: 13.0827, lon: 80.2707 },
-  { name: "Visakhapatnam", state: "Andhra Pradesh", lat: 17.6868, lon: 83.2185 },
-  { name: "Paradip", state: "Odisha", lat: 20.2648, lon: 86.6947 },
-  { name: "Digha", state: "West Bengal", lat: 21.627, lon: 87.509 },
-  { name: "Port Blair", state: "Andaman & Nicobar", lat: 11.6234, lon: 92.7265 },
-];
-
-const T: Record<Language, Record<string, string>> = {
-  en: {
-    yourLocation: "Your location",
-    useGps: "Use my location",
-    locating: "Finding you…",
-    denied: "Location blocked — pick your harbour below",
-    unavailable: "Location unavailable — pick your harbour below",
-    pickPort: "Choose harbour",
-    tapMap: "You can also tap anywhere on the map",
-    gps: "GPS",
-    search: "Search harbour",
-  },
-  hi: {
-    yourLocation: "आपका स्थान",
-    useGps: "मेरा स्थान लें",
-    locating: "आपको खोज रहे हैं…",
-    denied: "स्थान बंद है — नीचे अपना बंदरगाह चुनें",
-    unavailable: "स्थान उपलब्ध नहीं — नीचे अपना बंदरगाह चुनें",
-    pickPort: "बंदरगाह चुनें",
-    tapMap: "आप नक्शे पर कहीं भी टैप कर सकते हैं",
-    gps: "जीपीएस",
-    search: "बंदरगाह खोजें",
-  },
-  mr: {
-    yourLocation: "तुमचे ठिकाण",
-    useGps: "माझे ठिकाण घ्या",
-    locating: "तुम्हाला शोधत आहे…",
-    denied: "ठिकाण बंद आहे — खाली तुमचे बंदर निवडा",
-    unavailable: "ठिकाण उपलब्ध नाही — खाली तुमचे बंदर निवडा",
-    pickPort: "बंदर निवडा",
-    tapMap: "तुम्ही नकाशावर कुठेही टॅप करू शकता",
-    gps: "जीपीएस",
-    search: "बंदर शोधा",
-  },
-};
 
 export default function LocationPicker({
   current,

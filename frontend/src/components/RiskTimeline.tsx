@@ -1,34 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import * as api from "../api";
 import type { Language, Location, TimelinePoint } from "../types";
-import { RISK_COLOR } from "./RiskDial";
-
-const L: Record<Language, Record<string, string>> = {
-  en: {
-    title: "When is it safe to go?",
-    sub: "Risk hour by hour for the next 24 hours",
-    best: "Best window",
-    none: "No low-risk window in the next 24 hours",
-    now: "now",
-    loading: "Reading the next 24 hours…",
-  },
-  hi: {
-    title: "कब जाना सुरक्षित है?",
-    sub: "अगले 24 घंटों का घंटेवार जोखिम",
-    best: "सर्वोत्तम समय",
-    none: "अगले 24 घंटों में कोई सुरक्षित समय नहीं",
-    now: "अभी",
-    loading: "अगले 24 घंटे पढ़ रहे हैं…",
-  },
-  mr: {
-    title: "कधी जाणे सुरक्षित आहे?",
-    sub: "पुढील २४ तासांचा तासागणिक धोका",
-    best: "सर्वोत्तम वेळ",
-    none: "पुढील २४ तासांत सुरक्षित वेळ नाही",
-    now: "आत्ता",
-    loading: "पुढील २४ तास वाचत आहे…",
-  },
-};
+import { RISK_BANDS, RISK_COLOR } from "../risk";
+import { L } from "../i18n/riskTimeline";
 
 /** Longest run of hours at or below `limit`, returned as [startHour, endHour]. */
 function bestWindow(points: TimelinePoint[], limit = 50): [number, number] | null {
@@ -54,21 +28,27 @@ export default function RiskTimeline({
   location: Location | null;
   language?: Language;
 }) {
-  const [points, setPoints] = useState<TimelinePoint[] | null>(null);
+  // The series is kept with the position it was read for, so a new position
+  // shows the loading state until its own series arrives.
+  const [loaded, setLoaded] = useState<{ lat: number; lon: number; points: TimelinePoint[] } | null>(
+    null,
+  );
   const t = L[language] ?? L.en;
+  const lat = location?.latitude;
+  const lon = location?.longitude;
+  const points = loaded && loaded.lat === lat && loaded.lon === lon ? loaded.points : null;
 
   useEffect(() => {
-    if (!location) return;
+    if (lat == null || lon == null) return;
     let alive = true;
-    setPoints(null);
     api
-      .riskTimeline(location.latitude, location.longitude, 24)
-      .then((d) => alive && setPoints(d.points))
-      .catch(() => alive && setPoints([]));
+      .riskTimeline(lat, lon, 24)
+      .then((d) => alive && setLoaded({ lat, lon, points: d.points }))
+      .catch(() => alive && setLoaded({ lat, lon, points: [] }));
     return () => {
       alive = false;
     };
-  }, [location?.latitude, location?.longitude]);
+  }, [lat, lon]);
 
   const window = useMemo(() => (points ? bestWindow(points) : null), [points]);
 
@@ -121,12 +101,11 @@ export default function RiskTimeline({
           </defs>
 
           {/* risk bands */}
-          {[
-            { from: 0, to: 25, color: RISK_COLOR.LOW },
-            { from: 25, to: 50, color: RISK_COLOR.MODERATE },
-            { from: 50, to: 79, color: RISK_COLOR.HIGH },
-            { from: 79, to: 100, color: RISK_COLOR.EXTREME },
-          ].map((b) => (
+          {RISK_BANDS.map((b) => ({
+            from: b.from,
+            to: b.max,
+            color: RISK_COLOR[b.category],
+          })).map((b) => (
             <rect
               key={b.from}
               x={padX}
@@ -139,7 +118,7 @@ export default function RiskTimeline({
           ))}
 
           {/* hour grid, as chart graticule */}
-          {points.map((p, i) =>
+          {points.map((_, i) =>
             i % 4 === 0 && i > 0 ? (
               <line
                 key={`g${i}`}

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as api from "../api";
 import type { FishingOutlook, Language, ZoneFeature } from "../types";
-import { RATING_COLOR } from "./FishingPanel";
 import {
   BoatGlyph,
   ChartDefs,
@@ -13,9 +12,12 @@ import {
   StopGlyph,
   WarnGlyph,
 } from "./glyphs";
-import { PORTS } from "./LocationPicker";
 import MarineMap from "./MarineMap";
-import { RISK_COLOR } from "./RiskDial";
+import { readBootParams } from "../boot";
+import { T } from "../i18n/mobile";
+import { PORTS } from "../ports";
+import { RATING_COLOR, RISK_COLOR } from "../risk";
+import { getRecognition, SPEECH_LOCALE, type SpeechRecognitionLike } from "../speech";
 
 /**
  * The phone — ORCA for the fisher himself, many of whom read little.
@@ -30,77 +32,10 @@ import { RISK_COLOR } from "./RiskDial";
  */
 
 type MTab = "today" | "map" | "ask";
+type Place = { lat: number; lon: number; name: string };
 
 const SESSION = "phone";
 const DEFAULT_PORT = PORTS[0];
-
-const T: Record<Language, Record<string, string>> = {
-  en: {
-    today: "Today",
-    map: "Map",
-    ask: "Ask",
-    listen: "LISTEN",
-    stop: "STOP",
-    bestTime: "Best time",
-    returnBy: "Be back by",
-    areas: "Where the fish are",
-    km: "km",
-    profit: "Profit est.",
-    fuel: "Fuel",
-    tapMic: "Tap and speak",
-    listening: "Listening…",
-    thinking: "Asking the crew…",
-    reading: "Reading the sea…",
-    warnSpeak: "Official warning",
-    askExamples: "Can I go tomorrow at 6 AM?",
-    bestTimeSay: "Best time to fish is {a} to {b}.",
-    returnBySay: "Be back before {t}.",
-  },
-  hi: {
-    today: "आज",
-    map: "नक्शा",
-    ask: "पूछें",
-    listen: "सुनें",
-    stop: "रोकें",
-    bestTime: "सबसे अच्छा समय",
-    returnBy: "इससे पहले लौटें",
-    areas: "मछली कहाँ है",
-    km: "किमी",
-    profit: "अनुमानित मुनाफ़ा",
-    fuel: "ईंधन",
-    tapMic: "दबाकर बोलिए",
-    listening: "सुन रहे हैं…",
-    thinking: "टीम से पूछ रहे हैं…",
-    reading: "समुद्र पढ़ रहे हैं…",
-    warnSpeak: "आधिकारिक चेतावनी",
-    askExamples: "क्या मैं कल सुबह 6 बजे जा सकता हूँ?",
-    bestTimeSay: "मछली पकड़ने का सबसे अच्छा समय {a} से {b} तक है।",
-    returnBySay: "{t} से पहले लौट आएँ।",
-  },
-  mr: {
-    today: "आज",
-    map: "नकाशा",
-    ask: "विचारा",
-    listen: "ऐका",
-    stop: "थांबवा",
-    bestTime: "सर्वोत्तम वेळ",
-    returnBy: "याआधी परत या",
-    areas: "मासे कुठे आहेत",
-    km: "किमी",
-    profit: "अंदाजे नफा",
-    fuel: "इंधन",
-    tapMic: "दाबून बोला",
-    listening: "ऐकत आहोत…",
-    thinking: "टीमला विचारत आहोत…",
-    reading: "समुद्र वाचत आहोत…",
-    warnSpeak: "अधिकृत इशारा",
-    askExamples: "मी उद्या सकाळी ६ वाजता जाऊ का?",
-    bestTimeSay: "मासेमारीसाठी सर्वोत्तम वेळ {a} ते {b}.",
-    returnBySay: "{t} च्या आधी परत या.",
-  },
-};
-
-const SPEECH_LOCALE: Record<Language, string> = { en: "en-IN", hi: "hi-IN", mr: "mr-IN" };
 
 function speak(text: string, lang: Language) {
   try {
@@ -119,12 +54,6 @@ function clock12(h: number): string {
   return `${hh % 12 || 12} ${hh < 12 ? "AM" : "PM"}`;
 }
 
-function getRecognition(): any | null {
-  const w = window as any;
-  const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
-  return Ctor ? new Ctor() : null;
-}
-
 export default function MobileApp() {
   const [language, setLanguage] = useState<Language>(() => {
     const l = new URLSearchParams(window.location.search).get("lang");
@@ -136,8 +65,19 @@ export default function MobileApp() {
     const tp = new URLSearchParams(window.location.search).get("tab");
     return tp === "map" || tp === "ask" ? tp : "today";
   });
-  const [place, setPlace] = useState<{ lat: number; lon: number; name: string } | null>(null);
-  const [outlook, setOutlook] = useState<FishingOutlook | null>(null);
+  const [place, setPlace] = useState<Place | null>(() => {
+    const at = readBootParams(window.location.search).at;
+    return at ? { lat: at.latitude, lon: at.longitude, name: "—" } : null;
+  });
+  // The outlook is kept with the request it answers, so a new position or
+  // language shows the loading state until its own answer arrives.
+  const [loaded, setLoaded] = useState<{
+    place: Place;
+    language: Language;
+    data: FishingOutlook;
+  } | null>(null);
+  const outlook =
+    loaded && loaded.place === place && loaded.language === language ? loaded.data : null;
   const [zones, setZones] = useState<ZoneFeature[]>([]);
   const [focusRank, setFocusRank] = useState<number | null>(null);
   const [speaking, setSpeaking] = useState(false);
@@ -148,30 +88,7 @@ export default function MobileApp() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
-  const recRef = useRef<any>(null);
-
-  // Temporary layout probe: ?debug=1 prints the widest elements on screen so
-  // headless screenshots can carry their own diagnosis.
-  const [debugInfo, setDebugInfo] = useState<string>("");
-  useEffect(() => {
-    if (!new URLSearchParams(window.location.search).has("debug")) return;
-    const id = window.setTimeout(() => {
-      const vw = document.documentElement.clientWidth;
-      const rows = [...document.querySelectorAll("*")]
-        .map((el) => ({ el, w: el.getBoundingClientRect().width }))
-        .filter((x) => x.w > vw + 1)
-        .sort((a, b) => b.w - a.w)
-        .slice(0, 5)
-        .map(
-          (x) =>
-            `${Math.round(x.w)} ${x.el.tagName}.${String((x.el as HTMLElement).className).slice(0, 44)}`,
-        );
-      setDebugInfo(
-        `vw=${vw} sw=${document.documentElement.scrollWidth}\n${rows.join("\n") || "no wide elements"}`,
-      );
-    }, 3500);
-    return () => window.clearTimeout(id);
-  }, [outlook]);
+  const recRef = useRef<SpeechRecognitionLike | null>(null);
 
   const [mapH, setMapH] = useState(() => Math.max(320, window.innerHeight - 200));
   useEffect(() => {
@@ -185,11 +102,8 @@ export default function MobileApp() {
     api.zones().then((z) => setZones(z.features)).catch(() => {});
     const fallback = () =>
       setPlace({ lat: DEFAULT_PORT.lat, lon: DEFAULT_PORT.lon, name: DEFAULT_PORT.name });
-    const at = (new URLSearchParams(window.location.search).get("at") ?? "")
-      .split(",")
-      .map(Number);
-    if (at.length === 2 && at.every(Number.isFinite)) {
-      setPlace({ lat: at[0], lon: at[1], name: "—" });
+    if (readBootParams(window.location.search).at) {
+      // position already pinned by the link — GPS is not asked
     } else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) =>
@@ -207,15 +121,14 @@ export default function MobileApp() {
   useEffect(() => {
     if (!place) return;
     let alive = true;
-    setOutlook(null);
     api
       .fishingOutlook(place.lat, place.lon, { radiusKm: 100, days: 3, lang: language })
-      .then((d) => alive && setOutlook(d))
+      .then((d) => alive && setLoaded({ place, language, data: d }))
       .catch(() => {});
     return () => {
       alive = false;
     };
-  }, [place?.lat, place?.lon, language]);
+  }, [place, language]);
 
   // ---------------------------------------------------------------- voice
   const speakPlan = () => {
@@ -254,7 +167,7 @@ export default function MobileApp() {
     if (!rec) return;
     rec.lang = SPEECH_LOCALE[language];
     rec.interimResults = false;
-    rec.onresult = (e: any) => {
+    rec.onresult = (e) => {
       setListening(false);
       sendAsk(e.results[0][0].transcript);
     };
@@ -302,11 +215,6 @@ export default function MobileApp() {
     <div className="flex min-h-full flex-col">
       <ChartDefs />
       <div className="sea-drift" aria-hidden />
-      {debugInfo && (
-        <pre className="fixed left-0 top-0 z-[999] max-w-[300px] whitespace-pre-wrap bg-black p-1 text-[10px] leading-tight text-white">
-          {debugInfo}
-        </pre>
-      )}
 
       {/* ---------------- slim header ---------------- */}
       <header
