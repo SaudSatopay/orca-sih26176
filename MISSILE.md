@@ -1,7 +1,7 @@
 # Missile log: orca
 
-status: stage=1 iteration=0 verdict=CONTINUE updated=2026-10-01T08:43:01.221Z
-mode: recon
+status: stage=3 iteration=0 verdict=CONTINUE updated=2026-10-01T10:00:00Z
+mode: full flight (resumed from recon)
 branch: missile/20261001
 url: none
 max_iterations: 6
@@ -13,7 +13,7 @@ max_iterations: 6
 - Signature moment: "The chart answers" on the landing hero. A question is asked, ten agents report in, the course plots itself around the hatched no-go area, the verdict stamps, and the sea under the chart keeps moving. Static poster first; spec in DESIGN.md.
 - Direction: see DESIGN.md. The living nautical chart is kept as it is: chart paper, marine ink, Fraunces / Archivo / Spline Sans Mono, hatching, stamps, soundings. Additions only: one token source, a contrast fix at the token, a motion budget.
 - Scope: the plan below.
-- User's direction: none given beyond `recon`.
+- User's direction (second firing, 1 Oct 2026): "elevate the frontend to the max and make everything beautiful. use your skills to effect". Read as: push first_impression, motion, layout, design_system and ux_completeness hardest; the visual craft of every screen is the priority; use the installed design skills (impeccable, animate, emil-design-eng, frontend-design, web-design-guidelines, mobile-native) inside the stages.
 - Protected: the chart-paper visual language and palette; the three typefaces and their roles; the phone app's three-tab, voice-first structure; the five demo scenarios and their numbers; risk weights and safety floors; demo mode working offline; `RUN-ORCA.bat` and the committed `frontend/dist`; trilingual parity; the transform-only entrance rule; the "decision support, not an official advisory" wording; the README's content and honesty sections.
 - Out of scope: model changes, real agency feeds, SMS/IVR, a dark theme, any framework or build-tool change, auth, a database.
 - Definition of done: every rubric dimension at 9 or above, mean 9.5 or above, live URL, README, tagged release
@@ -162,6 +162,11 @@ Order: foundations, then ship a preview early, then tokens and accessibility, th
 <!-- iterations:end -->
 
 ## Decisions
+
+- Gate: the user was shown the target and asked go, adjust or stop, and answered by firing the missile again with a direction. Taken as go with an adjustment (frontend beauty first). No second confirmation was asked.
+- Hosting: proceeding with the recommended Vercel preview (static frontend plus the FastAPI app as a Python function). Preview only, never production. The in-memory chat session caveat stands and is tested on the preview.
+- The typecheck hook was offered once and not taken up; not added.
+- Builders run in git worktrees and do not rebuild `frontend/dist`; the main session rebuilds it once per merge so the committed bundle never conflicts.
 
 - Mode is `recon`: stages 0 and 1 only. No product source file was changed. Files added on the branch: MISSILE.md, PRODUCT.md, DESIGN.md, CLAUDE.md, `.claude/launch.json`; `.gitignore` gained `.missile/` and `.playwright-cli/`.
 - The working tree had an uncommitted rewrite of HANDOFF.md. On the user's choice it was stashed (`git stash list`: "pre-missile: HANDOFF.md rewrite (1 Oct 2026)"). Restore it with `git stash pop` on whichever branch should carry it.

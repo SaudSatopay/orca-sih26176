@@ -31,3 +31,4 @@ Thumbs.db
 # Missile working files and browser-sensor scratch
 .missile/
 .playwright-cli/
+.claude/worktrees/
