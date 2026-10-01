@@ -103,6 +103,8 @@ html.phone:has(.m-app) .shell-sea {
   border-top: 1px solid var(--rule-strong);
   background: theme(colors.paper.50);
 }
+/* No transition: a tab bar is pressed tens of times a day, and the selection
+   must land in one frame — label, fill and icon together. */
 .m-tab {
   position: relative;
   display: flex;
@@ -112,7 +114,6 @@ html.phone:has(.m-app) .shell-sea {
   gap: 4px;
   min-height: 60px;
   color: theme(colors.ink.500);
-  transition: background-color 120ms ease-out;
 }
 .m-tab:active {
   background: theme(colors.paper.200);
@@ -305,9 +306,12 @@ html.phone:has(.m-app) .shell-sea {
   border: 5px solid theme(colors.ink.900);
   background: theme(colors.paper.50);
   color: theme(colors.ink.900);
+  /* Fill, border and glyph colour move together: red arrives as one state. */
   transition:
     transform 140ms var(--m-ease-out),
-    background-color 140ms ease-out;
+    background-color 140ms ease-out,
+    border-color 140ms ease-out,
+    color 140ms ease-out;
 }
 .m-mic:active {
   transform: scale(0.96);

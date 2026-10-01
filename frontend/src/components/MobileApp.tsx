@@ -329,6 +329,9 @@ function Sheet({
   const titleId = useId();
   const ref = useRef<HTMLDivElement>(null);
   const [closing, setClosing] = useState(false);
+  // A double tap on the opener lands its second tap on the scrim and would
+  // close the sheet mid-entrance: the scrim answers only once the sheet is in.
+  const openedAt = useRef(0);
 
   // Leaves the way it came: the sheet slides back down, then unmounts.
   const close = useCallback(() => {
@@ -342,6 +345,7 @@ function Sheet({
   }, [closing, onClose]);
 
   useEffect(() => {
+    openedAt.current = performance.now();
     const opener = document.activeElement as HTMLElement | null;
     const sheet = ref.current;
     (sheet?.querySelector<HTMLElement>("[data-current='true']") ?? sheet)?.focus();
@@ -369,7 +373,14 @@ function Sheet({
 
   return (
     <>
-      <div className="m-scrim" data-closing={closing} onClick={close} aria-hidden />
+      <div
+        className="m-scrim"
+        data-closing={closing}
+        onClick={() => {
+          if (performance.now() - openedAt.current > 300) close();
+        }}
+        aria-hidden
+      />
       <div
         ref={ref}
         role="dialog"
