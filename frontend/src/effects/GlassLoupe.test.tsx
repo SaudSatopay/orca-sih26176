@@ -75,13 +75,13 @@ describe("the chart loupe, with the effect off", () => {
     expect(onEnter).toHaveBeenCalledTimes(1);
   });
 
-  it("does not fetch the lens or html2canvas", () => {
+  it("opens no canvas and no html2canvas frame", () => {
     render(
       <GlassLoupe id="open">
         <button>Open ORCA</button>
       </GlassLoupe>,
     );
-    expect(window.__orcaFx?.effects.glass).toBe("poster");
+    expect(document.querySelector("canvas")).toBeNull();
     expect(document.querySelector("iframe")).toBeNull();
   });
 });
