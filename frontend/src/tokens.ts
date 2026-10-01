@@ -171,9 +171,14 @@ export const typePx = {
 
 export type TypeStep = keyof typeof typePx;
 
-/** The same scale as Tailwind `fontSize` entries: `text-label`, `text-body`… */
+/**
+ * The same scale as Tailwind `fontSize` entries: `text-label`, `text-body`…
+ * Emitted in rem so a reader's browser font-size preference scales the whole
+ * sheet; `typePx` stays in CSS pixels for canvas, Leaflet and SVG code, which
+ * draw in pixels. (At the default root size the two are identical.)
+ */
 export const fontSize = Object.fromEntries(
-  Object.entries(typePx).map(([step, px]) => [step, `${px}px`]),
+  Object.entries(typePx).map(([step, px]) => [step, `${px / 16}rem`]),
 ) as Record<TypeStep, string>;
 
 /** Everything Tailwind turns into colour utilities. */

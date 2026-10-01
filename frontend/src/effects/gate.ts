@@ -42,8 +42,11 @@ export const WEBGL_CAP = 3;
 /**
  * The effects that passed their trial and ship switched on. An effect that
  * is not listed here only runs when a `?fx=` query asks for it by name.
+ * Ink: Lighthouse 99 with it on, one context in view, zero at rest.
+ * Relief: 98–99, one context, zero frames at rest. Glass joins when its
+ * rebuild lands and measures. `?fx=none` is the switch-off.
  */
-export const DEFAULT_EFFECTS: readonly EffectName[] = [];
+export const DEFAULT_EFFECTS: readonly EffectName[] = ["ink", "relief"];
 
 export interface EffectEnv {
   /** `location.search` */

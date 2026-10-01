@@ -230,9 +230,9 @@ describe("type scale", () => {
     });
   });
 
-  it("is handed to Tailwind in pixels", () => {
-    expect(fontSize.label).toBe("11px");
-    expect(fontSize.hero).toBe("48px");
+  it("is handed to Tailwind in rem, so reader font-size preferences scale it", () => {
+    expect(fontSize.label).toBe(`${11 / 16}rem`);
+    expect(fontSize.hero).toBe("3rem");
     expect(Object.keys(fontSize)).toEqual(Object.keys(typePx));
   });
 
