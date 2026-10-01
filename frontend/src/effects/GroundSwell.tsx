@@ -25,12 +25,16 @@ const DPR_CAP = 1.5;
  * radial gradient on a drifting Lissajous path, multiplied onto the paper at
  * wash opacity, so the ground darkens like wet paper and never covers it.
  */
-const PLUMES: { tint: "ink" | "deep" | "teal"; r: number; ax: number; ay: number; px: number; py: number; vx: number; vy: number; peak: number }[] = [
-  { tint: "ink", r: 0.52, ax: 0.30, ay: 0.22, px: 0.8, py: 2.1, vx: 0.030, vy: 0.024, peak: 0.12 },
-  { tint: "deep", r: 0.42, ax: 0.34, ay: 0.26, px: 3.7, py: 0.4, vx: 0.023, vy: 0.033, peak: 0.11 },
-  { tint: "teal", r: 0.62, ax: 0.26, ay: 0.3, px: 5.2, py: 4.0, vx: 0.019, vy: 0.027, peak: 0.10 },
-  { tint: "ink", r: 0.38, ax: 0.38, ay: 0.2, px: 2.4, py: 5.6, vx: 0.034, vy: 0.020, peak: 0.09 },
+const PLUMES: { tint: "ink" | "deep" | "teal"; bx: number; r: number; ax: number; ay: number; px: number; py: number; vx: number; vy: number; peak: number }[] = [
+  // `bx` anchors a plume's drift: the ink leans left, where the wash is deepest
+  { tint: "ink", bx: 0.3, r: 0.52, ax: 0.26, ay: 0.22, px: 0.8, py: 2.1, vx: 0.030, vy: 0.024, peak: 0.13 },
+  { tint: "deep", bx: 0.4, r: 0.42, ax: 0.3, ay: 0.26, px: 3.7, py: 0.4, vx: 0.023, vy: 0.033, peak: 0.11 },
+  { tint: "teal", bx: 0.64, r: 0.62, ax: 0.24, ay: 0.3, px: 5.2, py: 4.0, vx: 0.019, vy: 0.027, peak: 0.10 },
+  { tint: "ink", bx: 0.26, r: 0.38, ax: 0.3, ay: 0.2, px: 2.4, py: 5.6, vx: 0.034, vy: 0.020, peak: 0.10 },
 ];
+
+/** The standing wash: the sheet is always darkest at its left edge. */
+const LEFT_WASH = 0.16;
 
 /** Per-line phase seeds, fixed so the field is stable across resizes. */
 function seed(i: number): [number, number, number] {
@@ -84,9 +88,17 @@ export default function GroundSwell({ active, onReady, onFail }: EffectProps) {
 
       // the wash first, so the engraving prints over wet paper
       ctx.globalCompositeOperation = "multiply";
+      // the standing left-edge wash breathes a little but never leaves
+      const standing = ctx.createLinearGradient(0, 0, w * 0.62, 0);
+      const breath = LEFT_WASH * (0.88 + 0.12 * Math.sin(t * 0.04 * Math.PI * 2));
+      standing.addColorStop(0, alpha(ink[900], breath));
+      standing.addColorStop(0.55, alpha(ink[900], breath * 0.35));
+      standing.addColorStop(1, alpha(ink[900], 0));
+      ctx.fillStyle = standing;
+      ctx.fillRect(0, 0, w * 0.62, h);
       const span = Math.max(w, h);
       for (const p of PLUMES) {
-        const cx = (0.5 + p.ax * Math.sin(t * p.vx * Math.PI * 2 + p.px)) * w;
+        const cx = (p.bx + p.ax * Math.sin(t * p.vx * Math.PI * 2 + p.px)) * w;
         const cy = (0.5 + p.ay * Math.sin(t * p.vy * Math.PI * 2 + p.py)) * h;
         const r = p.r * span * (0.85 + 0.15 * Math.sin(t * 0.05 * Math.PI * 2 + p.px + p.py));
         const colour = p.tint === "ink" ? ink[900] : p.tint === "deep" ? chart[700] : chart[500];

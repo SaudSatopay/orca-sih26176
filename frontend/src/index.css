@@ -34,6 +34,7 @@
   /* The sheet itself: graticule grid, aged edges, and the sea rising from
      the foot of the sheet — the page always stands in shallow water. */
   --sheet-ground:
+    linear-gradient(90deg, theme(colors.ink.900 / 7%), theme(colors.ink.900 / 2.5%) 32%, transparent 58%),
     repeating-linear-gradient(
       90deg,
       theme(colors.chart.500 / 6%) 0 1px,
