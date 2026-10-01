@@ -12,7 +12,7 @@ export interface TourStep {
   /** How long to dwell after the action, in ms. */
   dwell: number;
   /** Highlighted feature name shown as a chip. */
-  feature?: string;
+  feature?: L10n;
   /** Continue the existing conversation instead of starting a fresh one. */
   followUp?: boolean;
 }
@@ -35,7 +35,7 @@ export const TOUR: TourStep[] = [
     },
     tab: "home",
     dwell: 7000,
-    feature: "Overview",
+    feature: { en: "Overview", hi: "सारांश", mr: "आढावा" },
   },
   {
     title: {
@@ -50,7 +50,7 @@ export const TOUR: TourStep[] = [
     },
     tab: "home",
     dwell: 9000,
-    feature: "Auto location",
+    feature: { en: "Auto location", hi: "अपने-आप स्थान", mr: "आपोआप ठिकाण" },
   },
   {
     title: {
@@ -65,7 +65,7 @@ export const TOUR: TourStep[] = [
     },
     tab: "home",
     dwell: 10000,
-    feature: "Plain language",
+    feature: { en: "Plain language", hi: "सीधी भाषा", mr: "सोपी भाषा" },
   },
   {
     title: {
@@ -80,7 +80,7 @@ export const TOUR: TourStep[] = [
     },
     tab: "home",
     dwell: 10000,
-    feature: "Fishing probability",
+    feature: { en: "Fishing probability", hi: "मछली की संभावना", mr: "माशांची शक्यता" },
   },
   {
     title: {
@@ -95,7 +95,7 @@ export const TOUR: TourStep[] = [
     },
     tab: "home",
     dwell: 9000,
-    feature: "Trip plan · economics",
+    feature: { en: "Trip plan · economics", hi: "यात्रा योजना · हिसाब", mr: "फेरी योजना · हिशेब" },
   },
   {
     title: {
@@ -110,7 +110,7 @@ export const TOUR: TourStep[] = [
     },
     ask: "मी उद्या सकाळी ६ वाजता मुंबईजवळ मासेमारीला जाऊ शकतो का?",
     dwell: 9000,
-    feature: "Multilingual · voice",
+    feature: { en: "Multilingual · voice", hi: "बहुभाषी · आवाज़", mr: "बहुभाषिक · आवाज" },
   },
   {
     title: {
@@ -124,7 +124,7 @@ export const TOUR: TourStep[] = [
       mr: "१०० पैकी ७० — जास्त धोका. प्रत्येक गुणाचा हिशेब आहे: IMD चा सक्रिय इशारा, उंच लाटा, जोराचा वारा. काहीही ब्लॅक बॉक्स नाही.",
     },
     dwell: 9000,
-    feature: "Explainable risk",
+    feature: { en: "Explainable risk", hi: "समझाया गया जोखिम", mr: "स्पष्ट केलेला धोका" },
   },
   {
     title: {
@@ -138,7 +138,7 @@ export const TOUR: TourStep[] = [
       mr: "२४ तासांची टाइमलाइन सुरक्षित वेळ दाखवते. ORCA फक्त नाही म्हणत नाही — ११ नंतर परिस्थिती सुधारेल, तेव्हा या, असे सांगते.",
     },
     dwell: 8000,
-    feature: "Risk timeline",
+    feature: { en: "Risk timeline", hi: "जोखिम की टाइमलाइन", mr: "धोक्याची टाइमलाइन" },
   },
   {
     title: {
@@ -154,7 +154,7 @@ export const TOUR: TourStep[] = [
     ask: "दुपारी १२ वाजता काय?",
     followUp: true, // must NOT reset the session — that is the whole point
     dwell: 9000,
-    feature: "Context memory",
+    feature: { en: "Context memory", hi: "बातचीत की याद", mr: "संभाषणाची आठवण" },
   },
   {
     title: {
@@ -169,7 +169,7 @@ export const TOUR: TourStep[] = [
     },
     ask: "Is there a cyclone near Paradip? Can I go fishing?",
     dwell: 10000,
-    feature: "Safety override",
+    feature: { en: "Safety override", hi: "सुरक्षा नियम सर्वोपरि", mr: "सुरक्षा नियम सर्वोच्च" },
   },
   {
     title: {
@@ -184,7 +184,7 @@ export const TOUR: TourStep[] = [
     },
     ask: "कोच्चि के पास मछली पकड़ने का क्षेत्र कहाँ है?",
     dwell: 10000,
-    feature: "PFZ intelligence",
+    feature: { en: "PFZ intelligence", hi: "PFZ जानकारी", mr: "PFZ माहिती" },
   },
   {
     title: {
@@ -199,7 +199,7 @@ export const TOUR: TourStep[] = [
     },
     ask: "Give me the safest route to the nearest fishing zone near Mumbai",
     dwell: 11000,
-    feature: "Route + geofencing",
+    feature: { en: "Route + geofencing", hi: "मार्ग + जियोफ़ेंसिंग", mr: "मार्ग + जिओफेन्सिंग" },
   },
   {
     title: {
@@ -213,7 +213,7 @@ export const TOUR: TourStep[] = [
       mr: "होडीचा मार्कर ओढता येतो. प्रतिबंधित क्षेत्राजवळ सोडा आणि ORCA त्या जागेची लगेच तपासणी करते — हेच मच्छीमाराला सीमा ओलांडण्याआधी सावध करते.",
     },
     dwell: 9000,
-    feature: "Live geofence",
+    feature: { en: "Live geofence", hi: "लाइव जियोफ़ेंस", mr: "लाइव्ह जिओफेन्स" },
   },
   {
     title: {
@@ -227,7 +227,7 @@ export const TOUR: TourStep[] = [
       mr: "एजंट पॅनेल खरोखर काय चालले ते दाखवते: हवामान, समुद्र, मासेमारी क्षेत्रे, इशारे आणि GIS एकाच वेळी चालतात, मग रिस्क इंजिन सर्वांची वाट पाहते.",
     },
     dwell: 9000,
-    feature: "Agent crew",
+    feature: { en: "Agent crew", hi: "एजेंट टीम", mr: "एजंट टीम" },
   },
   {
     title: {
@@ -242,7 +242,7 @@ export const TOUR: TourStep[] = [
     },
     tab: "system" as const,
     dwell: 11000,
-    feature: "Architecture · live feed",
+    feature: { en: "Architecture · live feed", hi: "संरचना · लाइव फ़ीड", mr: "रचना · लाइव्ह फीड" },
   },
   {
     title: {
@@ -257,7 +257,7 @@ export const TOUR: TourStep[] = [
     },
     tab: "authority" as const,
     dwell: 10000,
-    feature: "Authority dashboard",
+    feature: { en: "Authority dashboard", hi: "प्रशासन बोर्ड", mr: "प्रशासन फलक" },
   },
   {
     title: {
@@ -272,6 +272,43 @@ export const TOUR: TourStep[] = [
     },
     tab: "home",
     dwell: 8000,
-    feature: "Provenance",
+    feature: { en: "Provenance", hi: "स्रोत का प्रमाण", mr: "स्रोताचा पुरावा" },
   },
 ];
+
+/** The tour's own controls and labels. `{n}` and `{total}` are filled in. */
+export const TOUR_UI: Record<Language, Record<string, string>> = {
+  en: {
+    name: "Guided tour",
+    step: "Step {n} of {total}",
+    prev: "Previous step",
+    next: "Next step",
+    pause: "Pause the tour",
+    resume: "Resume the tour",
+    exit: "Close the tour",
+    paused: "Paused",
+    escHint: "Esc closes",
+  },
+  hi: {
+    name: "गाइडेड टूर",
+    step: "चरण {n} / {total}",
+    prev: "पिछला चरण",
+    next: "अगला चरण",
+    pause: "टूर रोकें",
+    resume: "टूर फिर चलाएँ",
+    exit: "टूर बंद करें",
+    paused: "रुका हुआ",
+    escHint: "Esc से बंद",
+  },
+  mr: {
+    name: "मार्गदर्शित फेरी",
+    step: "टप्पा {n} / {total}",
+    prev: "मागील टप्पा",
+    next: "पुढील टप्पा",
+    pause: "फेरी थांबवा",
+    resume: "फेरी पुन्हा सुरू करा",
+    exit: "फेरी बंद करा",
+    paused: "थांबलेली",
+    escHint: "Esc ने बंद",
+  },
+};
