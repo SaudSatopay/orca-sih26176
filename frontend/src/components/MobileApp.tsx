@@ -10,6 +10,7 @@ import {
   type CSSProperties,
   type FormEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import * as api from "../api";
 import type { ChatResponse, FishingOutlook, Language, RiskCategory, ZoneFeature } from "../types";
@@ -98,8 +99,11 @@ const GEO_OPTIONS: PositionOptions = { enableHighAccuracy: true, timeout: 7000, 
 const loadMap = () => import("./MarineMap");
 const MarineMap = lazy(loadMap);
 
-/** The verdict's entrance plays once per page load, never again on a tab change. */
-let entrancePlayed = false;
+/**
+ * The reading whose entrance has played. A tab change remounts the verdict and
+ * must not replay it; another harbour, or another verdict, is news.
+ */
+let entranceShownFor: string | null = null;
 
 const fill = (template: string, values: Record<string, string | number>) =>
   template.replace(/\{(\w+)\}/g, (_, k: string) => String(values[k] ?? ""));
@@ -125,30 +129,48 @@ function prefersReducedMotion(): boolean {
     : true;
 }
 
+/** The ring can be followed: motion is wanted, the page is being painted, the engine can say what is animating. */
+const canFollow = () =>
+  !prefersReducedMotion() &&
+  document.visibilityState === "visible" &&
+  typeof requestAnimationFrame === "function" &&
+  typeof Element.prototype.getAnimations === "function";
+
 /**
- * Counts up to `target` over the ring's 800 ms. The rendered value IS the
- * target until the first animation frame arrives, and a timer settles it
- * whatever happens, so a tab that never animates still shows the real score.
+ * The numeral follows the ring. While the ring's own draw is running, the
+ * numeral is read off the arc, so the two share one clock. When nothing is
+ * drawing (no entrance, reduced motion, a tab that is not painting, an engine
+ * without getAnimations) the numeral is the score, and a timer settles it
+ * whatever happens.
  */
-function useCountUp(target: number, play: boolean): number {
-  const [value, setValue] = useState(target);
+function useRingCount(target: number, play: boolean, root: RefObject<HTMLElement>): number {
+  // Opens on 0 only when the ring is about to draw; otherwise the score is simply there.
+  const [value, setValue] = useState(() => (play && canFollow() ? 0 : target));
   useEffect(() => {
-    if (!play || prefersReducedMotion() || typeof requestAnimationFrame !== "function") return;
-    let frame = 0;
-    let start = 0;
-    const tick = (now: number) => {
-      start ||= now;
-      const p = Math.min(1, (now - start) / 800);
-      setValue(Math.round(target * (1 - Math.pow(1 - p, 5))));
-      if (p < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
+    if (!play) return;
+    // Whatever happens below, the score is on screen within a second.
     const settle = window.setTimeout(() => setValue(target), 1000);
+    if (!canFollow()) return () => window.clearTimeout(settle);
+    const arc = root.current?.querySelector<SVGCircleElement>(".m-ring-arc");
+    const draw = arc?.getAnimations().find((a) => (a as CSSAnimation).animationName === "m-ring-draw");
+    const length = parseFloat(arc?.getAttribute("stroke-dasharray") ?? "");
+    let frame = 0;
+    const follow = () => {
+      // Nothing is drawing, or the draw is over: the numeral is the score.
+      if (!arc || !draw || !(length > 0) || draw.playState === "finished" || draw.playState === "idle") {
+        setValue(target);
+        return;
+      }
+      const drawn = 1 - parseFloat(getComputedStyle(arc).strokeDashoffset) / length;
+      setValue(Math.max(0, Math.min(target, Math.round(drawn * 100))));
+      frame = requestAnimationFrame(follow);
+    };
+    frame = requestAnimationFrame(follow);
     return () => {
       cancelAnimationFrame(frame);
       window.clearTimeout(settle);
     };
-  }, [target, play]);
+  }, [target, play, root]);
   return play ? value : target;
 }
 
@@ -504,19 +526,23 @@ function Verdict({
   canSpeak: boolean;
   onListen: () => void;
 }) {
-  // Decided at mount: the first verdict of this page load gets the entrance.
-  const [enter, setEnter] = useState(() => !entrancePlayed);
+  const { score, category, wave_height_m: wave, wind_speed_kmh: wind } = outlook.safety;
+  const reading = `${outlook.location.nearest_landing_centre}:${category}:${score}`;
+  // Decided at mount: a reading whose entrance has not played gets it.
+  const [enter, setEnter] = useState(() => entranceShownFor !== reading);
+  const rootRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    entrancePlayed = true;
+    entranceShownFor = reading;
     const id = window.setTimeout(() => setEnter(false), 1000);
     return () => window.clearTimeout(id);
+    // Decided once per mount, like the entrance itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const { score, category, wave_height_m: wave, wind_speed_kmh: wind } = outlook.safety;
   const color = RISK_COLOR[category];
   const printed = RISK_INK[category];
   const danger = category === "HIGH" || category === "EXTREME";
-  const counted = useCountUp(score, enter);
+  const counted = useRingCount(score, enter, rootRef);
   const read = parseClock(outlook.generated_at);
   const readings = [
     wave != null && `${wave.toFixed(1)} m ${t.waves}`,
@@ -525,6 +551,7 @@ function Verdict({
 
   return (
     <section
+      ref={rootRef}
       aria-labelledby="m-question"
       className={`panel rule-double ${enter ? "m-enter" : ""}`}
       style={{ background: alpha(color, 0.07) }}
@@ -587,6 +614,9 @@ function Verdict({
 
 /* ------------------------------------------------------------------- ask */
 
+/** The answer whose arrival has played: it rises and stamps once, not on every return to the tab. */
+let answerShown: ChatResponse | null = null;
+
 function AnswerCard({
   res,
   speaking,
@@ -598,6 +628,10 @@ function AnswerCard({
   canSpeak: boolean;
   onListen: () => void;
 }) {
+  const [arriving] = useState(() => answerShown !== res);
+  useEffect(() => {
+    answerShown = res;
+  }, [res]);
   // The card speaks the answer's own language, whatever the app was set to.
   const language = res.language;
   const t = T[language] ?? T.en;
@@ -610,7 +644,7 @@ function AnswerCard({
   return (
     <article
       lang={language}
-      className="panel rule-double m-rise w-full"
+      className={`panel rule-double ${arriving ? "m-rise" : ""} w-full`}
       style={risk ? { background: alpha(color, 0.07) } : undefined}
     >
       {risk && (
