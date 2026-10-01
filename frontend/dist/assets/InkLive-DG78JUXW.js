@@ -1,4 +1,4 @@
-var ae=Object.defineProperty;var ce=(t,e,i)=>e in t?ae(t,e,{enumerable:!0,configurable:!0,writable:!0,value:i}):t[e]=i;var l=(t,e,i)=>ce(t,typeof e!="symbol"?e+"":e,i);import{r as _,j as z,p as q,k as le,h as ue}from"./index-DucLF3d0.js";import{e as de,f as $,g as C,i as he,j as fe,W as L}from"./App-CgdQallG.js";import"./locate-zyqPwvM1.js";import"./MarineMap-rF3dy_0r.js";const pe=`#version 300 es
+var ae=Object.defineProperty;var ce=(t,e,i)=>e in t?ae(t,e,{enumerable:!0,configurable:!0,writable:!0,value:i}):t[e]=i;var l=(t,e,i)=>ce(t,typeof e!="symbol"?e+"":e,i);import{r as _,j as z,p as q,k as le,h as ue}from"./index-C9K-Y5qd.js";import{e as de,f as $,g as C,i as he,j as fe,W as L}from"./App-CGK5fhvT.js";import"./locate-DKQFuymQ.js";import"./MarineMap-CObcM4-1.js";const pe=`#version 300 es
 precision mediump float;
 
 layout(location = 0) in vec4 a_position;

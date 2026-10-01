@@ -43,7 +43,10 @@ const REARM_DEBOUNCE_MS = 250;
 const TAB_LENS_BLEED_X = 4;
 const TAB_LENS_BLEED_Y = 3;
 /** The rule under the primary action bleeds this far past the button. */
-const RULE_BLEED = 24;
+// The ruler stays wholly under the slab: a bleed past the bezel read as
+// ticks spilling out of the button (owner, 1 Oct 2026), so the glass shows
+// the scale through itself and nothing floats outside the hairline.
+const RULE_BLEED = 0;
 
 let tierCache: GlassTier | null = null;
 
