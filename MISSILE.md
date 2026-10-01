@@ -260,6 +260,8 @@ Order: foundations, then ship a preview early, then tokens and accessibility, th
 - All seven builder branches of stage two are merged (e2 relief, e3 glass trial+removal, e4 stills, i1 ink, m1 motion, h1 glass+hero, c3a shell, c3b panels, c3c chart; e1 sea stays unmerged as the removal record). One verdict vocabulary landed with c3a (stamp = VERDICT phrase, headline = INSTRUCTION sentence); c3b's panels and tests were aligned to it at merge.
 - Live-ledger reading with everything on: effects {ground, ink, glass, relief} all live, contexts {opened 7, lost 4, live 3} — exactly the cap, with glass holding zero at rest as designed.
 
+- Pushed, 1 Oct 2026 on the owner's instruction: `missile/20261001` to github.com/SaudSatopay/orca-sih26176 (95 commits ahead of main, sole author Saud Satopay). `main` untouched; the CI workflow now has a public branch to run on, which closes the critic's "branch is local only" evidence gap.
+
 ## Remaining gaps
 
 (filled at Impact, or on stall)
