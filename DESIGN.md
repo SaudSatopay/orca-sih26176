@@ -40,38 +40,38 @@ Proportion: paper carries about 70 percent, ink about 25, chart teal and the ris
 |---|---|---|
 | Display | Fraunces Variable (with Noto Serif Devanagari Variable for hi and mr) | wordmark, headlines, verdicts, buoy numbers, soundings (italic, `SOFT` 40) |
 | Body | Archivo Variable | running text, list items |
-| Mono | Spline Sans Mono Variable | labels (10 px, uppercase, tracking 0.16em), buttons, instrument readouts |
+| Mono | Spline Sans Mono Variable | labels (`label`, uppercase, tracking 0.16em), buttons, instrument readouts |
 
 All four are self-hosted through `@fontsource-variable` imports in `main.tsx`; nothing loads from a font CDN.
 
 ### Type scale
 
-One named scale; components never use a literal pixel size.
+Nine steps, a minor third (x1.2) apart, counted from 16 px and rounded to the
+pixel. Nothing is set smaller than 11 px, and components never use a literal
+pixel size. (The first flight shipped seventeen ad-hoc steps from 9 px; the
+critic called it a list, not a scale, and it collapsed to this on 1 Oct 2026.)
 
 | Step | px | Role |
 |---|---|---|
-| `micro` | 9 | table heads, stamps, chart margin notes |
-| `label` | 10 | the mono label, captions, hints, timestamps |
-| `readout` | 11 | buttons, folio tabs, mono readouts |
-| `small` | 12 | chips, dense lists, alert detail |
-| `body` | 13 | conversation, advice, fields, tables |
-| `prose` | 14 | lead-ins, row figures |
-| `lead` | 15 | lead lines, small panel headings |
-| `subtitle` | 16 | panel titles, phone body copy |
-| `title` | 17 | row titles, the LISTEN button |
-| `heading` | 19 | card headings, the advice headline, the hero question |
-| `figure` | 21 | instrument figures, the verdict line |
-| `headline` | 24 | section headlines, a ground's chance of fish |
-| `numeral` | 26 | large soundings, return-by |
-| `display` | 30 | the console wordmark, the phone score |
-| `tile` | 34 | authority board totals |
-| `dial` | 38 | the risk dial numeral, the landing thesis |
-| `hero` | 76 | the landing wordmark |
+| `label` | 11 | the mono label, table heads, stamps, captions, buttons, folio tabs, readouts, timestamps |
+| `body` | 13 | running text: conversation, advice, fields, tables, chips, dense lists |
+| `lead` | 16 | lead lines, panel titles, the phone's body copy |
+| `title` | 19 | card and row titles, the advice headline, LISTEN |
+| `headline` | 23 | section headlines, instrument figures, the verdict line |
+| `numeral` | 28 | large soundings, the wordmark in panel headers, return-by |
+| `display` | 33 | the authority board's totals |
+| `dial` | 40 | the risk dial numeral, the phone's score |
+| `hero` | 48 | the landing claim, the largest text in the product |
+
+Decorative lettering drawn inside an SVG viewBox (chart soundings, the hero
+sheet's margin notes) scales with its drawing and is not on the scale; any
+label carrying information must still render at 11 CSS px or more.
 
 ## Shape, surface, depth
 
 - Radius: 2 px on controls, 3 px on panels. Nothing rounder except buoys, dials and pulse dots, which are circles.
-- Panels (`.panel`): paper-50, one hairline border, a soft table shadow. `.panel-tint` is the flat variant. `.rule-double` (3 px double top rule) marks a sheet's lead panels only.
+- Elevation is two shadow tokens and no more (`tokens.ts`): `shadow.sheet`, a sheet lying on the chart table (every `.panel` and `.chart-sheet`), and `shadow.lift`, a row raised slightly under a fine pointer. The top inner highlight uses the one permitted white, `sheen`.
+- Panels (`.panel`): paper-50, one hairline border, `shadow.sheet`. `.panel-tint` is the flat variant. `.rule-double` (3 px double top rule) marks a sheet's lead panels only.
 - Panel headers (`.hd`): mono label on a shallow-water wash.
 - The page: graticule grid at 130 px, aged-edge vignette, bathymetric contours lower left, compass rose upper right, one grain pass at 4.5 percent, and the sea at the foot of every page (three swell layers and passing schools of fish).
 
@@ -88,7 +88,7 @@ One named scale; components never use a literal pixel size.
 
 ## Motion doctrine (as shipped)
 
-- Entrances are transform-only (`rise` 350 ms, `stampIn` 450 ms, `growx` 900 ms, `popin` 400 ms). Nothing starts at opacity 0, so safety data is visible even if an animation never runs.
+- Entrances are transform-only (`rise`, `stampIn`, `growx`), run without fill-mode, and play once per reading, never again on a later visit to the same sheet. Nothing starts at opacity 0, so safety data is visible even if an animation never runs.
 - UI transitions are 200 to 300 ms.
 - Ambient loops belong to things that would move at sea: buoys bob (3.4 s), the hull rolls (4.2 s), the compass needle sways (7 s), waterlines crawl, the plotted course's dashes run, the storm symbol turns, signals travel the pipeline, the swell drifts.
 - The chart's sea is a canvas particle field (`FlowLayer.ts`) of wind or surface current over a sea-temperature shade. It checks `prefers-reduced-motion` itself.
@@ -113,6 +113,16 @@ Built in `HeroChart.tsx`, `HeroSea.tsx`, `hero.css`. It is the landing hero and 
 6. **Cost.** No dependency. Landing Lighthouse performance stayed at 98 after it was added.
 
 Easing for the whole product: entrances `cubic-bezier(0.23, 1, 0.32, 1)`, on-screen movement `cubic-bezier(0.77, 0, 0.175, 1)`. Hover effects are gated to fine pointers; pressed states run 100 to 160 ms.
+
+### Status colours as text
+
+The risk, chance and signal values above are fills: rings, bars, squares,
+hatching, the dial's arc. Set as running text they fall under 4.5:1 on chart
+paper, so each has a text ink of the same hue (`riskInk`, `chanceInk`,
+`signalInk` in `tokens.ts`), the lightest that holds 4.6:1 on the darkest
+paper that carries text. Tailwind's `text-risk-*`, `text-chance-*` and
+`text-signal` resolve to the inks automatically; `bg-`, `border-`, `fill-`
+and `stroke-` keep the fills. In JavaScript: `RISK_INK` and `RATING_INK`.
 
 ## Banned here
 
