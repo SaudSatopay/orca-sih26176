@@ -117,7 +117,7 @@ export default function ChatPanel({
         aria-label={t.log}
         aria-busy={busy}
         tabIndex={empty ? undefined : 0}
-        className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-auto px-4 py-4"
+        className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-auto px-4 py-4 max-lg:max-h-[60vh]"
       >
         {empty && (
           <div className="flex h-full flex-col justify-end gap-3 pb-1">

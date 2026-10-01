@@ -47,6 +47,9 @@ export function usePageTop(ref: RefObject<HTMLElement | null>, watch?: unknown):
   return top;
 }
 
+/** How long a slot must hold still before its content is resized to it. */
+const SETTLE_MS = 200;
+
 /**
  * The height to give the thing inside a slot so that it, plus the frame it
  * draws around itself, exactly fills the slot. `inner` selects the element
@@ -72,9 +75,20 @@ export function useFittedHeight(
       setFitted((prev) => (prev === next ? prev : next));
     };
     measure();
-    const ro = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
+    // The first measurement is immediate; later ones wait until the slot has
+    // held still for a moment. A chart being dragged through a window resize
+    // is laid out once at the end, not on every frame.
+    let settle = 0;
+    const later = () => {
+      window.clearTimeout(settle);
+      settle = window.setTimeout(measure, SETTLE_MS);
+    };
+    const ro = typeof ResizeObserver === "function" ? new ResizeObserver(later) : null;
     ro?.observe(el);
-    return () => ro?.disconnect();
+    return () => {
+      window.clearTimeout(settle);
+      ro?.disconnect();
+    };
   }, [slot, inner, enabled, min, max]);
   return enabled ? fitted : undefined;
 }

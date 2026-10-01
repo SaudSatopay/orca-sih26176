@@ -60,8 +60,10 @@ const RADIUS_KM = 100;
 const DEFAULT_PORT = PORTS[0]; // Mumbai — used only if location is unavailable
 const LANGUAGES: Language[] = ["en", "hi", "mr"];
 const TABS: AppTab[] = ["home", "ask", "authority", "system"];
-/** From here up the working sheet has two columns and a sticky one. */
+/** From here up the Ask sheet has two columns and a sticky one. */
 const TWO_COLUMNS = "(min-width: 1024px)";
+/** Today's plan needs more room beside the chart, so it pairs up a little later. */
+const TODAY_COLUMNS = "(min-width: 1100px)";
 /** The sheet's bottom gutter at that width (Tailwind `lg:p-6`). */
 const GUTTER = 24;
 
@@ -140,7 +142,9 @@ export default function App() {
   // From 1024 px the left column is sticky and exactly as tall as the room
   // under the title block, so the page scrolls as one sheet and nothing
   // scrolls inside anything else.
-  const twoColumns = useMediaQuery(TWO_COLUMNS);
+  const askColumns = useMediaQuery(TWO_COLUMNS);
+  const todayColumns = useMediaQuery(TODAY_COLUMNS);
+  const twoColumns = tab === "home" ? todayColumns : askColumns;
   const sheetRef = useRef<HTMLDivElement>(null);
   const sheetTop = usePageTop(sheetRef, tab);
   const stickyHeight = twoColumns ? `calc(100dvh - ${sheetTop + GUTTER}px)` : undefined;
@@ -149,7 +153,7 @@ export default function App() {
     mapSlotRef,
     ".leaflet-container",
     // only once the column itself has been sized to the room under the header
-    twoColumns && tab === "home" && sheetTop > 0,
+    todayColumns && tab === "home" && sheetTop > 0,
     280,
     680,
   );
@@ -603,14 +607,14 @@ export default function App() {
           <ErrorBoundary language={language}>
             <div
               ref={sheetRef}
-              className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(370px,1fr)] lg:items-start"
+              className="grid gap-4 min-[1100px]:grid-cols-[minmax(0,1.35fr)_minmax(400px,1fr)] min-[1100px]:items-start"
             >
               {/* The chart column stays with the reader while the plan scrolls.
                   It is as tall as the room under the title block; on a short
                   window it keeps a floor so the chart stays a chart, and the
                   whole column is in view once the page has scrolled a little. */}
               <div
-                className="flex min-w-0 flex-col gap-4 lg:sticky lg:top-4 lg:min-h-[min(calc(100dvh-2rem),640px)]"
+                className="flex min-w-0 flex-col gap-4 min-[1100px]:sticky min-[1100px]:top-4 min-[1100px]:min-h-[min(calc(100dvh-2rem),640px)]"
                 style={{ height: stickyHeight }}
               >
                 <LocationPicker current={shownPlace} language={language} onPick={setPlace} />
@@ -643,10 +647,10 @@ export default function App() {
                   ))}
                 </dl>
 
-                <div ref={mapSlotRef} className="min-h-0 lg:flex-1">
+                <div ref={mapSlotRef} className="min-h-0 min-[1100px]:flex-1">
                   {/* The chart is drawn once its height is known, so it is laid
                       out a single time at the size it will keep. */}
-                  {twoColumns && todayMapHeight === undefined ? (
+                  {todayColumns && todayMapHeight === undefined ? (
                     <div className="chart-sheet h-full" aria-hidden />
                   ) : (
                     <ErrorBoundary language={language}>
@@ -724,7 +728,7 @@ export default function App() {
             <div ref={sheetRef} className="ask-sheet">
               <div
                 data-area="talk"
-                className="h-[min(68vh,520px)] min-w-0 lg:sticky lg:top-4 lg:min-h-[min(calc(100dvh-2rem),440px)]"
+                className="min-w-0 lg:sticky lg:top-4 lg:min-h-[min(calc(100dvh-2rem),440px)]"
                 style={{ height: stickyHeight }}
               >
                 <ChatPanel
