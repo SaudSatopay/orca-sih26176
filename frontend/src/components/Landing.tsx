@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { lazy, useEffect, useState, type ReactNode } from "react";
 import * as api from "../api";
 import type { Language } from "../types";
 import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph } from "./glyphs";
@@ -7,8 +7,13 @@ import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
 import GlassLoupe from "../effects/GlassLoupe";
 import { InkMark } from "../effects/InkWordmark";
+import { EffectSlot } from "../effects/EffectSlot";
+import "../effects/ground.css";
 import InkCartouche from "../effects/InkWordmark";
 import { countContexts } from "../effects/ledger";
+
+// The living ground is its own chunk, mounted only when the gate allows it.
+const GroundSwell = lazy(() => import("../effects/GroundSwell"));
 
 // With ?fxdebug=1 the page counts the WebGL contexts it opens (effects/ledger.ts).
 countContexts();
@@ -159,6 +164,15 @@ export default function Landing({
     <main className="mx-auto flex min-h-full max-w-[1240px] flex-col px-5 py-5">
       {/* the ground stays with the viewport, so the page never ends in a seam */}
       <div className="sheet-ground" aria-hidden />
+      {/* the living ground: the sheet's contours breathing (poster: the page as it is) */}
+      <EffectSlot
+        name="ground"
+        Effect={GroundSwell}
+        eager
+        className="ground-slot"
+        effectClassName="ground-live"
+        poster={null}
+      />
       {/* the sea at the foot of the sheet; the <i> is the far swell layer
           (index.css): three layers, each on its own transform */}
       <div className="sea-drift" aria-hidden>

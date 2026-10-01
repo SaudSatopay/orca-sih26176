@@ -18,6 +18,8 @@
  */
 
 /**
+ * - `ground`: the sheet's depth contours breathing under the whole landing
+ *   (a 2D canvas: no WebGL context at all);
  * - `ink`: wet ink in the ORCA wordmark (Paper Shaders LiquidMetal through an
  *   ink ramp), one canvas;
  * - `glass`: the chart loupe on the hero's question tabs and the primary
@@ -29,16 +31,16 @@
  * The ShaderGradient sea was tried and removed (MISSILE.md, Decisions): the
  * CSS swell at the foot of the sheet is the sea.
  */
-export type EffectName = "ink" | "glass" | "relief";
+export type EffectName = "ground" | "ink" | "glass" | "relief";
 
 /** In priority order: when the context cap bites, later ones lose. */
-export const ALL_EFFECTS: readonly EffectName[] = ["ink", "glass", "relief"];
+export const ALL_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief"];
 
 /** Live WebGL contexts each effect holds at rest. */
 // ink is 2: the mark flies twice, at the masthead and in the closing
 // cartouche, and each holds its canvas while mounted. With relief's one and
 // glass's zero at rest the landing sits exactly on the cap of three.
-export const CONTEXTS: Record<EffectName, number> = { ink: 2, glass: 0, relief: 1 };
+export const CONTEXTS: Record<EffectName, number> = { ground: 0, ink: 2, glass: 0, relief: 1 };
 
 export const WEBGL_CAP = 3;
 
@@ -49,7 +51,7 @@ export const WEBGL_CAP = 3;
  * Relief: 98–99, one context, zero frames at rest. Glass joins when its
  * rebuild lands and measures. `?fx=none` is the switch-off.
  */
-export const DEFAULT_EFFECTS: readonly EffectName[] = ["ink", "relief"];
+export const DEFAULT_EFFECTS: readonly EffectName[] = ["ground", "ink", "relief"];
 
 export interface EffectEnv {
   /** `location.search` */

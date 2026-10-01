@@ -1,0 +1,19 @@
+/* Effect 0 — the living ground. The slot pins itself under the page: above
+   the fixed sheet ground and the printed furniture, below every panel and
+   line of text (all opaque paper). Lines only; the paper stays the paper. */
+.ground-slot {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.ground-live,
+.ground-fill {
+  position: absolute;
+  inset: 0;
+}
+.ground-fill canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

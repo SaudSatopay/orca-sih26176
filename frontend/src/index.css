@@ -88,7 +88,9 @@ body {
   background: var(--sheet-ground);
 }
 
-/* Bathymetric contours — a surveyed seamount, lower left of the sheet. */
+/* Bathymetric contours lower left, the rose upper right, an engraved orca
+   riding the swell at the foot, and rhumb lines with stray soundings laid
+   from the rose across the sheet. */
 body::before {
   content: "";
   position: fixed;
@@ -96,10 +98,14 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='860' height='640' viewBox='0 0 860 640' fill='none' stroke='%232A7391' stroke-width='1'%3E%3Cg opacity='0.16'%3E%3Cpath d='M430 40 C640 55 800 170 805 320 C810 470 640 595 430 600 C220 605 55 480 60 320 C65 160 220 25 430 40 Z'/%3E%3Cpath d='M430 92 C598 102 742 196 748 320 C754 444 604 543 430 549 C256 555 112 452 116 320 C120 188 262 82 430 92 Z'/%3E%3Cpath d='M441 146 C574 152 684 231 689 325 C694 419 575 494 441 499 C307 504 196 424 201 325 C206 226 308 140 441 146 Z'/%3E%3Cpath d='M446 201 C545 206 624 261 627 325 C630 389 546 444 446 447 C346 450 266 394 269 325 C272 256 347 196 446 201 Z'/%3E%3Cpath d='M451 256 C515 259 564 291 566 327 C568 363 516 394 451 396 C386 398 337 364 339 327 C341 290 387 253 451 256 Z'/%3E%3Ctext x='430' y='330' font-family='Georgia' font-style='italic' font-size='14' fill='%232A7391' stroke='none' text-anchor='middle'%3E9%3C/text%3E%3Ctext x='560' y='250' font-family='Georgia' font-style='italic' font-size='13' fill='%232A7391' stroke='none'%3E18%3C/text%3E%3Ctext x='250' y='420' font-family='Georgia' font-style='italic' font-size='13' fill='%232A7391' stroke='none'%3E27%3C/text%3E%3Ctext x='640' y='430' font-family='Georgia' font-style='italic' font-size='13' fill='%232A7391' stroke='none'%3E44%3C/text%3E%3Ctext x='300' y='150' font-family='Georgia' font-style='italic' font-size='13' fill='%232A7391' stroke='none'%3E61%3C/text%3E%3C/g%3E%3C/svg%3E"),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='%2312212D' opacity='0.05'%3E%3Ccircle cx='210' cy='210' r='168' fill='none' stroke='%2312212D' stroke-width='1.5'/%3E%3Ccircle cx='210' cy='210' r='128' fill='none' stroke='%2312212D' stroke-width='1'/%3E%3Cg%3E%3Cpath d='M210 30 L224 196 L210 210 L196 196 Z'/%3E%3Cpath d='M210 390 L224 224 L210 210 L196 224 Z'/%3E%3Cpath d='M30 210 L196 196 L210 210 L196 224 Z'/%3E%3Cpath d='M390 210 L224 196 L210 210 L224 224 Z'/%3E%3C/g%3E%3Cg transform='rotate(45 210 210)'%3E%3Cpath d='M210 82 L220 200 L210 210 L200 200 Z'/%3E%3Cpath d='M210 338 L220 220 L210 210 L200 220 Z'/%3E%3Cpath d='M82 210 L200 200 L210 210 L200 220 Z'/%3E%3Cpath d='M338 210 L220 200 L210 210 L220 220 Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  background-repeat: no-repeat, no-repeat;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='420' height='420' viewBox='0 0 420 420'%3E%3Cg fill='%2312212D' opacity='0.05'%3E%3Ccircle cx='210' cy='210' r='168' fill='none' stroke='%2312212D' stroke-width='1.5'/%3E%3Ccircle cx='210' cy='210' r='128' fill='none' stroke='%2312212D' stroke-width='1'/%3E%3Cg%3E%3Cpath d='M210 30 L224 196 L210 210 L196 196 Z'/%3E%3Cpath d='M210 390 L224 224 L210 210 L196 224 Z'/%3E%3Cpath d='M30 210 L196 196 L210 210 L196 224 Z'/%3E%3Cpath d='M390 210 L224 196 L210 210 L224 224 Z'/%3E%3C/g%3E%3Cg transform='rotate(45 210 210)'%3E%3Cpath d='M210 82 L220 200 L210 210 L200 200 Z'/%3E%3Cpath d='M210 338 L220 220 L210 210 L200 220 Z'/%3E%3Cpath d='M82 210 L200 200 L210 210 L200 220 Z'/%3E%3Cpath d='M338 210 L220 200 L210 210 L220 220 Z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='230' viewBox='0 0 360 230' fill='none' stroke='%2312212D' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cg opacity='0.06'%3E%3Cpath d='M96 58 C120 34 160 24 196 32 C202 14 212 4 224 6 C228 18 232 34 238 44 C268 54 296 76 312 106 C318 118 322 130 330 136 C346 128 358 134 354 148 C340 150 334 152 330 156 C338 166 340 178 330 184 C320 176 312 166 304 158 C284 170 258 172 236 164 C220 158 204 150 188 146 C182 160 172 172 158 176 C152 164 154 150 160 140 C144 128 124 108 112 88 C104 74 98 64 96 58 Z'/%3E%3Cpath d='M148 54 C158 46 172 48 176 56 C170 62 156 62 148 58 Z'/%3E%3Cpath d='M160 138 C196 142 228 148 258 158' stroke-width='1.4'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='920' height='760' viewBox='0 0 920 760'%3E%3Cg opacity='0.05' stroke='%232A7391' stroke-width='1' fill='none'%3E%3Cpath d='M710 210 L30 210 M710 210 L70 440 M710 210 L260 660 M710 210 L540 744 M710 210 L698 752'/%3E%3C/g%3E%3Cg opacity='0.14' fill='%232A7391' font-family='Georgia' font-style='italic' font-size='13'%3E%3Ctext x='180' y='344'%3E12%3C/text%3E%3Ctext x='430' y='564'%3E27%3C/text%3E%3Ctext x='640' y='664'%3E7%3C/text%3E%3Ctext x='92' y='624'%3E44%3C/text%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
   background-position:
     left -180px bottom -140px,
+    right -60px top 40px,
+    left 5% bottom 180px,
     right -60px top 40px;
 }
 
