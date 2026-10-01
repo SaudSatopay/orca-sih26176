@@ -60,6 +60,10 @@ import "./mobile.css";
 import { tripIsOff } from "./todayModel";
 import { locationAlreadyAllowed } from "../locate";
 
+// `/?debug=1`: an on-screen list of over-wide elements (HANDOFF.md, section 2).
+const LayoutProbe = lazy(() => import("./LayoutProbe"));
+const DEBUG_LAYOUT = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug");
+
 /**
  * The phone — ORCA for the fisher himself, many of whom read little.
  *
@@ -1056,6 +1060,11 @@ export default function MobileApp() {
 
   return (
     <div className="m-app">
+      {DEBUG_LAYOUT && (
+        <Suspense fallback={null}>
+          <LayoutProbe />
+        </Suspense>
+      )}
       <ChartDefs />
       <div className="m-sr" role="status" aria-live="polite">
         {announce}
