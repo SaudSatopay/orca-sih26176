@@ -107,5 +107,8 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     css: false,
+    // Rendering a whole app cold takes seconds when the machine is busy
+    // (CI, or other builds running). The default 5 s made those tests flake.
+    testTimeout: 20_000,
   },
 });

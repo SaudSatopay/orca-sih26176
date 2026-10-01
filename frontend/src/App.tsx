@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as api from "./api";
+import { locationAlreadyAllowed } from "./locate";
 import { useAmbientMotion } from "./ambient";
 import AgentTracePanel from "./components/AgentTrace";
 import AuthorityPanel from "./components/AuthorityPanel";
@@ -330,22 +331,31 @@ export default function App() {
         source: "default",
       });
 
+    let alive = true;
     if (BOOT.at) {
       // position already pinned by the link — GPS is not asked
-    } else if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          setPlace({
-            latitude: +pos.coords.latitude.toFixed(4),
-            longitude: +pos.coords.longitude.toFixed(4),
-            label: "",
-            source: "gps",
-          }),
-        fallback,
-        { enableHighAccuracy: true, timeout: 7000, maximumAge: 300_000 },
-      );
-    } else {
+    } else if (!("geolocation" in navigator)) {
       fallback();
+    } else {
+      // Found without a prompt if the fisher has allowed it before; otherwise
+      // the default harbour now, and "Use my location" asks when pressed
+      // (locate.ts). No permission prompt is ever raised by loading the page.
+      void locationAlreadyAllowed().then((allowed) => {
+        if (!alive) return;
+        if (!allowed) return fallback();
+        navigator.geolocation.getCurrentPosition(
+          (pos) =>
+            alive &&
+            setPlace({
+              latitude: +pos.coords.latitude.toFixed(4),
+              longitude: +pos.coords.longitude.toFixed(4),
+              label: "",
+              source: "gps",
+            }),
+          () => alive && fallback(),
+          { enableHighAccuracy: true, timeout: 7000, maximumAge: 300_000 },
+        );
+      });
     }
 
     // The timers are cleared on unmount, so StrictMode's mount-unmount-mount
@@ -353,7 +363,10 @@ export default function App() {
     const timers: number[] = [];
     if (BOOT_SCENARIO) timers.push(window.setTimeout(() => runScenario(BOOT_SCENARIO.ask), 250));
     if (BOOT.tour) timers.push(window.setTimeout(() => startTour(), 500));
-    return () => timers.forEach((t) => window.clearTimeout(t));
+    return () => {
+      alive = false;
+      timers.forEach((t) => window.clearTimeout(t));
+    };
     // Runs once: the deep link is read at load and never again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

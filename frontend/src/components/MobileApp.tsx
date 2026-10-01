@@ -57,6 +57,8 @@ import {
 } from "../speech";
 import { alpha, ink, paper } from "../tokens";
 import "./mobile.css";
+import { tripIsOff } from "./todayModel";
+import { locationAlreadyAllowed } from "../locate";
 
 /**
  * The phone — ORCA for the fisher himself, many of whom read little.
@@ -77,7 +79,8 @@ import "./mobile.css";
 type MTab = "today" | "map" | "ask";
 type Place = { lat: number; lon: number; name: string };
 /** Where the position came from, or why there is none. */
-type Geo = "pinned" | "asking" | "found" | "denied" | "unavailable" | "chosen";
+/** "resting": a position could be read, and nobody has asked for it yet. */
+type Geo = "pinned" | "checking" | "resting" | "asking" | "found" | "denied" | "unavailable" | "chosen";
 type SheetKind = "harbour" | "language";
 
 const TABS: MTab[] = ["today", "map", "ask"];
@@ -687,7 +690,7 @@ export default function MobileApp() {
   const [pinned] = useState(() => readBootParams(window.location.search).at);
   const canLocate = typeof navigator !== "undefined" && "geolocation" in navigator;
   const [geo, setGeo] = useState<Geo>(() =>
-    pinned ? "pinned" : canLocate ? "asking" : "unavailable",
+    pinned ? "pinned" : canLocate ? "checking" : "unavailable",
   );
   const [place, setPlace] = useState<Place | null>(() =>
     pinned
@@ -750,7 +753,23 @@ export default function MobileApp() {
   useEffect(() => {
     // A position pinned by the link wins; GPS is not asked.
     if (pinned || !canLocate) return;
-    navigator.geolocation.getCurrentPosition(onPosition, onNoPosition, GEO_OPTIONS);
+    // Found without a prompt if the fisher has allowed it before. Otherwise
+    // the home harbour now, which is a whole answer, and the prompt comes
+    // when they press "Use my position" (locate.ts).
+    let alive = true;
+    void locationAlreadyAllowed().then((allowed) => {
+      if (!alive) return;
+      if (allowed) {
+        setGeo("asking");
+        navigator.geolocation.getCurrentPosition(onPosition, onNoPosition, GEO_OPTIONS);
+      } else {
+        setGeo("resting");
+        setPlace((p) => p ?? HOME_PLACE);
+      }
+    });
+    return () => {
+      alive = false;
+    };
   }, [pinned, canLocate, onPosition, onNoPosition]);
 
   useEffect(() => {
@@ -889,17 +908,22 @@ export default function MobileApp() {
     [],
   );
 
-  const windowText = outlook?.best_window
-    ? `${unbroken(clockLabel(language, outlook.best_window.from_hour))} – ${unbroken(clockLabel(language, outlook.best_window.to_hour))}`
-    : null;
-  const back = outlook?.duration?.return_by
-    ? returnLabel(language, outlook.duration.return_by, outlook.generated_at)
-    : null;
+  // A no-go day plans nothing: no best hour, no return time, no grounds, no profit.
+  const tripOff = outlook ? tripIsOff(outlook) : false;
+  const windowText =
+    outlook?.best_window && !tripOff
+      ? `${unbroken(clockLabel(language, outlook.best_window.from_hour))} – ${unbroken(clockLabel(language, outlook.best_window.to_hour))}`
+      : null;
+  const back =
+    outlook?.duration?.return_by && !tripOff
+      ? returnLabel(language, outlook.duration.return_by, outlook.generated_at)
+      : null;
 
   const speakPlan = () => {
     if (!outlook) return;
     const bits = [...outlook.advice.slice(0, 4)];
-    if (outlook.best_window)
+    if (tripOff) bits.push(t.noTrip + ".");
+    if (outlook.best_window && !tripOff)
       bits.push(
         fill(t.bestTimeSay, {
           a: clockLabel(language, outlook.best_window.from_hour),
@@ -999,20 +1023,34 @@ export default function MobileApp() {
   const idle = !question && !busy;
   // Said once the reading (or its failure) is on screen, never above content
   // that has already been painted: a late notice must not push the verdict.
-  const locationNotice = (geo === "denied" || geo === "unavailable") && (
+  const locationNotice = (geo === "resting" || geo === "denied" || geo === "unavailable") && (
     <div className="panel-tint flex items-center gap-3 py-2 pl-3.5 pr-2">
       <CrosshairGlyph size={18} className="shrink-0 text-ink-500" />
       <p className="min-w-0 flex-1 text-body leading-snug text-ink-800">
-        {fill(geo === "denied" ? t.locationOff : t.locationFailed, { p: placeName })}
+        {fill(
+          geo === "resting" ? t.locationResting : geo === "denied" ? t.locationOff : t.locationFailed,
+          { p: placeName },
+        )}
       </p>
-      <button
-        type="button"
-        onClick={() => setSheet("harbour")}
-        aria-haspopup="dialog"
-        className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-readout font-bold uppercase tracking-[0.08em]"
-      >
-        {t.chooseHarbour}
-      </button>
+      {geo === "resting" ? (
+        /* never asked: one press, and the browser's prompt answers that press */
+        <button
+          type="button"
+          onClick={locateMe}
+          className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-readout font-bold uppercase tracking-[0.08em]"
+        >
+          {t.useMyPosition}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setSheet("harbour")}
+          aria-haspopup="dialog"
+          className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-readout font-bold uppercase tracking-[0.08em]"
+        >
+          {t.chooseHarbour}
+        </button>
+      )}
     </div>
   );
 
@@ -1093,6 +1131,20 @@ export default function MobileApp() {
                 </button>
               )}
 
+              {/* a day with no trip in it says so, in the place the plan would be */}
+              {tripOff && (
+                <div className="panel-tint hatch-danger px-3.5 py-3" role="note">
+                  <div className="font-display text-title font-bold leading-tight text-ink-900">
+                    {t.noTrip}
+                  </div>
+                  <p className="mt-1 text-prose leading-snug text-ink-700">
+                    {outlook.safety.improves_after
+                      ? fill(t.noTripUntil, { t: outlook.safety.improves_after })
+                      : t.noTripBody}
+                  </p>
+                </div>
+              )}
+
               {/* when to go, when to be back — a matched pair */}
               {(windowText || back) && (
                 <div className={`panel grid ${windowText && back ? "grid-cols-2" : ""}`}>
@@ -1121,7 +1173,7 @@ export default function MobileApp() {
               )}
 
               {/* the grounds — tap to hear + see on the chart */}
-              {outlook.areas.length > 0 && (
+              {outlook.areas.length > 0 && !tripOff && (
                 <section className="panel overflow-hidden" aria-labelledby="m-areas">
                   <div className="hd !items-center !px-3.5 !py-2">
                     <h2 id="m-areas" className="label flex items-center gap-2">
@@ -1175,7 +1227,7 @@ export default function MobileApp() {
               )}
 
               {/* money — two numbers a fisher weighs every morning */}
-              {outlook.economics && (
+              {outlook.economics && !tripOff && (
                 <div className="panel grid grid-cols-2">
                   <div className="px-3.5 py-3">
                     <div className="label">{t.fuel}</div>

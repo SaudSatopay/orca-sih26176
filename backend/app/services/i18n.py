@@ -99,11 +99,11 @@ T: Dict[str, Dict[Language, str]] = {
     # (km, °C, mg/m3); the words around them are translated.
     "pfz_line": {
         "en": "#{rank} — {distance} km {direction}, SST {sst} °C, "
-              "chlorophyll {chl} mg/m3, chance of fish {chance}%.",
+              "chlorophyll {chl} mg/m³, chance of fish {chance}%.",
         "hi": "#{rank} — {distance} किमी {direction} की ओर, समुद्र सतह का तापमान {sst} °C, "
-              "क्लोरोफिल {chl} mg/m3, मछली मिलने की संभावना {chance}%।",
+              "क्लोरोफिल {chl} mg/m³, मछली मिलने की संभावना {chance}%।",
         "mr": "#{rank} — {distance} किमी {direction} दिशेला, समुद्रपृष्ठाचे तापमान {sst} °C, "
-              "क्लोरोफिल {chl} mg/m3, मासे मिळण्याची शक्यता {chance}%.",
+              "क्लोरोफिल {chl} mg/m³, मासे मिळण्याची शक्यता {chance}%.",
     },
     "pfz_note": {
         "en": "A potential fishing zone is a scientifically likely area — it is not a guarantee of fish.",

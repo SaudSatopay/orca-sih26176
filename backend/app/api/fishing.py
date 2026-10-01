@@ -70,7 +70,7 @@ def _zone_payload(loc: Location, zones: List[Dict], ambient_sst: Optional[float]
         z["confidence"] = round(result["probability"] / 100.0, 2)
         z["value_score"] = fishing.value_score(result["probability"], z["distance_km"])
         z["rationale"] = (
-            f"Chlorophyll {z.get('chlorophyll_mg_m3')} mg/m3 at {z.get('sst_c')} deg C, "
+            f"Chlorophyll {z.get('chlorophyll_mg_m3')} mg/m³ at {z.get('sst_c')} °C, "
             f"{round(z['distance_km'])} km {z['bearing']}."
         )
         scored.append(z)

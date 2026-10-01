@@ -53,7 +53,7 @@ def run(location: Location, when: datetime) -> AgentResult:
             "wave_period": measurement(None if period is None else round(float(period), 1),
                                        "s", "Wave period", source, stamp, mode),
             "sst": measurement(None if sst is None else round(float(sst), 1),
-                               "deg C", "Sea surface temperature", source, stamp, mode),
+                               "°C", "Sea surface temperature", source, stamp, mode),
         },
         unavailable=unavailable,
         source=source,

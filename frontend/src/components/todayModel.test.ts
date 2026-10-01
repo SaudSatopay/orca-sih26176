@@ -7,6 +7,7 @@ import {
   panelState,
   speciesParts,
   splitAdvice,
+  tripIsOff,
 } from "./todayModel";
 
 const area = (rank: number, rating: FishingArea["rating"]): FishingArea => ({
@@ -219,5 +220,31 @@ describe("small formatters", () => {
   it("fills template slots and leaves unknown ones alone", () => {
     expect(fill("No grounds within {km} km", { km: 100 })).toBe("No grounds within 100 km");
     expect(fill("{a} and {b}", { a: 1 })).toBe("1 and {b}");
+  });
+});
+
+describe("a day with no trip in it", () => {
+  const day = (category: string, feasible: boolean | null) => ({
+    safety: { category },
+    duration: feasible == null ? null : { feasible },
+  });
+
+  it("is off whenever the sea is EXTREME, whatever the planner says", () => {
+    expect(tripIsOff(day("EXTREME", true))).toBe(true);
+    expect(tripIsOff(day("EXTREME", false))).toBe(true);
+    expect(tripIsOff(day("EXTREME", null))).toBe(true);
+  });
+
+  it("follows the planner otherwise: no safe time means no trip", () => {
+    expect(tripIsOff(day("HIGH", false))).toBe(true);
+    expect(tripIsOff(day("MODERATE", false))).toBe(true);
+  });
+
+  it("keeps the plan on a day that still has a safe window", () => {
+    expect(tripIsOff(day("LOW", true))).toBe(false);
+    expect(tripIsOff(day("MODERATE", true))).toBe(false);
+    // a morning warning that lifts later: the afternoon window is still worth showing
+    expect(tripIsOff(day("HIGH", true))).toBe(false);
+    expect(tripIsOff(day("MODERATE", null))).toBe(false);
   });
 });

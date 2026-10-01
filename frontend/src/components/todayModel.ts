@@ -137,3 +137,20 @@ export function fill(template: string, vars: Record<string, string | number>): s
     key in vars ? String(vars[key]) : whole,
   );
 }
+
+/**
+ * A day with no trip in it. The backend still returns the hour the fish would
+ * bite and the grounds they would be on; under "Do not go out" those read as
+ * an invitation. When this is true a view shows the verdict and the warning
+ * and nothing that plans a trip.
+ *
+ * The backend's own signal comes first (`duration.feasible`: is there enough
+ * safe time to make a trip worthwhile). EXTREME is a no-go whatever it says.
+ */
+export function tripIsOff(data: {
+  safety: { category: string };
+  duration: { feasible: boolean } | null;
+}): boolean {
+  if (data.safety.category === "EXTREME") return true;
+  return data.duration ? !data.duration.feasible : false;
+}
