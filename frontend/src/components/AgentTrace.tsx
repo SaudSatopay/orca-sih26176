@@ -1,58 +1,6 @@
 import type { AgentTrace as Trace, Language } from "../types";
-
-const LABEL: Record<Language, Record<string, string>> = {
-  en: {
-    intent: "Intent", weather: "Weather", ocean: "Ocean", pfz: "Fishing zones",
-    cyclone: "Alerts", gis: "GIS", risk: "Risk engine", route: "Route",
-    explanation: "Explanation",
-  },
-  hi: {
-    intent: "आशय", weather: "मौसम", ocean: "समुद्र", pfz: "मत्स्य क्षेत्र",
-    cyclone: "चेतावनियाँ", gis: "GIS", risk: "रिस्क इंजन", route: "मार्ग",
-    explanation: "व्याख्या",
-  },
-  mr: {
-    intent: "हेतू", weather: "हवामान", ocean: "समुद्र", pfz: "मासेमारी क्षेत्रे",
-    cyclone: "इशारे", gis: "GIS", risk: "रिस्क इंजिन", route: "मार्ग",
-    explanation: "स्पष्टीकरण",
-  },
-};
-
-const T: Record<Language, Record<string, string>> = {
-  en: {
-    crew: "Agent crew",
-    agents: "agents",
-    total: "ms total",
-    concurrent: "CONCURRENT",
-    understand: "Understand", understandN: "parse the question",
-    gather: "Gather", gatherN: "specialists run in parallel",
-    decide: "Decide", decideN: "fuse evidence, plan",
-    explain: "Explain", explainN: "answer in the user's language",
-    note: "The planner decides which specialists a question needs and runs the independent ones concurrently. The risk engine waits for all of them — no agent's opinion can skip it.",
-  },
-  hi: {
-    crew: "एजेंट टीम",
-    agents: "एजेंट",
-    total: "ms कुल",
-    concurrent: "एक साथ",
-    understand: "समझो", understandN: "सवाल परखो",
-    gather: "जुटाओ", gatherN: "विशेषज्ञ एक साथ चलते हैं",
-    decide: "तय करो", decideN: "प्रमाण जोड़ो, योजना बनाओ",
-    explain: "समझाओ", explainN: "उपयोगकर्ता की भाषा में जवाब",
-    note: "प्लानर तय करता है कि किस सवाल के लिए कौन से विशेषज्ञ चाहिए और स्वतंत्र एजेंटों को एक साथ चलाता है। रिस्क इंजन सबका इंतज़ार करता है — कोई भी एजेंट इसे लाँघ नहीं सकता।",
-  },
-  mr: {
-    crew: "एजंट टीम",
-    agents: "एजंट",
-    total: "ms एकूण",
-    concurrent: "एकाच वेळी",
-    understand: "समजून घ्या", understandN: "प्रश्न पारखा",
-    gather: "गोळा करा", gatherN: "तज्ज्ञ एकाच वेळी चालतात",
-    decide: "ठरवा", decideN: "पुरावे जोडा, योजना करा",
-    explain: "समजावा", explainN: "वापरकर्त्याच्या भाषेत उत्तर",
-    note: "प्लॅनर ठरवतो की प्रश्नाला कोणते तज्ज्ञ हवेत आणि स्वतंत्र एजंटांना एकाच वेळी चालवतो. रिस्क इंजिन सर्वांची वाट पाहते — कोणताही एजंट ते टाळू शकत नाही.",
-  },
-};
+import { LABEL, T } from "../i18n/agentTrace";
+import { alpha, ink, risk } from "../tokens";
 
 /** The graph, as it actually executes. */
 const PHASES: { key: string; agents: string[] }[] = [
@@ -63,10 +11,10 @@ const PHASES: { key: string; agents: string[] }[] = [
 ];
 
 const STATUS_DOT: Record<Trace["status"], string> = {
-  ok: "#1D7A50",
-  degraded: "#A17000",
-  failed: "#AF2318",
-  skipped: "#82949F",
+  ok: risk.low,
+  degraded: risk.moderate,
+  failed: risk.extreme,
+  skipped: ink[300],
 };
 
 /**
@@ -100,7 +48,7 @@ export default function AgentTracePanel({
     <div className="panel overflow-hidden">
       <div className="hd">
         <span className="label">{t.crew}</span>
-        <span className="font-mono text-[10px] tabular-nums text-ink-400">
+        <span className="font-mono text-label tabular-nums text-ink-400">
           {trace.length} {t.agents} · {elapsed ?? trace.reduce((s, x) => s + x.latency_ms, 0)}{" "}
           {t.total}
         </span>
@@ -110,10 +58,10 @@ export default function AgentTracePanel({
         {ran.map((phase) => (
           <div key={phase.key}>
             <div className="mb-1.5 flex items-baseline gap-2">
-              <span className="font-display text-[13px] font-bold text-ink-900">{phase.title}</span>
-              <span className="text-[10.5px] italic text-ink-400">{phase.note}</span>
+              <span className="font-display text-body font-bold text-ink-900">{phase.title}</span>
+              <span className="text-label italic text-ink-400">{phase.note}</span>
               {phase.key === "gather" && phase.rows.length > 1 && (
-                <span className="ml-auto border border-chart-500/50 bg-chart-100/50 px-2 py-0.5 font-mono text-[9px] font-bold tracking-wide text-chart-700">
+                <span className="ml-auto border border-chart-500/50 bg-chart-100/50 px-2 py-0.5 font-mono text-micro font-bold tracking-wide text-chart-700">
                   ∥ {phase.rows.length} {t.concurrent}
                 </span>
               )}
@@ -140,10 +88,10 @@ export default function AgentTracePanel({
                       borderColor:
                         row.status === "ok" || row.status === "skipped"
                           ? "var(--rule-faint)"
-                          : STATUS_DOT[row.status] + "66",
+                          : alpha(STATUS_DOT[row.status], 0.4),
                     }}
                   >
-                    <div className="flex items-center gap-2 text-[11.5px]">
+                    <div className="flex items-center gap-2 text-readout">
                       <span
                         className="h-2 w-2 shrink-0 rotate-45"
                         style={{ background: STATUS_DOT[row.status] }}
@@ -154,7 +102,7 @@ export default function AgentTracePanel({
                       <span className="min-w-0 flex-1 truncate text-ink-500">
                         {row.summary || "—"}
                       </span>
-                      <span className="shrink-0 font-mono text-[9.5px] tabular-nums text-ink-400">
+                      <span className="shrink-0 font-mono text-label tabular-nums text-ink-400">
                         {row.latency_ms}ms
                       </span>
                     </div>
@@ -175,7 +123,7 @@ export default function AgentTracePanel({
       </div>
 
       <p
-        className="border-t px-4 py-2.5 text-[10.5px] italic leading-relaxed text-ink-400"
+        className="border-t px-4 py-2.5 text-label italic leading-relaxed text-ink-400"
         style={{ borderColor: "var(--rule-faint)" }}
       >
         {t.note}

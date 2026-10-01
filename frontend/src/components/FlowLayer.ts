@@ -1,5 +1,6 @@
 import L from "leaflet";
 import * as api from "../api";
+import { chance, chart, flow, risk, sst } from "../tokens";
 
 /**
  * The sea in motion — an earth.nullschool-style particle field, drawn in the
@@ -22,13 +23,13 @@ export type FlowMode = "wind" | "current" | "off";
 type Vec = { u: number; v: number } | null;
 
 const WIND_RAMP: [number, string][] = [
-  [5, "#8FB0C0"], [14, "#2A7391"], [24, "#1D7A50"], [34, "#63862B"], [999, "#B08000"],
+  [5, flow.calm], [14, chart[500]], [24, risk.low], [34, chance.good], [999, chance.some],
 ];
 const CUR_RAMP: [number, string][] = [
-  [0.4, "#8FB0C0"], [0.9, "#2A7391"], [1.6, "#1D7A50"], [2.6, "#63862B"], [999, "#B08000"],
+  [0.4, flow.calm], [0.9, chart[500]], [1.6, risk.low], [2.6, chance.good], [999, chance.some],
 ];
 const SST_RAMP: [number, string][] = [
-  [25.0, "#3E7A99"], [27.0, "#2F8A7D"], [28.5, "#7E9A4A"], [30.0, "#B08532"], [99, "#BF6A1F"],
+  [25.0, sst.cold], [27.0, sst.cool], [28.5, sst.mild], [30.0, sst.warm], [99, sst.hot],
 ];
 
 function rampColor(ramp: [number, string][], v: number): string {

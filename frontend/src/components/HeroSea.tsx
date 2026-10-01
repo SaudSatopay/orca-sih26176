@@ -53,8 +53,10 @@ export default function HeroSea({
   const ref = useRef<HTMLCanvasElement>(null);
   const fieldRef = useRef(field);
   const landRef = useRef(land);
-  fieldRef.current = field;
-  landRef.current = land;
+  useEffect(() => {
+    fieldRef.current = field;
+    landRef.current = land;
+  }, [field, land]);
 
   useEffect(() => {
     const canvas = ref.current;

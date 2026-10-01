@@ -1,73 +1,9 @@
 import { useState } from "react";
 import type { Evidence, Language, RiskAssessment } from "../types";
 import { LockGlyph } from "./glyphs";
-import RiskDial, { RISK_COLOR } from "./RiskDial";
-
-const VERDICT: Record<Language, Record<string, string>> = {
-  en: {
-    LOW: "Conditions look safe",
-    MODERATE: "Go with caution",
-    HIGH: "High risk — not recommended",
-    EXTREME: "EXTREME — do not go to sea",
-  },
-  hi: {
-    LOW: "स्थिति सुरक्षित लग रही है",
-    MODERATE: "सावधानी से जाएँ",
-    HIGH: "जोखिम अधिक है — जाने की सलाह नहीं",
-    EXTREME: "अत्यधिक जोखिम — समुद्र में न जाएँ",
-  },
-  mr: {
-    LOW: "परिस्थिती सुरक्षित दिसते",
-    MODERATE: "सावधगिरीने जा",
-    HIGH: "धोका जास्त आहे — जाऊ नका",
-    EXTREME: "अत्यंत धोका — समुद्रात जाऊ नका",
-  },
-};
-
-const UI: Record<Language, Record<string, string>> = {
-  en: {
-    why: "Why — ranked contribution to the score",
-    warning: "Official warning",
-    improves: "Conditions expected to improve after",
-    askAgain: "— ask again then.",
-    overrides: "Safety overrides applied",
-    overrideNote:
-      "Deterministic rules can only raise a risk score — never lower it. No model or language output can talk ORCA down from an official warning.",
-    evidence: "Evidence",
-    traced: "traced values",
-    show: "show ▾",
-    hide: "hide ▴",
-    cols: "Value|Reading|Source|Updated",
-  },
-  hi: {
-    why: "क्यों — स्कोर में योगदान",
-    warning: "आधिकारिक चेतावनी",
-    improves: "स्थिति सुधरने की संभावना",
-    askAgain: "बजे के बाद — तब दोबारा पूछें।",
-    overrides: "सुरक्षा नियम लागू",
-    overrideNote:
-      "नियम केवल जोखिम बढ़ा सकते हैं, घटा नहीं। कोई भी मॉडल आधिकारिक चेतावनी को रद्द नहीं कर सकता।",
-    evidence: "प्रमाण",
-    traced: "स्रोत-सहित मान",
-    show: "दिखाएँ ▾",
-    hide: "छिपाएँ ▴",
-    cols: "मान|रीडिंग|स्रोत|अपडेट",
-  },
-  mr: {
-    why: "का — गुणांमधील योगदान",
-    warning: "अधिकृत इशारा",
-    improves: "परिस्थिती सुधारण्याची शक्यता",
-    askAgain: "नंतर — तेव्हा पुन्हा विचारा.",
-    overrides: "सुरक्षा नियम लागू",
-    overrideNote:
-      "नियम फक्त धोका वाढवू शकतात, कमी करू शकत नाहीत. कोणतेही मॉडेल अधिकृत इशाऱ्याला ओलांडू शकत नाही.",
-    evidence: "पुरावा",
-    traced: "स्रोतासह मूल्ये",
-    show: "दाखवा ▾",
-    hide: "लपवा ▴",
-    cols: "मूल्य|वाचन|स्रोत|अपडेट",
-  },
-};
+import { RISK_COLOR } from "../risk";
+import RiskDial from "./RiskDial";
+import { UI, VERDICT } from "../i18n/riskCard";
 
 export default function RiskCard({
   risk,
@@ -91,7 +27,7 @@ export default function RiskCard({
         <RiskDial score={risk.score} category={risk.category} />
         <div className="min-w-0 flex-1">
           <div
-            className="font-display text-[22px] font-bold leading-tight tracking-tight"
+            className="font-display text-figure font-bold leading-tight tracking-tight"
             style={{ color }}
           >
             {(VERDICT[language] ?? VERDICT.en)[risk.category]}
@@ -100,22 +36,22 @@ export default function RiskCard({
             {/* the verdict, stamped on the document */}
             <span
               key={`${risk.category}-${risk.score}`}
-              className="stamp animate-stampIn text-[11px]"
+              className="stamp animate-stampIn text-readout"
               style={{ color }}
             >
               {risk.category}
             </span>
             {risk.official_warning && (
-              <span className="stamp animate-stampIn text-[11px] text-risk-extreme" style={{ animationDelay: "120ms" }}>
+              <span className="stamp animate-stampIn text-readout text-risk-extreme" style={{ animationDelay: "120ms" }}>
                 {ui.warning}
               </span>
             )}
-            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-400">
+            <span className="font-mono text-label uppercase tracking-[0.14em] text-ink-400">
               {risk.mode} data
             </span>
           </div>
           {risk.window && (
-            <div className="mt-3 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-3 py-2 text-[13px] text-risk-low">
+            <div className="mt-3 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-3 py-2 text-body text-risk-low">
               {ui.improves} <span className="font-display font-bold">{risk.window}</span>{" "}
               {ui.askAgain}
             </div>
@@ -129,9 +65,9 @@ export default function RiskCard({
         <ul className="space-y-2.5">
           {top.map((f) => (
             <li key={f.key}>
-              <div className="flex items-baseline justify-between gap-3 text-sm">
+              <div className="flex items-baseline justify-between gap-3 text-prose leading-5">
                 <span className="font-medium text-ink-800">{f.label}</span>
-                <span className="shrink-0 font-mono text-xs font-bold tabular-nums" style={{ color }}>
+                <span className="shrink-0 font-mono text-small leading-4 font-bold tabular-nums" style={{ color }}>
                   +{f.contribution.toFixed(1)}
                 </span>
               </div>
@@ -141,7 +77,7 @@ export default function RiskCard({
                   style={{ width: `${(f.contribution / max) * 100}%`, background: color }}
                 />
               </div>
-              <div className="mt-1 text-[11px] leading-relaxed text-ink-400">{f.detail}</div>
+              <div className="mt-1 text-readout leading-relaxed text-ink-400">{f.detail}</div>
             </li>
           ))}
         </ul>
@@ -153,13 +89,13 @@ export default function RiskCard({
           <div className="label mb-2 !text-risk-extreme">{ui.overrides}</div>
           <ul className="space-y-1.5">
             {risk.overrides.map((o, i) => (
-              <li key={i} className="flex items-start gap-2 text-[12.5px] font-medium text-ink-800">
+              <li key={i} className="flex items-start gap-2 text-small font-medium text-ink-800">
                 <LockGlyph size={13} className="mt-0.5 shrink-0 text-risk-extreme" />
                 <span>{o}</span>
               </li>
             ))}
           </ul>
-          <p className="mt-2 text-[11px] italic leading-relaxed text-ink-500">{ui.overrideNote}</p>
+          <p className="mt-2 text-readout italic leading-relaxed text-ink-500">{ui.overrideNote}</p>
         </div>
       )}
 
@@ -172,20 +108,20 @@ export default function RiskCard({
           <span className="label">
             {ui.evidence} · {evidence.length} {ui.traced}
           </span>
-          <span className="font-mono text-[11px] text-chart-600">
+          <span className="font-mono text-readout text-chart-600">
             {showEvidence ? ui.hide : ui.show}
           </span>
         </button>
 
         {showEvidence && (
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-left font-mono text-[11px]">
+            <table className="w-full text-left font-mono text-readout">
               <thead>
                 <tr className="border-b" style={{ borderColor: "var(--rule)" }}>
-                  <th className="pb-1.5 pr-3 text-[9px] font-bold uppercase tracking-[0.12em] text-ink-400">{colValue}</th>
-                  <th className="pb-1.5 pr-3 text-[9px] font-bold uppercase tracking-[0.12em] text-ink-400">{colReading}</th>
-                  <th className="pb-1.5 pr-3 text-[9px] font-bold uppercase tracking-[0.12em] text-ink-400">{colSource}</th>
-                  <th className="pb-1.5 text-[9px] font-bold uppercase tracking-[0.12em] text-ink-400">{colUpdated}</th>
+                  <th className="pb-1.5 pr-3 text-micro font-bold uppercase tracking-[0.12em] text-ink-400">{colValue}</th>
+                  <th className="pb-1.5 pr-3 text-micro font-bold uppercase tracking-[0.12em] text-ink-400">{colReading}</th>
+                  <th className="pb-1.5 pr-3 text-micro font-bold uppercase tracking-[0.12em] text-ink-400">{colSource}</th>
+                  <th className="pb-1.5 text-micro font-bold uppercase tracking-[0.12em] text-ink-400">{colUpdated}</th>
                 </tr>
               </thead>
               <tbody className="text-ink-800">

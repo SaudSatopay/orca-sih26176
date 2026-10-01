@@ -7,15 +7,15 @@ import "@fontsource-variable/fraunces/wght-italic.css";
 import "@fontsource-variable/noto-serif-devanagari";
 import "@fontsource-variable/spline-sans-mono";
 import App from "./App";
+import { isPhoneLayout, PHONE_QUERY } from "./boot";
 import MobileApp from "./components/MobileApp";
 import "./index.css";
 
-// Phone-sized screens get the fisher's own app — voice-first, symbol-first,
-// three destinations. `?m=1` forces it (testing, the PWA start_url), `?m=0`
-// forces the full console even on a small window.
-const mParam = new URLSearchParams(window.location.search).get("m");
-const isPhone =
-  mParam === "1" || (mParam !== "0" && window.matchMedia("(max-width: 640px)").matches);
+// Phone or console is chosen once, here (see isPhoneLayout for the rules).
+const isPhone = isPhoneLayout(
+  window.location.search,
+  () => window.matchMedia(PHONE_QUERY).matches,
+);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>{isPhone ? <MobileApp /> : <App />}</React.StrictMode>,

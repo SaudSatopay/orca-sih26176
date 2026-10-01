@@ -1,42 +1,16 @@
+import { colors, fontSize } from "./src/tokens.ts";
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
     extend: {
-      colors: {
-        // "Living nautical chart": warm chart paper, marine ink, shallow-water
-        // teal, and buoy/signal colours. Everything reads like a drafted sheet.
-        paper: {
-          50: "#FBF7ED",
-          100: "#F5EEDD",
-          150: "#EFE6CF",
-          200: "#E6DABD",
-          300: "#D6C7A2",
-          400: "#B9A67C",
-        },
-        ink: {
-          900: "#12212D",
-          800: "#1B2F3E",
-          700: "#263B4D",
-          500: "#42596D",
-          400: "#5D7386",
-          300: "#82949F",
-        },
-        chart: {
-          700: "#174F68",
-          600: "#1E5F7A",
-          500: "#2A7391",
-          300: "#7FA9BC",
-          100: "#D8E7EB",
-        },
-        signal: "#C7442E",
-        risk: {
-          low: "#1D7A50",
-          moderate: "#A17000",
-          high: "#BF4E12",
-          extreme: "#AF2318",
-        },
-      },
+      // "Living nautical chart": warm chart paper, marine ink, shallow-water
+      // teal, and buoy/signal colours. The values live in src/tokens.ts, the
+      // one source shared with canvas, Leaflet and SVG code.
+      colors,
+      // The named type scale (micro … hero), also from src/tokens.ts.
+      fontSize,
       fontFamily: {
         display: [
           '"Fraunces Variable"',

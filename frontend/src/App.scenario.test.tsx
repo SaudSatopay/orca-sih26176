@@ -1,0 +1,100 @@
+import { act, render, screen } from "@testing-library/react";
+import { StrictMode } from "react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { ChatResponse } from "./types";
+
+// The chart needs a real layout engine; the conversation does not need the chart.
+vi.mock("./components/MarineMap", () => ({ default: () => null }));
+vi.mock("./api");
+
+const QUESTION = "मी उद्या सकाळी ६ वाजता मुंबईजवळ मासेमारीला जाऊ शकतो का?";
+const ANSWER = "धोका जास्त आहे — जाऊ नका. जोखीम 70/100.";
+
+const response = {
+  answer: ANSWER,
+  language: "mr",
+  mode: "DEMO",
+  suggestions: [],
+  pfz: [],
+  routes: [],
+  geofence: [],
+  alerts: [],
+  risk: null,
+  evidence: [],
+  trace: [],
+  intent: { location: null },
+  disclaimer: "Decision support, not an official advisory.",
+  elapsed_ms: 12,
+} as unknown as ChatResponse;
+
+async function openApp(search: string) {
+  vi.resetModules(); // the deep link is read when App is first imported
+  window.history.replaceState({}, "", `/${search}`);
+  const api = vi.mocked(await import("./api"));
+  api.zones.mockResolvedValue({ features: [], note: "" });
+  api.health.mockResolvedValue({ data_mode: "DEMO" } as Awaited<ReturnType<typeof api.health>>);
+  api.resetSession.mockResolvedValue({} as Awaited<ReturnType<typeof api.resetSession>>);
+  api.authority.mockRejectedValue(new Error("not under test"));
+  api.fishingOutlook.mockRejectedValue(new Error("not under test"));
+  api.ask.mockResolvedValue(response);
+  const { default: App } = await import("./App");
+  // StrictMode, as main.tsx renders it: effects mount, unmount and mount again.
+  render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+  return api;
+}
+
+beforeEach(() => {
+  Element.prototype.scrollIntoView = vi.fn();
+});
+afterEach(() => {
+  window.history.replaceState({}, "", "/");
+});
+
+describe("a rehearsed scenario opened by deep link", () => {
+  it("asks once and answers once under StrictMode", async () => {
+    const api = await openApp("?demo=danger");
+
+    expect(await screen.findByText(ANSWER)).toBeInTheDocument();
+    // leave room for a second, stale run to land if there is one
+    await act(() => new Promise((r) => setTimeout(r, 500)));
+
+    expect(api.ask).toHaveBeenCalledTimes(1);
+    expect(api.ask).toHaveBeenCalledWith(expect.objectContaining({ message: QUESTION }));
+    expect(screen.getAllByText(QUESTION)).toHaveLength(1);
+    expect(screen.getAllByText(ANSWER)).toHaveLength(1);
+  });
+
+  it("keeps only the newest answer when two scenarios overlap", async () => {
+    const api = await openApp("?tab=ask");
+    let releaseFirst: (r: ChatResponse) => void = () => {};
+    api.ask
+      .mockReset()
+      .mockImplementationOnce(() => new Promise<ChatResponse>((r) => (releaseFirst = r)))
+      .mockResolvedValueOnce({ ...response, answer: "second answer", language: "en" });
+
+    const chips = await screen.findAllByRole("button", { name: /Safe|Cyclone/ });
+    const safe = chips.find((b) => b.textContent?.includes("Safe"))!;
+    const cyclone = chips.find((b) => b.textContent?.includes("Cyclone"))!;
+
+    await act(async () => {
+      safe.click();
+      await new Promise((r) => setTimeout(r, 20));
+      // the chip is disabled while busy, so restart the way the tour does
+      cyclone.removeAttribute("disabled");
+      cyclone.click();
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(await screen.findByText("second answer")).toBeInTheDocument();
+
+    await act(async () => {
+      releaseFirst({ ...response, answer: "first answer, arriving late", language: "en" });
+      await new Promise((r) => setTimeout(r, 20));
+    });
+    expect(screen.queryByText("first answer, arriving late")).not.toBeInTheDocument();
+    expect(screen.getAllByText("second answer")).toHaveLength(1);
+  });
+});

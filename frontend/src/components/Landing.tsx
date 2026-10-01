@@ -2,183 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import * as api from "../api";
 import type { Language } from "../types";
 import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph } from "./glyphs";
+import { L10N } from "../i18n/landing";
 import HeroChart from "./HeroChart";
-
-/** Every word on the front door, in the fisher's three languages. */
-const L10N: Record<
-  Language,
-  {
-    tag1: string;
-    tag2a: string;
-    tag2b: string;
-    tag2c: string;
-    sub: string;
-    ctaTour: string;
-    ctaPhone: string;
-    openOrca: string;
-    openWord: string;
-    watchLive: string;
-    pipelineTitle: string;
-    stats: string[];
-    cards: { kicker: string; title: string; lines: string[] }[];
-    phases: { t: string; n: string }[];
-    footer: string;
-  }
-> = {
-  en: {
-    tag1: "Ten agents read the sea.",
-    tag2a: "One safe, ",
-    tag2b: "explainable",
-    tag2c: " decision.",
-    sub: "Marine EcOsystem Reasoning with Collaborative Agents — India's marine data turned into plain words a fisher can act on, in his own language, with every number carrying its source.",
-    ctaTour: "Watch the guided tour",
-    ctaPhone: "Phone version",
-    openOrca: "Open ORCA",
-    openWord: "Open",
-    watchLive: "watch it run live →",
-    pipelineTitle: "How ORCA decides",
-    stats: ["Agents in the crew", "Landing centres", "Official warnings", "Languages", "Data edition"],
-    cards: [
-      {
-        kicker: "Today's plan",
-        title: "Where the fish are",
-        lines: [
-          "Opens knowing where you are — reads 100 km of sea unprompted",
-          "Every ground scored for chance of fish, with the why behind it",
-          "Trip plan: when to go, how long to stay, what it should earn",
-        ],
-      },
-      {
-        kicker: "Ask ORCA",
-        title: "Your language, spoken or typed",
-        lines: [
-          "English · हिंदी · मराठी — detected, never configured",
-          "A 0–100 risk verdict where every point is attributed",
-          "Official warnings override the model. Always.",
-        ],
-      },
-      {
-        kicker: "Authority",
-        title: "The district view",
-        lines: [
-          "Every landing centre on the coast, scored by the same engine",
-          "The administration sees the same evidence the fisher sees",
-          "One-click CSV export for the day's advisory board",
-        ],
-      },
-    ],
-    phases: [
-      { t: "Understand", n: "parse the question, any language" },
-      { t: "Gather", n: "five specialists fan out concurrently" },
-      { t: "Decide", n: "weighted model + safety floors that only raise" },
-      { t: "Explain", n: "plain words, with sources, spoken back" },
-    ],
-    footer:
-      "Demo / simulated data is always labelled · ORCA is decision support — never a replacement for an official advisory",
-  },
-  hi: {
-    tag1: "दस एजेंट समुद्र पढ़ते हैं।",
-    tag2a: "एक सुरक्षित, ",
-    tag2b: "समझाने योग्य",
-    tag2c: " फ़ैसला।",
-    sub: "भारत का समुद्री डेटा, मछुआरे की अपनी भाषा में, सीधे काम आने वाले शब्दों में — और हर आँकड़े के साथ उसका स्रोत।",
-    ctaTour: "गाइडेड टूर देखें",
-    ctaPhone: "फ़ोन संस्करण",
-    openOrca: "ORCA खोलें",
-    openWord: "खोलें",
-    watchLive: "इसे चलते हुए देखें →",
-    pipelineTitle: "ORCA फ़ैसला कैसे करता है",
-    stats: ["टीम के एजेंट", "लैंडिंग सेंटर", "आधिकारिक चेतावनियाँ", "भाषाएँ", "डेटा संस्करण"],
-    cards: [
-      {
-        kicker: "आज की योजना",
-        title: "मछली कहाँ है",
-        lines: [
-          "खुलते ही आपकी जगह जानता है — 100 किमी समुद्र ख़ुद पढ़ता है",
-          "हर इलाक़े को मछली की संभावना पर अंक, कारण के साथ",
-          "यात्रा योजना: कब जाएँ, कितना रुकें, कितना मिलेगा",
-        ],
-      },
-      {
-        kicker: "ORCA से पूछें",
-        title: "आपकी भाषा, बोलकर या लिखकर",
-        lines: [
-          "English · हिंदी · मराठी — ख़ुद पहचानता है, कोई सेटिंग नहीं",
-          "0–100 का जोखिम, हर अंक के हिसाब के साथ",
-          "आधिकारिक चेतावनी मॉडल से हमेशा ऊपर।",
-        ],
-      },
-      {
-        kicker: "प्रशासन",
-        title: "ज़िले का नज़ारा",
-        lines: [
-          "तट का हर लैंडिंग सेंटर, उसी इंजन से आँका हुआ",
-          "प्रशासन वही प्रमाण देखता है जो मछुआरा देखता है",
-          "दिन के बोर्ड का एक-क्लिक CSV निर्यात",
-        ],
-      },
-    ],
-    phases: [
-      { t: "समझो", n: "सवाल परखो, किसी भी भाषा में" },
-      { t: "जुटाओ", n: "पाँच विशेषज्ञ एक साथ निकलते हैं" },
-      { t: "तय करो", n: "भारित मॉडल + नियम जो सिर्फ़ जोखिम बढ़ाते हैं" },
-      { t: "समझाओ", n: "सीधी भाषा, स्रोतों के साथ, बोलकर भी" },
-    ],
-    footer:
-      "नक़ली/डेमो डेटा पर हमेशा लेबल · ORCA निर्णय-सहायक है — आधिकारिक सलाह का विकल्प कभी नहीं",
-  },
-  mr: {
-    tag1: "दहा एजंट समुद्र वाचतात.",
-    tag2a: "एक सुरक्षित, ",
-    tag2b: "स्पष्टीकरणासह",
-    tag2c: " निर्णय.",
-    sub: "भारताचा सागरी डेटा, मच्छीमाराच्या स्वतःच्या भाषेत, थेट कामी येणाऱ्या शब्दांत — आणि प्रत्येक आकड्यासोबत त्याचा स्रोत.",
-    ctaTour: "गाइडेड टूर पाहा",
-    ctaPhone: "फोन आवृत्ती",
-    openOrca: "ORCA उघडा",
-    openWord: "उघडा",
-    watchLive: "हे चालताना पाहा →",
-    pipelineTitle: "ORCA निर्णय कसा घेते",
-    stats: ["टीममधील एजंट", "लँडिंग सेंटर", "अधिकृत इशारे", "भाषा", "डेटा आवृत्ती"],
-    cards: [
-      {
-        kicker: "आजची योजना",
-        title: "मासे कुठे आहेत",
-        lines: [
-          "उघडताच तुमचे ठिकाण ओळखते — १०० किमी समुद्र स्वतः वाचते",
-          "प्रत्येक जागेला माशांच्या शक्यतेवर गुण, कारणासह",
-          "फेरीची योजना: कधी जायचे, किती थांबायचे, किती मिळेल",
-        ],
-      },
-      {
-        kicker: "ORCA ला विचारा",
-        title: "तुमची भाषा, बोलून किंवा लिहून",
-        lines: [
-          "English · हिंदी · मराठी — स्वतः ओळखते, सेटिंग नाही",
-          "0–100 धोका, प्रत्येक गुणाच्या हिशेबासह",
-          "अधिकृत इशारा मॉडेलच्या नेहमी वर.",
-        ],
-      },
-      {
-        kicker: "प्रशासन",
-        title: "जिल्ह्याचे दृश्य",
-        lines: [
-          "किनाऱ्यावरील प्रत्येक लँडिंग सेंटर, त्याच इंजिनने तपासलेले",
-          "प्रशासनाला तेच पुरावे दिसतात जे मच्छीमाराला दिसतात",
-          "दिवसाच्या बोर्डाचे एक-क्लिक CSV निर्यात",
-        ],
-      },
-    ],
-    phases: [
-      { t: "समजून घ्या", n: "प्रश्न पारखा, कोणत्याही भाषेत" },
-      { t: "गोळा करा", n: "पाच तज्ज्ञ एकाच वेळी निघतात" },
-      { t: "ठरवा", n: "भारित मॉडेल + फक्त धोका वाढवणारे नियम" },
-      { t: "समजावा", n: "सोपी भाषा, स्रोतांसह, बोलूनही" },
-    ],
-    footer:
-      "नमुना/डेमो डेटावर नेहमी लेबल · ORCA निर्णय-सहाय्यक आहे — अधिकृत सल्ल्याचा पर्याय कधीही नाही",
-  },
-};
 
 /** Honour the OS "reduce motion" setting — those users get the finished page. */
 function prefersStill(): boolean {
@@ -234,12 +59,10 @@ function Reveal({
 /** Count-up with the same fail-safe as the risk dial: the number always lands. */
 function useCountUp(target: number | null, ms = 1000): string {
   const [v, setV] = useState(0);
+  const still = prefersStill();
   useEffect(() => {
-    if (target == null) return;
-    if (prefersStill()) {
-      setV(target);
-      return;
-    }
+    // Reduced motion: no count, the number is simply there (see the return).
+    if (target == null || still) return;
     let raf = 0;
     const start = performance.now();
     const tick = (now: number) => {
@@ -253,8 +76,8 @@ function useCountUp(target: number | null, ms = 1000): string {
       cancelAnimationFrame(raf);
       window.clearTimeout(settle);
     };
-  }, [target, ms]);
-  return target == null ? "—" : String(v);
+  }, [target, ms, still]);
+  return target == null ? "—" : String(still ? target : v);
 }
 
 /**
@@ -322,7 +145,7 @@ export default function Landing({
       <Reveal>
         <div className="flex items-center gap-3">
           <CompassMark size={30} className="text-ink-900" />
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-chart-600">
+          <span className="font-mono text-label font-bold uppercase tracking-[0.2em] text-chart-600">
             SIH26176 · ISRO · Smart India Hackathon 2026
           </span>
           <span className="ml-auto flex gap-1">
@@ -330,7 +153,7 @@ export default function Landing({
               <button
                 key={l}
                 onClick={() => onLanguage(l)}
-                className={`rounded-[2px] border px-2 py-1 font-mono text-[11px] font-bold transition ${
+                className={`rounded-[2px] border px-2 py-1 font-mono text-readout font-bold transition ${
                   language === l
                     ? "border-ink-900 bg-ink-900 text-paper-50"
                     : "text-ink-400 hover:text-ink-800"
@@ -348,14 +171,14 @@ export default function Landing({
       <div className="mt-9 grid items-center gap-x-12 gap-y-9 lg:mt-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
         <div>
           <Reveal delay={60}>
-            <p className="font-display text-[64px] font-black leading-none tracking-tight text-ink-900">
+            <p className="font-display text-hero font-black leading-none tracking-tight text-ink-900">
               ORCA
             </p>
             <div className="wave-rule mt-3 max-w-[360px]" />
           </Reveal>
           <Reveal delay={140}>
             <h1
-              className="mt-6 max-w-[520px] font-display text-[38px] font-semibold leading-[1.12] text-ink-900"
+              className="mt-6 max-w-[520px] font-display text-dial font-semibold leading-[1.12] text-ink-900"
               style={{ textWrap: "balance" }}
             >
               {t.tag1}
@@ -365,7 +188,7 @@ export default function Landing({
               {t.tag2c}
             </h1>
             <p
-              className="mt-5 max-w-[470px] text-[15px] leading-relaxed text-ink-500"
+              className="mt-5 max-w-[470px] text-lead leading-relaxed text-ink-500"
               style={{ textWrap: "pretty" }}
             >
               {t.sub}
@@ -385,7 +208,7 @@ export default function Landing({
             {/* full reload on purpose: phone vs console is decided at boot */}
             <a
               href={`/?m=1&lang=${language}`}
-              className="mt-5 inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-chart-700 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
+              className="mt-5 inline-flex items-center gap-2 font-mono text-readout font-semibold uppercase tracking-[0.1em] text-chart-700 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
             >
               <PhoneGlyph size={14} /> {t.ctaPhone}
             </a>
@@ -406,9 +229,9 @@ export default function Landing({
               className={`group px-4 py-3.5 transition-colors hover:bg-chart-100/40 ${i > 0 ? "border-l" : ""}`}
               style={{ borderColor: "var(--rule-faint)" }}
             >
-              <div className="label truncate !text-[9px]">{x.k}</div>
+              <div className="label truncate !text-micro">{x.k}</div>
               <div
-                className={`mt-1 font-mono text-[21px] font-bold tabular-nums leading-none transition-colors ${
+                className={`mt-1 font-mono text-figure font-bold tabular-nums leading-none transition-colors ${
                   x.warn ? "text-risk-extreme" : "text-ink-900 group-hover:text-chart-600"
                 }`}
               >
@@ -431,12 +254,12 @@ export default function Landing({
                 </span>
               </div>
               <div className="flex-1 px-4 py-4">
-                <h3 className="font-display text-[19px] font-bold leading-snug text-ink-900">
+                <h3 className="font-display text-heading font-bold leading-snug text-ink-900">
                   {c.title}
                 </h3>
                 <ul className="mt-3 space-y-2">
                   {c.lines.map((l) => (
-                    <li key={l} className="flex gap-2.5 text-[12.5px] leading-relaxed text-ink-700">
+                    <li key={l} className="flex gap-2.5 text-small leading-relaxed text-ink-700">
                       <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rotate-45 bg-chart-500/70 transition-transform group-hover:rotate-[135deg] group-hover:bg-chart-500" style={{ transitionDuration: "500ms" }} />
                       {l}
                     </li>
@@ -461,7 +284,7 @@ export default function Landing({
             <span className="label">{t.pipelineTitle}</span>
             <button
               onClick={() => onEnter("system")}
-              className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-chart-600 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
+              className="font-mono text-label font-bold uppercase tracking-[0.1em] text-chart-600 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
             >
               {t.watchLive}
             </button>
@@ -474,12 +297,12 @@ export default function Landing({
                 style={{ borderColor: "var(--rule-faint)" }}
               >
                 <div className="flex items-baseline gap-2">
-                  <span className="font-display text-[15px] font-bold text-ink-900">{p.t}</span>
+                  <span className="font-display text-lead font-bold text-ink-900">{p.t}</span>
                   {i === 1 && (
-                    <span className="font-mono text-[9px] font-bold text-chart-700">∥ 5</span>
+                    <span className="font-mono text-micro font-bold text-chart-700">∥ 5</span>
                   )}
                 </div>
-                <p className="mt-1 text-[11.5px] italic leading-snug text-ink-500">{p.n}</p>
+                <p className="mt-1 text-readout italic leading-snug text-ink-500">{p.n}</p>
                 {i < 3 && (
                   <CourseArrow
                     size={13}
@@ -495,14 +318,14 @@ export default function Landing({
       {/* footer */}
       <Reveal delay={980}>
         <div className="mt-8 flex flex-wrap items-baseline justify-between gap-2 pb-4">
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-400">
+          <span className="font-mono text-label uppercase tracking-[0.14em] text-ink-400">
             {t.footer}
           </span>
           <a
             href="https://github.com/SaudSatopay/orca-sih26176"
             target="_blank"
             rel="noreferrer"
-            className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-chart-600 transition-colors hover:text-ink-900"
+            className="font-mono text-label uppercase tracking-[0.14em] text-chart-600 transition-colors hover:text-ink-900"
           >
             github.com/SaudSatopay/orca-sih26176
           </a>

@@ -3,6 +3,7 @@ import * as api from "../api";
 import type { ChatResponse, Language, RiskCategory } from "../types";
 import { CheckGlyph, CourseArrow } from "./glyphs";
 import type { SeaField } from "./HeroSea";
+import { HERO as T, type FactorKey, type SceneId } from "../i18n/hero";
 import "./hero.css";
 
 /**
@@ -22,8 +23,6 @@ import "./hero.css";
 
 const HeroSea = lazy(() => import("./HeroSea"));
 
-type SceneId = "route" | "danger" | "cyclone";
-type FactorKey = "wave" | "cyclone" | "wind" | "weather" | "ocean" | "gis";
 
 const VB_W = 600;
 const VB_H = 330;
@@ -119,136 +118,6 @@ const POSTERS: Record<SceneId, Poster> = {
 };
 
 const SCENES: SceneId[] = ["route", "danger", "cyclone"];
-
-const T: Record<
-  Language,
-  {
-    sheet: string;
-    asks: string;
-    crew: string;
-    crewRan: (n: number) => string;
-    idle: string;
-    verdict: Record<RiskCategory, string>;
-    band: Record<RiskCategory, string>;
-    why: string;
-    factor: Record<FactorKey, string>;
-    floor: string;
-    clears: string;
-    safest: string;
-    direct: string;
-    tabs: Record<SceneId, string>;
-    tabsLabel: string;
-    askReal: string;
-    naval: string;
-    channel: string;
-    imd: string;
-    until: string;
-    storm: string;
-    track: string;
-    live: string;
-    rehearsed: string;
-  }
-> = {
-  en: {
-    sheet: "One question, start to finish",
-    asks: "A fisher asks",
-    crew: "The crew reports",
-    crewRan: (n) => `${n} of 10 needed`,
-    idle: "not needed for this question",
-    verdict: { LOW: "Safe to go", MODERATE: "Go with care", HIGH: "Do not go", EXTREME: "Do not launch" },
-    band: { LOW: "Low", MODERATE: "Moderate", HIGH: "High", EXTREME: "Extreme" },
-    why: "Why — every point attributed",
-    factor: {
-      wave: "Wave height",
-      cyclone: "Official warning",
-      wind: "Wind",
-      weather: "Rain and visibility",
-      ocean: "Sea state",
-      gis: "Position and zones",
-    },
-    floor: "Official warning in force — the score cannot go lower",
-    clears: "Expected to clear after",
-    safest: "Safest course",
-    direct: "direct track",
-    tabs: { route: "Safest course", danger: "Storm warning", cyclone: "Cyclone" },
-    tabsLabel: "Rehearsed questions",
-    askReal: "Ask this in the app",
-    naval: "Naval exercise area",
-    channel: "Port channel",
-    imd: "IMD fishermen warning",
-    until: "until",
-    storm: "Severe cyclonic storm",
-    track: "forecast track",
-    live: "answered live by the crew",
-    rehearsed: "rehearsed scenario · simulated data",
-  },
-  hi: {
-    sheet: "एक सवाल, शुरू से आख़िर तक",
-    asks: "मछुआरा पूछता है",
-    crew: "टीम की रिपोर्ट",
-    crewRan: (n) => `10 में से ${n} की ज़रूरत`,
-    idle: "इस सवाल के लिए ज़रूरी नहीं",
-    verdict: { LOW: "जाना सुरक्षित", MODERATE: "सावधानी से जाएँ", HIGH: "न जाएँ", EXTREME: "नाव न उतारें" },
-    band: { LOW: "कम", MODERATE: "मध्यम", HIGH: "अधिक", EXTREME: "अत्यधिक" },
-    why: "क्यों — हर अंक का हिसाब",
-    factor: {
-      wave: "लहर की ऊँचाई",
-      cyclone: "आधिकारिक चेतावनी",
-      wind: "हवा",
-      weather: "बारिश और दृश्यता",
-      ocean: "समुद्र की दशा",
-      gis: "स्थिति और क्षेत्र",
-    },
-    floor: "आधिकारिक चेतावनी लागू — स्कोर इससे कम नहीं हो सकता",
-    clears: "सुधरने की उम्मीद",
-    safest: "सबसे सुरक्षित मार्ग",
-    direct: "सीधा रास्ता",
-    tabs: { route: "सुरक्षित मार्ग", danger: "तूफ़ान की चेतावनी", cyclone: "चक्रवात" },
-    tabsLabel: "तैयार सवाल",
-    askReal: "यही ऐप में पूछें",
-    naval: "नौसेना अभ्यास क्षेत्र",
-    channel: "बंदरगाह चैनल",
-    imd: "IMD मछुआरा चेतावनी",
-    until: "तक",
-    storm: "गंभीर चक्रवाती तूफ़ान",
-    track: "अनुमानित मार्ग",
-    live: "टीम ने अभी जवाब दिया",
-    rehearsed: "तैयार परिदृश्य · नक़ली डेटा",
-  },
-  mr: {
-    sheet: "एक प्रश्न, सुरुवातीपासून शेवटपर्यंत",
-    asks: "मच्छीमार विचारतो",
-    crew: "टीमचा अहवाल",
-    crewRan: (n) => `10 पैकी ${n} लागले`,
-    idle: "या प्रश्नासाठी गरज नाही",
-    verdict: { LOW: "जाणे सुरक्षित", MODERATE: "सावधगिरीने जा", HIGH: "जाऊ नका", EXTREME: "होडी उतरवू नका" },
-    band: { LOW: "कमी", MODERATE: "मध्यम", HIGH: "जास्त", EXTREME: "अत्यंत" },
-    why: "का — प्रत्येक गुणाचा हिशेब",
-    factor: {
-      wave: "लाटांची उंची",
-      cyclone: "अधिकृत इशारा",
-      wind: "वारा",
-      weather: "पाऊस आणि दृश्यमानता",
-      ocean: "समुद्राची स्थिती",
-      gis: "स्थान आणि क्षेत्रे",
-    },
-    floor: "अधिकृत इशारा लागू — गुण यापेक्षा कमी होऊ शकत नाहीत",
-    clears: "सुधारण्याची शक्यता",
-    safest: "सर्वात सुरक्षित मार्ग",
-    direct: "थेट मार्ग",
-    tabs: { route: "सुरक्षित मार्ग", danger: "वादळाचा इशारा", cyclone: "चक्रीवादळ" },
-    tabsLabel: "तयार प्रश्न",
-    askReal: "हेच अ‍ॅपमध्ये विचारा",
-    naval: "नौदल सराव क्षेत्र",
-    channel: "बंदर मार्ग",
-    imd: "IMD मच्छीमार इशारा",
-    until: "पर्यंत",
-    storm: "तीव्र चक्रीवादळ",
-    track: "अंदाजित मार्ग",
-    live: "टीमने आत्ताच उत्तर दिले",
-    rehearsed: "तयार परिस्थिती · नमुना डेटा",
-  },
-};
 
 const RISK_TEXT: Record<RiskCategory, string> = {
   LOW: "text-risk-low",
@@ -367,17 +236,22 @@ export default function HeroChart({
   useEffect(() => {
     if (live[scene]) return;
     let alive = true;
-    api
-      .ask({ message: POSTERS[scene].ask, sessionId: `hero-${scene}` })
-      .then((r) => {
-        if (!alive || r.mode !== "DEMO") return;
-        setLive((m) => ({ ...m, [scene]: fromResponse(POSTERS[scene], r) }));
-      })
-      .catch(() => {
-        /* the poster already says everything; it stays labelled as rehearsed */
-      });
+    // Wait out the entrance: a visitor passing through (a deep link, a quick
+    // tab change) never costs the crew a question.
+    const id = window.setTimeout(() => {
+      api
+        .ask({ message: POSTERS[scene].ask, sessionId: `hero-${scene}` })
+        .then((r) => {
+          if (!alive || r.mode !== "DEMO") return;
+          setLive((m) => ({ ...m, [scene]: fromResponse(POSTERS[scene], r) }));
+        })
+        .catch(() => {
+          /* the poster already says everything; it stays labelled as rehearsed */
+        });
+    }, 400);
     return () => {
       alive = false;
+      window.clearTimeout(id);
     };
   }, [scene, live]);
 
@@ -416,7 +290,7 @@ export default function HeroChart({
           </div>
           <p
             lang={p.askLang}
-            className={`hero-type mt-1.5 font-display text-[19px] font-semibold leading-snug text-ink-900 ${
+            className={`hero-type mt-1.5 font-display text-heading font-semibold leading-snug text-ink-900 ${
               p.askLang === "en" ? "italic" : ""
             }`}
           >
@@ -439,7 +313,7 @@ export default function HeroChart({
               return (
                 <li
                   key={a}
-                  className={`hero-tick flex items-center gap-1 font-mono text-[10.5px] font-semibold ${
+                  className={`hero-tick flex items-center gap-1 font-mono text-label font-semibold ${
                     ran ? "text-ink-800" : "text-ink-400"
                   }`}
                   style={i(n)}
@@ -638,10 +512,10 @@ export default function HeroChart({
             aria-label={`${t.verdict[p.category]} — ${p.score}/100`}
           >
             <div className="flex items-baseline justify-center gap-1 leading-none">
-              <span className="sounding text-[40px] tracking-normal">{p.score}</span>
-              <span className="font-mono text-[10px] font-bold tracking-normal opacity-80">/100</span>
+              <span className="sounding text-dial tracking-normal">{p.score}</span>
+              <span className="font-mono text-label font-bold tracking-normal opacity-80">/100</span>
             </div>
-            <div className="mt-1 whitespace-nowrap text-[11.5px] leading-tight">{t.verdict[p.category]}</div>
+            <div className="mt-1 whitespace-nowrap text-readout leading-tight">{t.verdict[p.category]}</div>
           </div>
 
           <div className="min-w-0">
@@ -650,7 +524,7 @@ export default function HeroChart({
             </div>
             <ul className="mt-1.5 space-y-1">
               {p.factors.map((f, n) => (
-                <li key={f.key} className="grid grid-cols-[3.2rem_1fr] items-center gap-2 text-[11.5px] leading-tight text-ink-700">
+                <li key={f.key} className="grid grid-cols-[3.2rem_1fr] items-center gap-2 text-readout leading-tight text-ink-700">
                   <span className="hero-rise text-right font-mono font-bold tabular-nums text-ink-900" style={i(n)}>
                     +{f.points.toFixed(1)}
                   </span>
@@ -669,7 +543,7 @@ export default function HeroChart({
               ))}
             </ul>
             {(p.official || p.window) && (
-              <p className="hero-rise mt-2 text-[11px] font-semibold leading-snug text-risk-extreme" style={i(3)}>
+              <p className="hero-rise mt-2 text-readout font-semibold leading-snug text-risk-extreme" style={i(3)}>
                 {p.official && t.floor}
                 {p.official && p.window && " · "}
                 {p.window && (
@@ -703,7 +577,7 @@ export default function HeroChart({
                 aria-controls="hero-sheet"
                 tabIndex={on ? 0 : -1}
                 onClick={() => pick(id)}
-                className={`hero-tab rounded-[2px] border px-2.5 py-1.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.1em] ${
+                className={`hero-tab rounded-[2px] border px-2.5 py-1.5 font-mono text-label font-bold uppercase tracking-[0.1em] ${
                   on ? "border-ink-900 bg-ink-900 text-paper-50" : "text-ink-700"
                 }`}
                 style={on ? undefined : { borderColor: "var(--rule)" }}
@@ -715,7 +589,7 @@ export default function HeroChart({
         </div>
         <button
           onClick={() => onAsk(p.ask)}
-          className="group ml-auto inline-flex items-center gap-1.5 font-mono text-[10.5px] font-bold uppercase tracking-[0.1em] text-chart-700 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
+          className="group ml-auto inline-flex items-center gap-1.5 font-mono text-label font-bold uppercase tracking-[0.1em] text-chart-700 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
         >
           {t.askReal}
           <CourseArrow size={12} className="transition-transform group-hover:translate-x-1" />

@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
+import { RISK_BANDS, RISK_COLOR } from "../risk";
 import type { RiskCategory } from "../types";
-
-export const RISK_COLOR: Record<RiskCategory, string> = {
-  LOW: "#1D7A50",
-  MODERATE: "#A17000",
-  HIGH: "#BF4E12",
-  EXTREME: "#AF2318",
-};
+import { alpha, ink, paper } from "../tokens";
 
 /**
  * The risk gauge, drawn like a ship's instrument: a fine tick ring, an ink
@@ -72,11 +67,8 @@ export default function RiskDial({
   });
 
   // Band thresholds marked on the ring, as an instrument prints its red-lines.
-  const thresholds = [
-    { v: 25, col: RISK_COLOR.LOW },
-    { v: 50, col: RISK_COLOR.MODERATE },
-    { v: 79, col: RISK_COLOR.HIGH },
-  ].map(({ v, col }) => {
+  const thresholds = RISK_BANDS.slice(0, -1).map(({ max: v, category }) => {
+    const col = RISK_COLOR[category];
     const a = (v / 100) * 2 * Math.PI - Math.PI / 2;
     return {
       x1: c + (c - 8) * Math.cos(a),
@@ -88,7 +80,13 @@ export default function RiskDial({
   });
 
   return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
+    <div
+      className="relative shrink-0"
+      style={{ width: size, height: size }}
+      // The count-up is decoration; assistive tech gets the final reading at once.
+      role="img"
+      aria-label={`${score} / 100 · ${category}`}
+    >
       <svg width={size} height={size}>
         {ticks.map((tk, i) => (
           <line
@@ -97,7 +95,7 @@ export default function RiskDial({
             y1={tk.y1}
             x2={tk.x2}
             y2={tk.y2}
-            stroke="#12212D"
+            stroke={ink[900]}
             strokeWidth={tk.major ? 1.3 : 0.6}
             opacity={tk.major ? 0.7 : 0.35}
           />
@@ -113,7 +111,7 @@ export default function RiskDial({
             strokeWidth={2.4}
           />
         ))}
-        <circle cx={c} cy={c} r={rArc} fill="#FBF7ED" stroke="rgba(18,33,45,0.2)" strokeWidth={7} />
+        <circle cx={c} cy={c} r={rArc} fill={paper[50]} stroke={alpha(ink[900], 0.2)} strokeWidth={7} />
         <circle
           cx={c}
           cy={c}
@@ -127,17 +125,17 @@ export default function RiskDial({
           style={{ transition: "stroke-dashoffset .12s linear" }}
           transform={`rotate(-90 ${c} ${c})`}
         />
-        <circle cx={c} cy={c} r={rArc - 6.5} fill="none" stroke="rgba(18,33,45,0.3)" strokeWidth={0.8} />
+        <circle cx={c} cy={c} r={rArc - 6.5} fill="none" stroke={alpha(ink[900], 0.3)} strokeWidth={0.8} />
       </svg>
       <div className="absolute inset-0 grid place-items-center">
         <div className="text-center leading-none">
           <div
-            className="font-display text-[38px] font-black tabular-nums tracking-tight"
+            className="font-display text-dial font-black tabular-nums tracking-tight"
             style={{ color }}
           >
             {Math.max(0, shown)}
           </div>
-          <div className="mt-1 font-mono text-[9px] font-semibold uppercase tracking-[0.2em] text-ink-400">
+          <div className="mt-1 font-mono text-micro font-semibold uppercase tracking-[0.2em] text-ink-400">
             / 100
           </div>
         </div>

@@ -1,58 +1,9 @@
 import { useEffect, useState } from "react";
 import * as api from "../api";
 import type { AuthorityDashboard, Language } from "../types";
-import { RISK_COLOR } from "./RiskDial";
-
-const T: Record<Language, Record<string, string>> = {
-  en: {
-    centres: "Landing centres",
-    extreme: "Extreme risk",
-    high: "High risk",
-    warnings: "Official warnings",
-    board: "Coastal risk board",
-    refresh: "refreshes every 30 s",
-    export: "Export CSV",
-    hCentre: "Landing centre",
-    hState: "State",
-    hRisk: "Risk",
-    hWave: "Wave",
-    hWind: "Wind",
-    hWarning: "Active warning",
-    loading: "Loading coastline…",
-  },
-  hi: {
-    centres: "लैंडिंग सेंटर",
-    extreme: "अत्यधिक जोखिम",
-    high: "उच्च जोखिम",
-    warnings: "आधिकारिक चेतावनियाँ",
-    board: "तटीय जोखिम बोर्ड",
-    refresh: "हर 30 सेकंड में ताज़ा",
-    export: "CSV निर्यात",
-    hCentre: "लैंडिंग सेंटर",
-    hState: "राज्य",
-    hRisk: "जोखिम",
-    hWave: "लहर",
-    hWind: "हवा",
-    hWarning: "सक्रिय चेतावनी",
-    loading: "तटरेखा लोड हो रही है…",
-  },
-  mr: {
-    centres: "लँडिंग सेंटर",
-    extreme: "अत्यंत धोका",
-    high: "जास्त धोका",
-    warnings: "अधिकृत इशारे",
-    board: "किनारी धोका फलक",
-    refresh: "दर ३० सेकंदांनी ताजे",
-    export: "CSV निर्यात",
-    hCentre: "लँडिंग सेंटर",
-    hState: "राज्य",
-    hRisk: "धोका",
-    hWave: "लाट",
-    hWind: "वारा",
-    hWarning: "सक्रिय इशारा",
-    loading: "किनारपट्टी लोड होत आहे…",
-  },
-};
+import { RISK_COLOR } from "../risk";
+import { T } from "../i18n/authority";
+import { chart, risk } from "../tokens";
 
 /** The board as a CSV file — the format an administration actually circulates. */
 function exportCsv(data: AuthorityDashboard) {
@@ -102,14 +53,14 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
   }, []);
 
   if (error)
-    return <div className="panel p-6 text-sm text-risk-extreme">Failed to load: {error}</div>;
-  if (!data) return <div className="panel p-6 text-sm italic text-ink-400">{t.loading}</div>;
+    return <div className="panel p-6 text-prose leading-5 text-risk-extreme">Failed to load: {error}</div>;
+  if (!data) return <div className="panel p-6 text-prose leading-5 italic text-ink-400">{t.loading}</div>;
 
   const tiles = [
-    { key: "monitored", label: t.centres, color: "#1E5F7A" },
+    { key: "monitored", label: t.centres, color: chart[600] },
     { key: "extreme", label: t.extreme, color: RISK_COLOR.EXTREME },
     { key: "high", label: t.high, color: RISK_COLOR.HIGH },
-    { key: "official_warnings", label: t.warnings, color: "#A17000" },
+    { key: "official_warnings", label: t.warnings, color: risk.moderate },
   ];
 
   return (
@@ -122,7 +73,7 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
             style={{ borderColor: "var(--rule-faint)" }}
           >
             <div
-              className="font-display text-[34px] font-black leading-none tabular-nums"
+              className="font-display text-tile font-black leading-none tabular-nums"
               style={{ color: t.color }}
             >
               {data.summary[t.key] ?? 0}
@@ -136,13 +87,13 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
         <div className="hd">
           <span className="label">{t.board}</span>
           <span className="flex items-center gap-3">
-            <span className="font-mono text-[10px] tabular-nums text-ink-400">
+            <span className="font-mono text-label tabular-nums text-ink-400">
               {data.generated_at.slice(0, 16).replace("T", " ")} IST · {t.refresh}
             </span>
             {/* The day's advisory board as a file the administration can circulate. */}
             <button
               onClick={() => exportCsv(data)}
-              className="btn-line !px-2.5 !py-1 !text-[9.5px]"
+              className="btn-line !px-2.5 !py-1 !text-label"
               title="Download the board as a CSV advisory sheet"
             >
               {t.export}
@@ -150,13 +101,13 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
           </span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-[12.5px]">
+          <table className="w-full min-w-[640px] text-left text-small">
             <thead>
               <tr className="border-b" style={{ borderColor: "var(--rule-strong)" }}>
                 {[t.hCentre, t.hState, t.hRisk, t.hWave, t.hWind, t.hWarning].map((h, i) => (
                   <th
                     key={h}
-                    className={`py-2.5 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-ink-400 ${
+                    className={`py-2.5 font-mono text-micro font-bold uppercase tracking-[0.14em] text-ink-400 ${
                       i === 0 ? "pl-4 pr-3" : i === 5 ? "px-4" : "px-3"
                     }`}
                   >
@@ -174,20 +125,20 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
                     className="border-b transition last:border-0 hover:bg-paper-150"
                     style={{ borderColor: "var(--rule-faint)" }}
                   >
-                    <td className="py-2.5 pl-4 pr-3 font-display text-[13.5px] font-bold text-ink-900">
+                    <td className="py-2.5 pl-4 pr-3 font-display text-body font-bold text-ink-900">
                       {row.name}
                     </td>
                     <td className="px-3 py-2.5 text-ink-500">{row.state}</td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <span
-                          className="font-mono text-[13px] font-bold tabular-nums"
+                          className="font-mono text-body font-bold tabular-nums"
                           style={{ color }}
                         >
                           {row.risk_score}
                         </span>
                         <span
-                          className="border px-1.5 py-px font-mono text-[8.5px] font-bold tracking-wider"
+                          className="border px-1.5 py-px font-mono text-micro font-bold tracking-wider"
                           style={{ color, borderColor: color }}
                         >
                           {row.risk_category}
@@ -200,7 +151,7 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
                     <td className="px-3 py-2.5 font-mono tabular-nums text-ink-800">
                       {row.wind_speed_kmh ?? "—"} km/h
                     </td>
-                    <td className="max-w-[280px] truncate px-4 py-2.5 text-[12px] text-ink-500">
+                    <td className="max-w-[280px] truncate px-4 py-2.5 text-small text-ink-500">
                       {row.headline ?? "—"}
                     </td>
                   </tr>

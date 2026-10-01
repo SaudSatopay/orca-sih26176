@@ -1,26 +1,7 @@
 import type { Language, PFZZone } from "../types";
 import { SchoolGlyph } from "./glyphs";
-
-const L: Record<Language, Record<string, string>> = {
-  en: {
-    title: "Potential fishing zones",
-    note: "Derived from sea-surface-temperature fronts and chlorophyll — a likely area, never a guarantee of fish.",
-    conf: "confidence",
-    away: "away",
-  },
-  hi: {
-    title: "संभावित मत्स्य क्षेत्र",
-    note: "समुद्री सतह तापमान और क्लोरोफिल से अनुमानित — संभावित क्षेत्र, मछली की गारंटी नहीं।",
-    conf: "भरोसा",
-    away: "दूर",
-  },
-  mr: {
-    title: "संभाव्य मासेमारी क्षेत्रे",
-    note: "समुद्र पृष्ठभाग तापमान व क्लोरोफिलवरून काढलेले — शक्यता असलेला भाग, माशांची हमी नाही.",
-    conf: "भरवसा",
-    away: "अंतरावर",
-  },
-};
+import { L } from "../i18n/pfz";
+import { chart, risk } from "../tokens";
 
 export default function PFZList({
   zones,
@@ -43,7 +24,7 @@ export default function PFZList({
       <div className="space-y-2 px-4 py-3.5">
         {zones.map((z) => {
           const best = z.rank === 1;
-          const ring = best ? "#1D7A50" : "#2A7391";
+          const ring = best ? risk.low : chart[500];
           return (
             <div
               key={z.rank}
@@ -56,7 +37,7 @@ export default function PFZList({
               <div className="relative shrink-0" style={{ color: ring }}>
                 <span className="badge-ping" />
                 <div
-                  className="grid h-9 w-9 place-items-center rounded-full border-[3px] bg-paper-50 font-display text-[14px] font-extrabold text-ink-900"
+                  className="grid h-9 w-9 place-items-center rounded-full border-[3px] bg-paper-50 font-display text-prose font-extrabold text-ink-900"
                   style={{ borderColor: ring }}
                 >
                   {z.rank}
@@ -64,24 +45,24 @@ export default function PFZList({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-[13px] font-bold tabular-nums text-ink-900">
+                  <span className="font-mono text-body font-bold tabular-nums text-ink-900">
                     {z.distance_km} km
                   </span>
-                  <span className="text-[11px] text-ink-500">{z.bearing}</span>
+                  <span className="text-readout text-ink-500">{z.bearing}</span>
                 </div>
-                <div className="mt-0.5 truncate font-mono text-[10.5px] text-ink-400">
+                <div className="mt-0.5 truncate font-mono text-label text-ink-400">
                   SST {z.sst_c ?? "—"}°C · Chl {z.chlorophyll_mg_m3 ?? "—"} mg/m³
                   {z.wave_height_m != null ? ` · ${z.wave_height_m} m` : ""}
                 </div>
               </div>
               <div className="shrink-0 text-right">
                 <div
-                  className="sounding text-[17px] tabular-nums"
-                  style={{ color: best ? "#1D7A50" : "#2A7391" }}
+                  className="sounding text-title tabular-nums"
+                  style={{ color: best ? risk.low : chart[500] }}
                 >
                   {Math.round(z.confidence * 100)}%
                 </div>
-                <div className="font-mono text-[8.5px] uppercase tracking-wide text-ink-400">
+                <div className="font-mono text-micro uppercase tracking-wide text-ink-400">
                   {t.conf}
                 </div>
               </div>
@@ -90,7 +71,7 @@ export default function PFZList({
         })}
       </div>
       <p
-        className="border-t px-4 py-2.5 text-[10.5px] italic leading-relaxed text-ink-400"
+        className="border-t px-4 py-2.5 text-label italic leading-relaxed text-ink-400"
         style={{ borderColor: "var(--rule-faint)" }}
       >
         {t.note}

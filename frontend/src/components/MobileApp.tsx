@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as api from "../api";
 import type { FishingOutlook, Language, ZoneFeature } from "../types";
-import { RATING_COLOR } from "./FishingPanel";
 import {
   BoatGlyph,
   ChartDefs,
@@ -13,9 +12,13 @@ import {
   StopGlyph,
   WarnGlyph,
 } from "./glyphs";
-import { PORTS } from "./LocationPicker";
 import MarineMap from "./MarineMap";
-import { RISK_COLOR } from "./RiskDial";
+import { readBootParams } from "../boot";
+import { T } from "../i18n/mobile";
+import { PORTS } from "../ports";
+import { RATING_COLOR, RISK_COLOR } from "../risk";
+import { getRecognition, SPEECH_LOCALE, type SpeechRecognitionLike } from "../speech";
+import { alpha, ink } from "../tokens";
 
 /**
  * The phone — ORCA for the fisher himself, many of whom read little.
@@ -30,77 +33,10 @@ import { RISK_COLOR } from "./RiskDial";
  */
 
 type MTab = "today" | "map" | "ask";
+type Place = { lat: number; lon: number; name: string };
 
 const SESSION = "phone";
 const DEFAULT_PORT = PORTS[0];
-
-const T: Record<Language, Record<string, string>> = {
-  en: {
-    today: "Today",
-    map: "Map",
-    ask: "Ask",
-    listen: "LISTEN",
-    stop: "STOP",
-    bestTime: "Best time",
-    returnBy: "Be back by",
-    areas: "Where the fish are",
-    km: "km",
-    profit: "Profit est.",
-    fuel: "Fuel",
-    tapMic: "Tap and speak",
-    listening: "Listening…",
-    thinking: "Asking the crew…",
-    reading: "Reading the sea…",
-    warnSpeak: "Official warning",
-    askExamples: "Can I go tomorrow at 6 AM?",
-    bestTimeSay: "Best time to fish is {a} to {b}.",
-    returnBySay: "Be back before {t}.",
-  },
-  hi: {
-    today: "आज",
-    map: "नक्शा",
-    ask: "पूछें",
-    listen: "सुनें",
-    stop: "रोकें",
-    bestTime: "सबसे अच्छा समय",
-    returnBy: "इससे पहले लौटें",
-    areas: "मछली कहाँ है",
-    km: "किमी",
-    profit: "अनुमानित मुनाफ़ा",
-    fuel: "ईंधन",
-    tapMic: "दबाकर बोलिए",
-    listening: "सुन रहे हैं…",
-    thinking: "टीम से पूछ रहे हैं…",
-    reading: "समुद्र पढ़ रहे हैं…",
-    warnSpeak: "आधिकारिक चेतावनी",
-    askExamples: "क्या मैं कल सुबह 6 बजे जा सकता हूँ?",
-    bestTimeSay: "मछली पकड़ने का सबसे अच्छा समय {a} से {b} तक है।",
-    returnBySay: "{t} से पहले लौट आएँ।",
-  },
-  mr: {
-    today: "आज",
-    map: "नकाशा",
-    ask: "विचारा",
-    listen: "ऐका",
-    stop: "थांबवा",
-    bestTime: "सर्वोत्तम वेळ",
-    returnBy: "याआधी परत या",
-    areas: "मासे कुठे आहेत",
-    km: "किमी",
-    profit: "अंदाजे नफा",
-    fuel: "इंधन",
-    tapMic: "दाबून बोला",
-    listening: "ऐकत आहोत…",
-    thinking: "टीमला विचारत आहोत…",
-    reading: "समुद्र वाचत आहोत…",
-    warnSpeak: "अधिकृत इशारा",
-    askExamples: "मी उद्या सकाळी ६ वाजता जाऊ का?",
-    bestTimeSay: "मासेमारीसाठी सर्वोत्तम वेळ {a} ते {b}.",
-    returnBySay: "{t} च्या आधी परत या.",
-  },
-};
-
-const SPEECH_LOCALE: Record<Language, string> = { en: "en-IN", hi: "hi-IN", mr: "mr-IN" };
 
 function speak(text: string, lang: Language) {
   try {
@@ -119,12 +55,6 @@ function clock12(h: number): string {
   return `${hh % 12 || 12} ${hh < 12 ? "AM" : "PM"}`;
 }
 
-function getRecognition(): any | null {
-  const w = window as any;
-  const Ctor = w.SpeechRecognition || w.webkitSpeechRecognition;
-  return Ctor ? new Ctor() : null;
-}
-
 export default function MobileApp() {
   const [language, setLanguage] = useState<Language>(() => {
     const l = new URLSearchParams(window.location.search).get("lang");
@@ -136,8 +66,19 @@ export default function MobileApp() {
     const tp = new URLSearchParams(window.location.search).get("tab");
     return tp === "map" || tp === "ask" ? tp : "today";
   });
-  const [place, setPlace] = useState<{ lat: number; lon: number; name: string } | null>(null);
-  const [outlook, setOutlook] = useState<FishingOutlook | null>(null);
+  const [place, setPlace] = useState<Place | null>(() => {
+    const at = readBootParams(window.location.search).at;
+    return at ? { lat: at.latitude, lon: at.longitude, name: "—" } : null;
+  });
+  // The outlook is kept with the request it answers, so a new position or
+  // language shows the loading state until its own answer arrives.
+  const [loaded, setLoaded] = useState<{
+    place: Place;
+    language: Language;
+    data: FishingOutlook;
+  } | null>(null);
+  const outlook =
+    loaded && loaded.place === place && loaded.language === language ? loaded.data : null;
   const [zones, setZones] = useState<ZoneFeature[]>([]);
   const [focusRank, setFocusRank] = useState<number | null>(null);
   const [speaking, setSpeaking] = useState(false);
@@ -148,30 +89,7 @@ export default function MobileApp() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
-  const recRef = useRef<any>(null);
-
-  // Temporary layout probe: ?debug=1 prints the widest elements on screen so
-  // headless screenshots can carry their own diagnosis.
-  const [debugInfo, setDebugInfo] = useState<string>("");
-  useEffect(() => {
-    if (!new URLSearchParams(window.location.search).has("debug")) return;
-    const id = window.setTimeout(() => {
-      const vw = document.documentElement.clientWidth;
-      const rows = [...document.querySelectorAll("*")]
-        .map((el) => ({ el, w: el.getBoundingClientRect().width }))
-        .filter((x) => x.w > vw + 1)
-        .sort((a, b) => b.w - a.w)
-        .slice(0, 5)
-        .map(
-          (x) =>
-            `${Math.round(x.w)} ${x.el.tagName}.${String((x.el as HTMLElement).className).slice(0, 44)}`,
-        );
-      setDebugInfo(
-        `vw=${vw} sw=${document.documentElement.scrollWidth}\n${rows.join("\n") || "no wide elements"}`,
-      );
-    }, 3500);
-    return () => window.clearTimeout(id);
-  }, [outlook]);
+  const recRef = useRef<SpeechRecognitionLike | null>(null);
 
   const [mapH, setMapH] = useState(() => Math.max(320, window.innerHeight - 200));
   useEffect(() => {
@@ -185,11 +103,8 @@ export default function MobileApp() {
     api.zones().then((z) => setZones(z.features)).catch(() => {});
     const fallback = () =>
       setPlace({ lat: DEFAULT_PORT.lat, lon: DEFAULT_PORT.lon, name: DEFAULT_PORT.name });
-    const at = (new URLSearchParams(window.location.search).get("at") ?? "")
-      .split(",")
-      .map(Number);
-    if (at.length === 2 && at.every(Number.isFinite)) {
-      setPlace({ lat: at[0], lon: at[1], name: "—" });
+    if (readBootParams(window.location.search).at) {
+      // position already pinned by the link — GPS is not asked
     } else if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) =>
@@ -207,15 +122,14 @@ export default function MobileApp() {
   useEffect(() => {
     if (!place) return;
     let alive = true;
-    setOutlook(null);
     api
       .fishingOutlook(place.lat, place.lon, { radiusKm: 100, days: 3, lang: language })
-      .then((d) => alive && setOutlook(d))
+      .then((d) => alive && setLoaded({ place, language, data: d }))
       .catch(() => {});
     return () => {
       alive = false;
     };
-  }, [place?.lat, place?.lon, language]);
+  }, [place, language]);
 
   // ---------------------------------------------------------------- voice
   const speakPlan = () => {
@@ -254,7 +168,7 @@ export default function MobileApp() {
     if (!rec) return;
     rec.lang = SPEECH_LOCALE[language];
     rec.interimResults = false;
-    rec.onresult = (e: any) => {
+    rec.onresult = (e) => {
       setListening(false);
       sendAsk(e.results[0][0].transcript);
     };
@@ -284,7 +198,7 @@ export default function MobileApp() {
 
   // ---------------------------------------------------------------- bits
   const cat = outlook?.safety.category;
-  const color = cat ? RISK_COLOR[cat] : "#42596D";
+  const color = cat ? RISK_COLOR[cat] : ink[500];
   const danger = cat === "HIGH" || cat === "EXTREME";
 
   const speakArea = (a: FishingOutlook["areas"][number]) => {
@@ -302,11 +216,6 @@ export default function MobileApp() {
     <div className="flex min-h-full flex-col">
       <ChartDefs />
       <div className="sea-drift" aria-hidden />
-      {debugInfo && (
-        <pre className="fixed left-0 top-0 z-[999] max-w-[300px] whitespace-pre-wrap bg-black p-1 text-[10px] leading-tight text-white">
-          {debugInfo}
-        </pre>
-      )}
 
       {/* ---------------- slim header ---------------- */}
       <header
@@ -315,9 +224,9 @@ export default function MobileApp() {
       >
         <CompassMark size={30} className="shrink-0 text-ink-900" />
         <div className="min-w-0">
-          <div className="font-display text-[17px] font-black leading-none text-ink-900">ORCA</div>
+          <div className="font-display text-title font-black leading-none text-ink-900">ORCA</div>
           {place && outlook && (
-            <div className="truncate font-mono text-[9px] text-chart-600">
+            <div className="truncate font-mono text-micro text-chart-600">
               {outlook.location.nearest_landing_centre}
             </div>
           )}
@@ -327,7 +236,7 @@ export default function MobileApp() {
             <button
               key={l}
               onClick={() => setLanguage(l)}
-              className={`min-w-[42px] rounded-[2px] border px-2 py-2 font-mono text-[13px] font-bold transition ${
+              className={`min-w-[42px] rounded-[2px] border px-2 py-2 font-mono text-body font-bold transition ${
                 language === l
                   ? "border-ink-900 bg-ink-900 text-paper-50"
                   : "text-ink-400"
@@ -346,7 +255,7 @@ export default function MobileApp() {
           {!outlook && (
             <div className="panel flex flex-col items-center gap-3 p-10 text-center">
               <CompassMark size={56} className="text-ink-300" />
-              <span className="text-[15px] italic text-ink-400">{t.reading}</span>
+              <span className="text-lead italic text-ink-400">{t.reading}</span>
             </div>
           )}
 
@@ -355,7 +264,7 @@ export default function MobileApp() {
               {/* the verdict — colour first, words second */}
               <div
                 className="panel rule-double flex flex-col items-center px-4 pb-4 pt-6 text-center"
-                style={{ background: `${color}14` }}
+                style={{ background: alpha(color, 0.08) }}
               >
                 <div
                   className="grid h-32 w-32 place-items-center rounded-full border-[7px] bg-paper-50"
@@ -368,20 +277,20 @@ export default function MobileApp() {
                   )}
                 </div>
                 <div
-                  className="mt-3 font-display text-[30px] font-black leading-none"
+                  className="mt-3 font-display text-display font-black leading-none"
                   style={{ color }}
                 >
                   {outlook.safety.score}
-                  <span className="text-[15px] font-bold opacity-70"> / 100</span>
+                  <span className="text-lead font-bold opacity-70"> / 100</span>
                 </div>
-                <p className="mt-2.5 font-display text-[19px] font-semibold leading-snug text-ink-900">
+                <p className="mt-2.5 font-display text-heading font-semibold leading-snug text-ink-900">
                   {outlook.advice[0]}
                 </p>
 
                 {/* THE button — one tap, hear everything */}
                 <button
                   onClick={speakPlan}
-                  className="mt-4 flex w-full items-center justify-center gap-3 rounded-[3px] bg-ink-900 py-4 font-mono text-[17px] font-bold uppercase tracking-[0.14em] text-paper-50 active:translate-y-px"
+                  className="mt-4 flex w-full items-center justify-center gap-3 rounded-[3px] bg-ink-900 py-4 font-mono text-title font-bold uppercase tracking-[0.14em] text-paper-50 active:translate-y-px"
                 >
                   {speaking ? <StopGlyph size={20} /> : <SpeakerGlyph size={24} />}
                   {speaking ? t.stop : t.listen}
@@ -395,7 +304,7 @@ export default function MobileApp() {
                   className="panel hatch-danger flex w-full items-center gap-3 border-risk-extreme/70 px-4 py-3 text-left"
                 >
                   <WarnGlyph size={30} className="shrink-0 text-risk-extreme" />
-                  <span className="font-display text-[16px] font-bold leading-tight text-risk-extreme">
+                  <span className="font-display text-subtitle font-bold leading-tight text-risk-extreme">
                     {t.warnSpeak}
                   </span>
                   <SpeakerGlyph size={18} className="ml-auto shrink-0 text-risk-extreme" />
@@ -406,8 +315,8 @@ export default function MobileApp() {
               <div className="grid grid-cols-2 gap-3">
                 {outlook.best_window && (
                   <div className="panel px-3 py-3 text-center">
-                    <div className="label !text-[9px]">{t.bestTime}</div>
-                    <div className="mt-1 font-display text-[21px] font-bold leading-none text-risk-low">
+                    <div className="label !text-micro">{t.bestTime}</div>
+                    <div className="mt-1 font-display text-figure font-bold leading-none text-risk-low">
                       {clock12(outlook.best_window.from_hour)}–
                       {clock12(outlook.best_window.to_hour)}
                     </div>
@@ -415,8 +324,8 @@ export default function MobileApp() {
                 )}
                 {outlook.duration?.return_by && (
                   <div className="panel border-risk-extreme/50 bg-risk-extreme/[0.06] px-3 py-3 text-center">
-                    <div className="label !text-[9px] !text-risk-extreme">{t.returnBy}</div>
-                    <div className="mt-1 font-display text-[26px] font-black leading-none text-risk-extreme">
+                    <div className="label !text-micro !text-risk-extreme">{t.returnBy}</div>
+                    <div className="mt-1 font-display text-numeral font-black leading-none text-risk-extreme">
                       {outlook.duration.return_by}
                     </div>
                   </div>
@@ -426,7 +335,7 @@ export default function MobileApp() {
               {/* the grounds — tap to hear + see on the chart */}
               <div className="panel overflow-hidden">
                 <div className="hd !py-2">
-                  <span className="label flex items-center gap-2 !text-[10px]">
+                  <span className="label flex items-center gap-2 !text-label">
                     {t.areas} <FishGlyph size={14} className="swim text-chart-500" />
                   </span>
                 </div>
@@ -438,25 +347,25 @@ export default function MobileApp() {
                       className="flex w-full items-center gap-3 px-3 py-3 text-left active:bg-paper-150"
                     >
                       <span
-                        className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-4 bg-paper-50 font-display text-[19px] font-extrabold text-ink-900"
+                        className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-4 bg-paper-50 font-display text-heading font-extrabold text-ink-900"
                         style={{ borderColor: RATING_COLOR[a.rating] }}
                       >
                         {a.rank}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[17px] font-bold text-ink-900">
+                        <span className="block text-title font-bold text-ink-900">
                           {Math.round(a.distance_km)} {t.km}
                         </span>
-                        <span className="block truncate font-mono text-[11px] text-chart-700">
+                        <span className="block truncate font-mono text-readout text-chart-700">
                           {(a.likely_species ?? []).map((s) => s.split(" (")[0]).join(" · ")}
                         </span>
                       </span>
                       <span
-                        className="sounding shrink-0 text-[26px]"
+                        className="sounding shrink-0 text-numeral"
                         style={{ color: RATING_COLOR[a.rating] }}
                       >
                         {a.probability}
-                        <span className="text-[14px]">%</span>
+                        <span className="text-prose">%</span>
                       </span>
                     </button>
                   ))}
@@ -467,8 +376,8 @@ export default function MobileApp() {
               {outlook.economics && (
                 <div className="panel grid grid-cols-2">
                   <div className="px-3 py-3 text-center">
-                    <div className="label !text-[9px]">{t.fuel}</div>
-                    <div className="mt-1 font-mono text-[21px] font-bold text-ink-900">
+                    <div className="label !text-micro">{t.fuel}</div>
+                    <div className="mt-1 font-mono text-figure font-bold text-ink-900">
                       ₹{outlook.economics.fuel_cost_inr.toLocaleString("en-IN")}
                     </div>
                   </div>
@@ -476,8 +385,8 @@ export default function MobileApp() {
                     className="border-l bg-risk-low/[0.07] px-3 py-3 text-center"
                     style={{ borderColor: "var(--rule-faint)" }}
                   >
-                    <div className="label !text-[9px] !text-risk-low">{t.profit}</div>
-                    <div className="mt-1 font-mono text-[21px] font-bold text-risk-low">
+                    <div className="label !text-micro !text-risk-low">{t.profit}</div>
+                    <div className="mt-1 font-mono text-figure font-bold text-risk-low">
                       ₹{outlook.economics.profit_inr.toLocaleString("en-IN")}
                     </div>
                   </div>
@@ -526,12 +435,12 @@ export default function MobileApp() {
           >
             {listening ? <StopGlyph size={44} /> : <MicGlyph size={64} />}
           </button>
-          <div className="font-mono text-[13px] font-bold uppercase tracking-[0.14em] text-ink-500">
+          <div className="font-mono text-body font-bold uppercase tracking-[0.14em] text-ink-500">
             {listening ? t.listening : busy ? t.thinking : t.tapMic}
           </div>
 
           {question && (
-            <div className="w-full rounded-[3px] bg-ink-900 px-4 py-3 text-[15px] text-paper-50">
+            <div className="w-full rounded-[3px] bg-ink-900 px-4 py-3 text-lead text-paper-50">
               {question}
             </div>
           )}
@@ -551,8 +460,8 @@ export default function MobileApp() {
               onClick={() => speak(answer, language)}
               className="panel w-full px-4 py-3.5 text-left"
             >
-              <p className="text-[16px] leading-relaxed text-ink-800">{answer}</p>
-              <span className="mt-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-chart-600">
+              <p className="text-subtitle leading-relaxed text-ink-800">{answer}</p>
+              <span className="mt-2 flex items-center gap-1.5 font-mono text-label uppercase tracking-wide text-chart-600">
                 <SpeakerGlyph size={14} /> {t.listen}
               </span>
             </button>
@@ -563,7 +472,7 @@ export default function MobileApp() {
                 <button
                   key={s}
                   onClick={() => sendAsk(s)}
-                  className="chip w-full justify-center !py-3 !text-[14px]"
+                  className="chip w-full justify-center !py-3 !text-prose"
                 >
                   {s}
                 </button>
@@ -571,7 +480,7 @@ export default function MobileApp() {
             </div>
           )}
           {!question && !answer && (
-            <p className="max-w-[260px] text-center text-[13px] italic text-ink-400">
+            <p className="max-w-[260px] text-center text-body italic text-ink-400">
               “{t.askExamples}”
             </p>
           )}
@@ -598,7 +507,7 @@ export default function MobileApp() {
             }`}
           >
             {icon}
-            <span className="font-mono text-[11px] font-bold uppercase tracking-wide">{t[m]}</span>
+            <span className="font-mono text-readout font-bold uppercase tracking-wide">{t[m]}</span>
           </button>
         ))}
       </nav>

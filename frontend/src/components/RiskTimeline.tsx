@@ -1,34 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import * as api from "../api";
 import type { Language, Location, TimelinePoint } from "../types";
-import { RISK_COLOR } from "./RiskDial";
-
-const L: Record<Language, Record<string, string>> = {
-  en: {
-    title: "When is it safe to go?",
-    sub: "Risk hour by hour for the next 24 hours",
-    best: "Best window",
-    none: "No low-risk window in the next 24 hours",
-    now: "now",
-    loading: "Reading the next 24 hours…",
-  },
-  hi: {
-    title: "कब जाना सुरक्षित है?",
-    sub: "अगले 24 घंटों का घंटेवार जोखिम",
-    best: "सर्वोत्तम समय",
-    none: "अगले 24 घंटों में कोई सुरक्षित समय नहीं",
-    now: "अभी",
-    loading: "अगले 24 घंटे पढ़ रहे हैं…",
-  },
-  mr: {
-    title: "कधी जाणे सुरक्षित आहे?",
-    sub: "पुढील २४ तासांचा तासागणिक धोका",
-    best: "सर्वोत्तम वेळ",
-    none: "पुढील २४ तासांत सुरक्षित वेळ नाही",
-    now: "आत्ता",
-    loading: "पुढील २४ तास वाचत आहे…",
-  },
-};
+import { RISK_BANDS, RISK_COLOR } from "../risk";
+import { L } from "../i18n/riskTimeline";
+import { chart, ink, paper, risk, typePx } from "../tokens";
 
 /** Longest run of hours at or below `limit`, returned as [startHour, endHour]. */
 function bestWindow(points: TimelinePoint[], limit = 50): [number, number] | null {
@@ -54,26 +29,32 @@ export default function RiskTimeline({
   location: Location | null;
   language?: Language;
 }) {
-  const [points, setPoints] = useState<TimelinePoint[] | null>(null);
+  // The series is kept with the position it was read for, so a new position
+  // shows the loading state until its own series arrives.
+  const [loaded, setLoaded] = useState<{ lat: number; lon: number; points: TimelinePoint[] } | null>(
+    null,
+  );
   const t = L[language] ?? L.en;
+  const lat = location?.latitude;
+  const lon = location?.longitude;
+  const points = loaded && loaded.lat === lat && loaded.lon === lon ? loaded.points : null;
 
   useEffect(() => {
-    if (!location) return;
+    if (lat == null || lon == null) return;
     let alive = true;
-    setPoints(null);
     api
-      .riskTimeline(location.latitude, location.longitude, 24)
-      .then((d) => alive && setPoints(d.points))
-      .catch(() => alive && setPoints([]));
+      .riskTimeline(lat, lon, 24)
+      .then((d) => alive && setLoaded({ lat, lon, points: d.points }))
+      .catch(() => alive && setLoaded({ lat, lon, points: [] }));
     return () => {
       alive = false;
     };
-  }, [location?.latitude, location?.longitude]);
+  }, [lat, lon]);
 
   const window = useMemo(() => (points ? bestWindow(points) : null), [points]);
 
   if (!location) return null;
-  if (!points) return <div className="panel p-5 text-sm italic text-ink-400">{t.loading}</div>;
+  if (!points) return <div className="panel p-5 text-prose leading-5 italic text-ink-400">{t.loading}</div>;
   if (!points.length) return null;
 
   const W = 720;
@@ -96,16 +77,16 @@ export default function RiskTimeline({
     <div className="panel overflow-hidden">
       <div className="hd">
         <div>
-          <h3 className="font-display text-[15px] font-bold text-ink-900">{t.title}</h3>
-          <p className="mt-0.5 text-[11px] text-ink-400">{t.sub}</p>
+          <h3 className="font-display text-lead font-bold text-ink-900">{t.title}</h3>
+          <p className="mt-0.5 text-readout text-ink-400">{t.sub}</p>
         </div>
         {window ? (
-          <span className="shrink-0 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-2.5 py-1 font-mono text-[10.5px] font-bold tabular-nums text-risk-low">
+          <span className="shrink-0 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-2.5 py-1 font-mono text-label font-bold tabular-nums text-risk-low">
             {t.best}: {String(points[window[0]].hour).padStart(2, "0")}:00–
             {String((points[window[1]].hour + 1) % 24).padStart(2, "0")}:00
           </span>
         ) : (
-          <span className="stamp shrink-0 !px-2 !py-0.5 !text-[9px] text-risk-extreme">
+          <span className="stamp shrink-0 !px-2 !py-0.5 !text-micro text-risk-extreme">
             {t.none}
           </span>
         )}
@@ -115,18 +96,17 @@ export default function RiskTimeline({
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 150 }}>
           <defs>
             <linearGradient id="riskArea" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2A7391" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#2A7391" stopOpacity="0.02" />
+              <stop offset="0%" stopColor={chart[500]} stopOpacity="0.22" />
+              <stop offset="100%" stopColor={chart[500]} stopOpacity="0.02" />
             </linearGradient>
           </defs>
 
           {/* risk bands */}
-          {[
-            { from: 0, to: 25, color: RISK_COLOR.LOW },
-            { from: 25, to: 50, color: RISK_COLOR.MODERATE },
-            { from: 50, to: 79, color: RISK_COLOR.HIGH },
-            { from: 79, to: 100, color: RISK_COLOR.EXTREME },
-          ].map((b) => (
+          {RISK_BANDS.map((b) => ({
+            from: b.from,
+            to: b.max,
+            color: RISK_COLOR[b.category],
+          })).map((b) => (
             <rect
               key={b.from}
               x={padX}
@@ -139,7 +119,7 @@ export default function RiskTimeline({
           ))}
 
           {/* hour grid, as chart graticule */}
-          {points.map((p, i) =>
+          {points.map((_, i) =>
             i % 4 === 0 && i > 0 ? (
               <line
                 key={`g${i}`}
@@ -147,7 +127,7 @@ export default function RiskTimeline({
                 y1={padTop}
                 x2={x(i)}
                 y2={padTop + plotH}
-                stroke="#12212D"
+                stroke={ink[900]}
                 strokeWidth="0.5"
                 opacity="0.12"
               />
@@ -161,7 +141,7 @@ export default function RiskTimeline({
               y={padTop}
               width={(window[1] - window[0] + 1) * stepX}
               height={plotH}
-              fill="#1D7A50"
+              fill={risk.low}
               opacity={0.1}
             />
           )}
@@ -172,7 +152,7 @@ export default function RiskTimeline({
               width={(window[1] - window[0] + 1) * stepX}
               height={plotH}
               fill="none"
-              stroke="#1D7A50"
+              stroke={risk.low}
               strokeWidth="1"
               strokeDasharray="4 3"
               opacity={0.55}
@@ -180,7 +160,7 @@ export default function RiskTimeline({
           )}
 
           <path d={area} fill="url(#riskArea)" />
-          <path d={line} fill="none" stroke="#12212D" strokeWidth={2} strokeLinejoin="round" />
+          <path d={line} fill="none" stroke={ink[900]} strokeWidth={2} strokeLinejoin="round" />
 
           {/* per-hour dots coloured by category */}
           {points.map((p, i) => (
@@ -190,7 +170,7 @@ export default function RiskTimeline({
               cy={y(p.score)}
               r={p.warning ? 3.8 : 2.7}
               fill={RISK_COLOR[p.category]}
-              stroke={p.warning ? "#FBF7ED" : "none"}
+              stroke={p.warning ? paper[50] : "none"}
               strokeWidth={p.warning ? 1.4 : 0}
             >
               <title>
@@ -208,15 +188,15 @@ export default function RiskTimeline({
             y1={padTop - 4}
             x2={x(nowIdx)}
             y2={padTop + plotH}
-            stroke="#2A7391"
+            stroke={chart[500]}
             strokeWidth={1.3}
             strokeDasharray="4 4"
           />
           <text
             x={x(nowIdx) + 5}
             y={padTop + 6}
-            fill="#2A7391"
-            fontSize="10"
+            fill={chart[500]}
+            fontSize={typePx.label}
             fontWeight="700"
             fontFamily="'Spline Sans Mono Variable', monospace"
           >
@@ -228,7 +208,7 @@ export default function RiskTimeline({
             x={Math.min(W - 60, Math.max(30, x(points.indexOf(peak))))}
             y={Math.max(14, y(peak.score) - 7)}
             fill={RISK_COLOR[peak.category]}
-            fontSize="12"
+            fontSize={typePx.small}
             fontWeight="700"
             fontStyle="italic"
             textAnchor="middle"
@@ -244,8 +224,8 @@ export default function RiskTimeline({
                 key={`t${i}`}
                 x={x(i)}
                 y={H - 8}
-                fill="#5D7386"
-                fontSize="9.5"
+                fill={ink[400]}
+                fontSize={typePx.label}
                 textAnchor="middle"
                 fontFamily="'Spline Sans Mono Variable', monospace"
               >

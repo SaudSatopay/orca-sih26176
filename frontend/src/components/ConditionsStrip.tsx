@@ -1,10 +1,5 @@
 import type { ChatResponse, Language } from "../types";
-
-const L: Record<Language, Record<string, string>> = {
-  en: { wave: "Wave", wind: "Wind", sea: "Sea state", vis: "Visibility", sst: "Sea temp", rain: "Rain" },
-  hi: { wave: "लहरें", wind: "हवा", sea: "समुद्र", vis: "दृश्यता", sst: "तापमान", rain: "वर्षा" },
-  mr: { wave: "लाटा", wind: "वारा", sea: "समुद्र", vis: "दृश्यमानता", sst: "तापमान", rain: "पाऊस" },
-};
+import { L } from "../i18n/conditions";
 
 /** Reads the traced evidence rows rather than duplicating any parsing. */
 function findEvidence(res: ChatResponse, label: string): string | null {
@@ -40,8 +35,8 @@ export default function ConditionsStrip({
           }`}
           style={{ borderColor: "var(--rule-faint)" }}
         >
-          <div className="label truncate !text-[9px]">{tile.label}</div>
-          <div className="mt-1 truncate font-mono text-[14.5px] font-bold tabular-nums leading-none text-ink-900">
+          <div className="label truncate !text-micro">{tile.label}</div>
+          <div className="mt-1 truncate font-mono text-prose font-bold tabular-nums leading-none text-ink-900">
             {tile.value ?? "—"}
           </div>
         </div>

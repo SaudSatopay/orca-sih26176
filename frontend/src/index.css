@@ -12,13 +12,14 @@
 
 :root {
   color-scheme: light;
-  --paper: #f5eedd;
-  --paper-bright: #fbf7ed;
-  --ink: #12212d;
-  --rule: rgba(18, 33, 45, 0.28);
-  --rule-strong: rgba(18, 33, 45, 0.55);
-  --rule-faint: rgba(18, 33, 45, 0.14);
-  --chart-teal: #2a7391;
+  /* Derived from src/tokens.ts through the Tailwind theme — never literals. */
+  --paper: theme(colors.paper.100);
+  --paper-bright: theme(colors.paper.50);
+  --ink: theme(colors.ink.900);
+  --rule: theme(colors.rule.DEFAULT);
+  --rule-strong: theme(colors.rule.strong);
+  --rule-faint: theme(colors.rule.faint);
+  --chart-teal: theme(colors.chart.500);
 }
 
 html {
@@ -33,7 +34,7 @@ body,
 }
 
 body {
-  color: #263b4d;
+  color: theme(colors.ink.700);
   font-family: "Archivo Variable", "Segoe UI", "Nirmala UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   /* The sheet itself: graticule grid, aged edges, and the sea rising from
@@ -41,19 +42,19 @@ body {
   background:
     repeating-linear-gradient(
       90deg,
-      rgba(42, 115, 145, 0.06) 0 1px,
+      theme(colors.chart.500 / 6%) 0 1px,
       transparent 1px 130px
     ),
     repeating-linear-gradient(
       0deg,
-      rgba(42, 115, 145, 0.06) 0 1px,
+      theme(colors.chart.500 / 6%) 0 1px,
       transparent 1px 130px
     ),
-    radial-gradient(130% 100% at 50% -10%, transparent 55%, rgba(185, 166, 124, 0.24) 100%),
+    radial-gradient(130% 100% at 50% -10%, transparent 55%, theme(colors.paper.400 / 24%) 100%),
     linear-gradient(
       0deg,
-      rgba(42, 115, 145, 0.16),
-      rgba(42, 115, 145, 0.05) 32%,
+      theme(colors.chart.500 / 16%),
+      theme(colors.chart.500 / 5%) 32%,
       transparent 60%
     ),
     var(--paper);
@@ -287,7 +288,7 @@ body::after {
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background: #2a7391;
+  background: var(--chart-teal);
 }
 .signal-line > i:nth-child(1) {
   animation: travelx 2.6s linear infinite;
@@ -373,8 +374,8 @@ body::after {
     border-color: var(--rule);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      0 1px 3px rgba(18, 33, 45, 0.1),
-      0 14px 30px -20px rgba(18, 33, 45, 0.35);
+      0 1px 3px theme(colors.ink.900 / 10%),
+      0 14px 30px -20px theme(colors.ink.900 / 35%);
   }
   .panel-tint {
     @apply relative rounded-[3px] border bg-paper-100;
@@ -388,7 +389,7 @@ body::after {
     @apply flex items-baseline justify-between gap-3 border-b px-4 py-2.5;
     border-color: var(--rule-faint);
     /* shallow-water wash on every panel header */
-    background: linear-gradient(180deg, rgba(42, 115, 145, 0.06), rgba(42, 115, 145, 0.015));
+    background: linear-gradient(180deg, theme(colors.chart.500 / 6%), theme(colors.chart.500 / 1.5%));
   }
 
   /* Interactive sheets lift off the table slightly. */
@@ -399,33 +400,33 @@ body::after {
     transform: translateY(-3px);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      0 3px 6px rgba(18, 33, 45, 0.1),
-      0 22px 40px -22px rgba(18, 33, 45, 0.45);
+      0 3px 6px theme(colors.ink.900 / 10%),
+      0 22px 40px -22px theme(colors.ink.900 / 45%);
   }
   .lift.rule-double:hover {
-    border-top-color: #2a7391;
+    border-top-color: var(--chart-teal);
   }
 
   .label {
-    @apply font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400;
+    @apply font-mono text-label font-semibold uppercase tracking-[0.16em] text-ink-400;
   }
 
   /* ------------------------------------------------ controls */
   .btn-ink {
-    @apply inline-flex items-center gap-2 rounded-[2px] bg-ink-900 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-paper-50;
+    @apply inline-flex items-center gap-2 rounded-[2px] bg-ink-900 px-4 py-2 font-mono text-readout font-bold uppercase tracking-[0.12em] text-paper-50;
     transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   }
   .btn-ink:hover:not(:disabled) {
     @apply bg-ink-700;
     transform: translateY(-1px);
-    box-shadow: 0 6px 14px -6px rgba(18, 33, 45, 0.5);
+    box-shadow: 0 6px 14px -6px theme(colors.ink.900 / 50%);
   }
   .btn-ink:active {
     transform: translateY(1px);
     box-shadow: none;
   }
   .btn-line {
-    @apply inline-flex items-center gap-2 rounded-[2px] border px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-ink-700;
+    @apply inline-flex items-center gap-2 rounded-[2px] border px-3.5 py-2 font-mono text-readout font-bold uppercase tracking-[0.1em] text-ink-700;
     border-color: var(--rule-strong);
     background: transparent;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease,
@@ -433,9 +434,9 @@ body::after {
   }
   .btn-line:hover:not(:disabled) {
     @apply bg-ink-900 text-paper-50;
-    border-color: #12212d;
+    border-color: var(--ink);
     transform: translateY(-1px);
-    box-shadow: 0 6px 14px -6px rgba(18, 33, 45, 0.45);
+    box-shadow: 0 6px 14px -6px theme(colors.ink.900 / 45%);
   }
   .btn-line:active {
     transform: translateY(1px);
@@ -447,25 +448,25 @@ body::after {
   }
   .btn-square:hover:not(:disabled) {
     @apply bg-ink-900 text-paper-50;
-    border-color: #12212d;
+    border-color: var(--ink);
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-[2px] border bg-paper-50 px-2.5 py-1.5 text-[12px] font-medium text-ink-700;
+    @apply inline-flex items-center gap-1.5 rounded-[2px] border bg-paper-50 px-2.5 py-1.5 text-small font-medium text-ink-700;
     border-color: var(--rule);
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease,
       transform 0.2s ease;
   }
   .chip:hover:not(:disabled) {
     @apply bg-ink-900 text-paper-50;
-    border-color: #12212d;
+    border-color: var(--ink);
     transform: translateY(-1px);
   }
 
   /* Folio tabs: the underline draws itself from the left; hovering an
      inactive tab previews it in chart teal. */
   .tab {
-    @apply relative px-1 pb-2.5 pt-1 font-mono text-[11.5px] font-bold uppercase tracking-[0.14em] text-ink-300;
+    @apply relative px-1 pb-2.5 pt-1 font-mono text-readout font-bold uppercase tracking-[0.14em] text-ink-400;
     transition: color 0.2s ease;
   }
   .tab::after {
@@ -473,7 +474,7 @@ body::after {
     position: absolute;
     inset: auto 0 -1px 0;
     height: 2px;
-    background: #12212d;
+    background: var(--ink);
     transform: scaleX(0);
     transform-origin: left center;
     transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.3, 1), background-color 0.2s ease;
@@ -483,7 +484,7 @@ body::after {
   }
   .tab:not(.tab-on):hover::after {
     transform: scaleX(1);
-    background: #2a7391;
+    background: var(--chart-teal);
   }
   .tab-on {
     @apply text-ink-900;
@@ -493,7 +494,7 @@ body::after {
   }
 
   .field {
-    @apply w-full rounded-[2px] border px-3.5 py-2.5 text-[13.5px] text-ink-800 outline-none transition placeholder:text-ink-300;
+    @apply w-full rounded-[2px] border px-3.5 py-2.5 text-body text-ink-800 outline-none transition placeholder:text-ink-400;
     border-color: var(--rule);
     background: var(--paper-bright);
   }
@@ -506,7 +507,7 @@ body::after {
   /* ------------------------------------------------ chart language */
   /* Rubber-stamped verdicts — how officials mark a document. */
   .stamp {
-    @apply inline-block rounded-[2px] border-2 px-2.5 py-1 font-display text-[12px] font-black uppercase;
+    @apply inline-block rounded-[2px] border-2 px-2.5 py-1 font-display text-small font-black uppercase;
     letter-spacing: 0.18em;
     border-color: currentColor;
     box-shadow: inset 0 0 0 1px currentColor;
@@ -518,7 +519,7 @@ body::after {
   .hatch-danger {
     background-image: repeating-linear-gradient(
       45deg,
-      rgba(175, 35, 24, 0.1) 0 1.5px,
+      theme(colors.risk.extreme / 10%) 0 1.5px,
       transparent 1.5px 8px
     );
   }
@@ -559,8 +560,8 @@ body::after {
     border-color: var(--rule);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.55),
-      0 1px 3px rgba(18, 33, 45, 0.1),
-      0 14px 30px -20px rgba(18, 33, 45, 0.35);
+      0 1px 3px theme(colors.ink.900 / 10%),
+      0 14px 30px -20px theme(colors.ink.900 / 35%);
   }
   .chart-sheet::before {
     content: "";
@@ -587,7 +588,7 @@ body::after {
 
 /* ---- Leaflet: draft the map like the rest of the sheet ---- */
 .leaflet-container {
-  background: #cfe0e6;
+  background: theme(colors.sea);
   font-family: inherit;
 }
 /* Warm the basemap toward the paper. */
@@ -595,44 +596,44 @@ body::after {
   filter: sepia(0.22) saturate(0.82) brightness(1.02);
 }
 .leaflet-control-attribution {
-  background: rgba(245, 238, 221, 0.85) !important;
-  color: #5d7386 !important;
-  font-size: 9px !important;
+  background: theme(colors.paper.100 / 85%) !important;
+  color: theme(colors.ink.400) !important;
+  font-size: theme(fontSize.micro) !important;
   font-family: "Spline Sans Mono Variable", Consolas, monospace;
 }
 .leaflet-control-attribution a {
-  color: #1e5f7a !important;
+  color: theme(colors.chart.600) !important;
 }
 .leaflet-popup-content-wrapper,
 .leaflet-popup-tip {
-  background: #fbf7ed;
-  color: #263b4d;
+  background: var(--paper-bright);
+  color: theme(colors.ink.700);
   border: 1px solid var(--rule-strong);
   border-radius: 3px;
-  box-shadow: 0 10px 26px rgba(18, 33, 45, 0.28);
+  box-shadow: 0 10px 26px theme(colors.ink.900 / 28%);
 }
 .leaflet-popup-content {
   margin: 11px 13px;
   line-height: 1.5;
-  font-size: 12px;
+  font-size: theme(fontSize.small);
 }
 .leaflet-popup-content b {
   font-family: "Fraunces Variable", Georgia, serif;
-  font-size: 13px;
+  font-size: theme(fontSize.body);
 }
 .leaflet-bar {
   border: 1px solid var(--rule-strong) !important;
   border-radius: 2px !important;
-  box-shadow: 0 2px 6px rgba(18, 33, 45, 0.18) !important;
+  box-shadow: 0 2px 6px theme(colors.ink.900 / 18%) !important;
 }
 .leaflet-bar a {
-  background: #fbf7ed !important;
-  color: #263b4d !important;
+  background: var(--paper-bright) !important;
+  color: theme(colors.ink.700) !important;
   border-color: var(--rule) !important;
 }
 .leaflet-bar a:hover {
-  background: #12212d !important;
-  color: #fbf7ed !important;
+  background: var(--ink) !important;
+  color: var(--paper-bright) !important;
 }
 
 /* Restricted zones: true chart hatching (patterns defined in App's <defs>). */
@@ -668,20 +669,20 @@ path.radius-drift {
 }
 /* The storm's chart annotation. */
 .leaflet-tooltip.storm-label {
-  background: #fbf7ed;
-  color: #af2318;
-  border: 1.5px solid #af2318;
+  background: var(--paper-bright);
+  color: theme(colors.risk.extreme);
+  border: 1.5px solid theme(colors.risk.extreme);
   border-radius: 2px;
   font-family: "Spline Sans Mono Variable", Consolas, monospace;
-  font-size: 9px;
+  font-size: theme(fontSize.micro);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   padding: 3px 7px;
-  box-shadow: 0 3px 8px rgba(18, 33, 45, 0.3);
+  box-shadow: 0 3px 8px theme(colors.ink.900 / 30%);
 }
 .leaflet-tooltip-top.storm-label::before {
-  border-top-color: #af2318;
+  border-top-color: theme(colors.risk.extreme);
 }
 
 /* Everything moored on the chart rides the swell (never the Leaflet-positioned
@@ -706,13 +707,13 @@ path.radius-drift {
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(42, 115, 145, 0.4);
+  background: theme(colors.chart.500 / 40%);
   border-radius: 999px;
   border: 3px solid transparent;
   background-clip: content-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(30, 95, 122, 0.65);
+  background: theme(colors.chart.600 / 65%);
   background-clip: content-box;
 }
 ::-webkit-scrollbar-track {
