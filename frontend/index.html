@@ -2,15 +2,166 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content"
+    />
+    <title>ORCA — safe-to-fish decisions for India's coast</title>
+    <meta
+      name="description"
+      content="Ten agents read the sea and return one safe, explainable decision for a fisher, in Marathi, Hindi or English. Decision support, not an official advisory."
+    />
+    <!-- The sheet colour: paper-100 in src/tokens.ts, mirrored here and in
+         public/manifest.webmanifest (background_color, theme_color), which
+         cannot read the tokens. The app is light by design. -->
     <meta name="theme-color" content="#F5EEDD" />
+    <meta name="color-scheme" content="light" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ORCA" />
+    <meta property="og:title" content="ORCA — safe-to-fish decisions for India's coast" />
+    <meta
+      property="og:description"
+      content="Ten agents read the sea and return one safe, explainable decision for a fisher, in Marathi, Hindi or English."
+    />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="The ORCA chart: a plotted course around a hatched no-go area, with the verdict stamped."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-    <title>ORCA — Marine Decision Support</title>
-    <meta name="description" content="ORCA: a crew of AI agents turning Indian marine data into one safe, explainable decision for fishers. SIH26176." />
+    <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="ORCA" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <style>
+      /* Critical CSS for the static shell below: it paints before the bundle
+         arrives and is all a visitor without JavaScript sees. The values
+         MIRROR src/tokens.ts (paper-100, ink-900, ink-700, ink-500, chart-500,
+         chart-600, rule); if a token changes there, change it here. */
+      html {
+        background: #f5eedd;
+      }
+      body {
+        margin: 0;
+      }
+      .shell {
+        box-sizing: border-box;
+        min-height: 100vh;
+        min-height: 100svh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 14px;
+        max-width: 34rem;
+        margin: 0 auto;
+        padding: calc(24px + env(safe-area-inset-top, 0px)) 24px
+          calc(24px + env(safe-area-inset-bottom, 0px));
+        color: #263b4d;
+        font-family: "Archivo Variable", "Segoe UI", "Nirmala UI", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .shell-lockup {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #12212d;
+      }
+      .shell-mark {
+        margin: 0;
+        font-family: "Fraunces Variable", Georgia, serif;
+        font-size: 30px;
+        font-weight: 900;
+        line-height: 1;
+        letter-spacing: 0.01em;
+      }
+      .shell-rule {
+        height: 0;
+        margin: 2px 0;
+        border: 0;
+        border-top: 3px double rgba(18, 33, 45, 0.55);
+      }
+      .shell-line {
+        margin: 0;
+        color: #12212d;
+        font-family: "Fraunces Variable", Georgia, serif;
+        font-size: 24px;
+        font-weight: 600;
+        line-height: 1.25;
+        text-wrap: balance;
+      }
+      .shell-ask {
+        margin: 0;
+        color: #42596d;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      .shell-status {
+        margin: 6px 0 0;
+        color: #1e5f7a;
+        font-family: "Spline Sans Mono Variable", Consolas, monospace;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .shell-status a {
+        color: #12212d;
+      }
+      .shell-noscript {
+        margin: 6px 0 0;
+        padding-top: 12px;
+        border-top: 1px solid rgba(18, 33, 45, 0.28);
+        color: #12212d;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+    </style>
+    <noscript>
+      <style>
+        .shell-status {
+          display: none;
+        }
+      </style>
+    </noscript>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Static shell: replaced by the app on its first render. -->
+      <div class="shell">
+        <div class="shell-lockup">
+          <svg width="40" height="40" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+            <circle cx="22" cy="22" r="20" stroke="currentColor" stroke-width="1.6" />
+            <circle cx="22" cy="22" r="16.5" stroke="currentColor" stroke-width="0.7" opacity="0.55" />
+            <path d="M22 2v3M22 39v3M2 22h3M39 22h3" stroke="currentColor" stroke-width="1.4" />
+            <path d="M17.2 27.5C17.2 19.5 19.6 12.5 22.3 9c.6 6 3.1 12 4.8 18.5Z" fill="currentColor" />
+            <path d="M10.5 30q3.5-2.4 7 0t7 0 7 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+            <path d="M13.5 33.5q3-2 6 0t6 0 5.5 0" stroke="currentColor" stroke-width="1" stroke-linecap="round" opacity="0.6" />
+          </svg>
+          <p class="shell-mark">ORCA</p>
+        </div>
+        <hr class="shell-rule" />
+        <h1 class="shell-line">
+          Ten agents read the sea and return one safe, explainable decision for a fisher.
+        </h1>
+        <p class="shell-ask">
+          <span lang="en">Can I go to sea today?</span> ·
+          <span lang="hi">क्या आज समुद्र में जाऊँ?</span> ·
+          <span lang="mr">आज समुद्रात जाऊ का?</span>
+        </p>
+        <p class="shell-status" data-shell-status>Reading the sea…</p>
+        <noscript>
+          <p class="shell-noscript">
+            ORCA needs JavaScript to read the sea and draw the chart. Turn JavaScript on in your
+            browser, then reload this page. ORCA is decision support, not an official advisory.
+          </p>
+        </noscript>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
