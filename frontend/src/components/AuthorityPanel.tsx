@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import * as api from "../api";
+import { useFirstSight } from "../firstSight";
 import type { AuthorityDashboard, AuthorityRow, Language, RiskCategory } from "../types";
 import { RISK_BANDS, RISK_COLOR } from "../risk";
 import { BAND, T } from "../i18n/authority";
@@ -217,9 +218,12 @@ function CoastProfile({ rows, language, t }: { rows: AuthorityRow[]; language: L
   const stations = groups.flatMap((g) => g.rows);
   const stretchName: Record<string, string> = { west: t.west, east: t.east, islands: t.islands };
   const offset = groups.map((_, i) => groups.slice(0, i).reduce((n, g) => n + g.rows.length, 0));
+  // Constant key on purpose: the board refetches every 30 s, and a refreshed
+  // profile is not the news — the stems rise once per page load.
+  const fresh = useFirstSight("authority:coast");
 
   return (
-    <section className="panel overflow-hidden" aria-labelledby={titleId}>
+    <section className="panel overflow-hidden" aria-labelledby={titleId} data-fresh={fresh ? "" : undefined}>
       <div className="hd flex-wrap">
         <h2 id={titleId} className="label">
           {t.coast}
@@ -390,9 +394,12 @@ function BoardTable({
 
   const head = { sort, onSort, sortBy: t.sortBy };
   const plainHead = `${HEAD} text-left`;
+  // Constant key on purpose: a sort or a 30 s refresh must not redraw the
+  // meters on the rows React moves — the officer asked for an order, not a show.
+  const fresh = useFirstSight("authority:board");
 
   return (
-    <section className="panel rule-double overflow-hidden" aria-labelledby={titleId}>
+    <section className="panel rule-double overflow-hidden" aria-labelledby={titleId} data-fresh={fresh ? "" : undefined}>
       <div className="hd flex-wrap">
         <h2 id={titleId} className="label">
           {t.board}

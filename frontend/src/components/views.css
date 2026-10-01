@@ -108,6 +108,10 @@ button.v-card:active {
   height: 100%;
   background: theme(colors.chart.600);
   transform-origin: left center;
+}
+/* The meters draw once per reading ([data-fresh] on the section), never on a
+   later mount of the same reading. */
+[data-fresh] .v-factor-fill {
   animation: growx 700ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .v-factor-value {
@@ -214,6 +218,8 @@ button.v-card:active {
   display: block;
   height: 100%;
   transform-origin: left center;
+}
+[data-fresh] .v-meter-fill {
   animation: growx 700ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 .v-meter-tick {
@@ -328,6 +334,8 @@ button.v-card:active {
   margin-left: -0.5px;
   background: theme(colors.ink.900 / 30%);
   transform-origin: center bottom;
+}
+[data-fresh] .v-coast-stem {
   animation: v-stem 600ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 @keyframes v-stem {
@@ -517,9 +525,9 @@ button.v-card:active {
   .v-enter,
   .v-row-enter,
   .v-map-key-body,
-  .v-coast-stem,
-  .v-factor-fill,
-  .v-meter-fill {
+  [data-fresh] .v-coast-stem,
+  [data-fresh] .v-factor-fill,
+  [data-fresh] .v-meter-fill {
     animation: none;
   }
   .v-draft,

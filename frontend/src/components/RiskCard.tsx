@@ -1,4 +1,5 @@
 import type { Evidence, Language, RiskAssessment } from "../types";
+import { useFirstSight } from "../firstSight";
 import { LockGlyph } from "./glyphs";
 import { RISK_COLOR, RISK_INK } from "../risk";
 import { pairs } from "../crew";
@@ -40,12 +41,15 @@ export default function RiskCard({
     .filter(Boolean)
     .join(" · ");
   const dataMode = pairs(ui.data)[risk.mode] ?? risk.mode;
+  // The stamp, the count and the bars belong to this reading. They play when
+  // it arrives and stay still when the sheet is only opened again.
+  const fresh = useFirstSight(`risk:${risk.generated_at}:${risk.category}:${risk.score}`);
 
   return (
     <section className="verdict panel rule-double overflow-hidden" aria-labelledby="verdict-words">
       <div className="verdict-body">
         <div className="flex items-center gap-5 p-5">
-          <RiskDial score={risk.score} category={risk.category} label={band} size={124} />
+          <RiskDial score={risk.score} category={risk.category} label={band} size={124} fresh={fresh} />
           <div className="min-w-0 flex-1">
             <p className="label">
               {ui.verdict} · {ui.outOf.replace("{n}", String(risk.score))}
@@ -61,14 +65,14 @@ export default function RiskCard({
               {/* the verdict, stamped on the document */}
               <span
                 key={`${risk.category}-${risk.score}`}
-                className="stamp animate-stampIn text-label"
+                className={`stamp ${fresh ? "animate-stampIn" : ""} text-label`}
                 style={{ color: printed }}
               >
                 {band}
               </span>
               {risk.official_warning && (
                 <span
-                  className="stamp animate-stampIn text-label text-risk-extreme"
+                  className={`stamp ${fresh ? "animate-stampIn" : ""} text-label text-risk-extreme`}
                   style={{ animationDelay: "120ms" }}
                 >
                   {ui.warning}
@@ -107,7 +111,7 @@ export default function RiskCard({
                 </div>
                 <div className="mt-1 h-[3px] overflow-hidden bg-ink-900/10">
                   <div
-                    className="grow-x h-full"
+                    className={`${fresh ? "grow-x" : ""} h-full`}
                     style={{ width: `${(f.contribution / max) * 100}%`, background: color }}
                   />
                 </div>

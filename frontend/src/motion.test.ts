@@ -10,12 +10,6 @@ const styles = import.meta.glob<string>("./**/*.css", {
   query: "?raw",
   import: "default",
 });
-const config = import.meta.glob<string>("../tailwind.config.js", {
-  eager: true,
-  query: "?raw",
-  import: "default",
-});
-
 const bare = (css: string) => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
 /** Every `@keyframes` block: its file, its name and the properties it animates. */

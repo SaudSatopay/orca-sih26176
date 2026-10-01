@@ -106,6 +106,8 @@ export default function MarineMap({
   const [probe, setProbe] = useState<PositionCheck | null>(null);
   const [dragging, setDragging] = useState(false);
   const [keyOpen, setKeyOpen] = useState(() => !startsNarrow());
+  // The key's rise is for the reader opening it, not for the chart mounting.
+  const [keyTouched, setKeyTouched] = useState(false);
   // The grounds view (a search radius is given) is tall from the first paint,
   // so the sheet does not jump when the grounds arrive.
   const mapHeight = heightPx ?? (areas.length || radiusKm ? 540 : 420);
@@ -588,7 +590,10 @@ export default function MarineMap({
             aria-expanded={keyOpen}
             aria-controls={keyId}
             title={keyOpen ? tx.hideKey : tx.showKey}
-            onClick={() => setKeyOpen((v) => !v)}
+            onClick={() => {
+              setKeyTouched(true);
+              setKeyOpen((v) => !v);
+            }}
             className="flex w-full items-center justify-between gap-3 px-3 py-1.5 font-mono text-label font-bold uppercase tracking-[0.16em] text-ink-500"
           >
             {legend.symbols}
@@ -596,7 +601,7 @@ export default function MarineMap({
               <ChevronGlyph size={9} className="v-chevron" />
             </span>
           </button>
-          <div id={keyId} hidden={!keyOpen} className="v-map-key-body px-3 pb-2">
+          <div id={keyId} hidden={!keyOpen} className={`${keyTouched ? "v-map-key-body " : ""}px-3 pb-2`}>
             {[
               [risk.low, legend.veryGood],
               [chance.some, legend.some],
