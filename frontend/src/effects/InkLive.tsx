@@ -56,9 +56,11 @@ export default function InkLive({ active, onReady, onFail }: EffectProps) {
   // The slot hands fresh callbacks on every render; the lifecycle effects
   // below must not re-run (and release the context!) over an identity change.
   const onReadyRef = useRef(onReady);
-  onReadyRef.current = onReady;
   const onFailRef = useRef(onFail);
-  onFailRef.current = onFail;
+  useEffect(() => {
+    onReadyRef.current = onReady;
+    onFailRef.current = onFail;
+  });
 
   // The subject: drawn once, after the face is really loaded.
   useEffect(() => {
