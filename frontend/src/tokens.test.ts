@@ -1,6 +1,8 @@
 /// <reference types="vite/client" />
 import { describe, expect, it } from "vitest";
-import { alpha, chance, colors, flow, fontSize, ink, paper, rule, sst, typePx } from "./tokens";
+import {
+  alpha, chance, colors, flow, fontSize, ink, paper, rule, sst, TYPE_BASE, TYPE_RATIO, typePx,
+} from "./tokens";
 
 describe("tokens", () => {
   it("writes a hex colour at an opacity", () => {
@@ -44,18 +46,18 @@ describe("tokens", () => {
   });
 });
 
+const sources = import.meta.glob<string>(
+  ["./**/*.{ts,tsx}", "!./tokens.ts", "!./**/*.test.{ts,tsx}"],
+  { eager: true, query: "?raw", import: "default" },
+);
+
+const styles = import.meta.glob<string>("./**/*.css", {
+  eager: true,
+  query: "?raw",
+  import: "default",
+});
+
 describe("one token source", () => {
-  const sources = import.meta.glob<string>(
-    ["./**/*.{ts,tsx}", "!./tokens.ts", "!./**/*.test.{ts,tsx}"],
-    { eager: true, query: "?raw", import: "default" },
-  );
-
-  const styles = import.meta.glob<string>("./**/*.css", {
-    eager: true,
-    query: "?raw",
-    import: "default",
-  });
-
   it("no source file spells a colour as a literal hex", () => {
     expect(Object.keys(sources).length).toBeGreaterThan(30);
     const offenders: string[] = [];
@@ -80,15 +82,35 @@ describe("one token source", () => {
 });
 
 describe("type scale", () => {
-  it("rises strictly, one step per role", () => {
+  it("has nine steps, the smallest 11 px", () => {
     const sizes = Object.values(typePx);
+    expect(sizes).toHaveLength(9);
+    expect(Math.min(...sizes)).toBe(11);
     expect(sizes).toEqual([...sizes].sort((a, b) => a - b));
-    expect(new Set(sizes).size).toBe(sizes.length);
+  });
+
+  it("is a minor third counted from 16 px, rounded to the pixel", () => {
+    const sizes = Object.values(typePx);
+    const base = sizes.indexOf(TYPE_BASE);
+    expect(base).toBeGreaterThan(-1);
+    sizes.forEach((px, i) => {
+      expect(px, `step ${i}`).toBe(Math.round(TYPE_BASE * TYPE_RATIO ** (i - base)));
+    });
   });
 
   it("is handed to Tailwind in pixels", () => {
-    expect(fontSize.label).toBe("10px");
+    expect(fontSize.label).toBe("11px");
     expect(fontSize.hero).toBe("48px");
     expect(Object.keys(fontSize)).toEqual(Object.keys(typePx));
+  });
+
+  it("no source file uses a step that was folded into another", () => {
+    const folded = new RegExp(
+      String.raw`(?<![\w-])text-(?:micro|readout|small|prose|subtitle|heading|figure|tile)\b(?!-)|\b(?:fontSize|typePx)\.(?:micro|readout|small|prose|subtitle|heading|figure|tile)\b`,
+    );
+    const offenders = Object.entries({ ...sources, ...styles })
+      .filter(([, text]) => folded.test(text))
+      .map(([file]) => file);
+    expect(offenders).toEqual([]);
   });
 });

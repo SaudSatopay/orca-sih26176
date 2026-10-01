@@ -4,7 +4,7 @@ import { FishGlyph, SchoolGlyph, WarnGlyph } from "./glyphs";
 import { EmptySweepGlyph, NoEntryGlyph } from "./viewGlyphs";
 import { Draft, DraftSheet, OfflineNotice } from "./SheetStates";
 import { FACTORS, RATING_WORD, T } from "../i18n/fishing";
-import { RATING_COLOR } from "../risk";
+import { RATING_COLOR, RATING_INK } from "../risk";
 import {
   CHOOSE_HARBOUR_EVENT,
   FACTOR_KEYS,
@@ -166,7 +166,7 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
                 <div className="min-w-0 flex-1">
                   <p className="text-body font-semibold leading-snug text-ink-900">{text}</p>
                   {zone && (
-                    <p className="mt-1 font-mono text-readout leading-snug text-ink-700">
+                    <p className="mt-1 font-mono text-label leading-snug text-ink-700">
                       {zone.window && zone.name !== text ? `${zone.name} · ` : ""}
                       {Math.round(zone.distance_km)} km {t.away} ·{" "}
                       {zone.window
@@ -176,7 +176,7 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
                   )}
                 </div>
                 {zone?.window && zone.active_now && (
-                  <span className="shrink-0 self-center border border-risk-extreme bg-paper-50 px-1.5 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.1em] text-risk-extreme">
+                  <span className="shrink-0 self-center border border-risk-extreme bg-paper-50 px-1.5 py-0.5 font-mono text-label font-bold uppercase tracking-[0.1em] text-risk-extreme">
                     {t.closedNow}
                   </span>
                 )}
@@ -200,7 +200,7 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
               {figures.map((f) => (
                 <div key={f.k}>
                   <dt className={`label ${f.alert ? "!text-risk-extreme" : ""}`}>{f.k}</dt>
-                  <dd className="mt-1 font-mono text-subtitle font-bold tabular-nums leading-tight text-ink-900">
+                  <dd className="mt-1 font-mono text-lead font-bold tabular-nums leading-tight text-ink-900">
                     {f.v}
                   </dd>
                   {f.note && <dd className="mt-0.5 text-label leading-snug text-ink-500">{f.note}</dd>}
@@ -244,12 +244,12 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
                 <div className="label truncate !tracking-[0.1em]">{dayName(f.day_offset, t)}</div>
                 <div
                   className="sounding mt-1.5 text-numeral leading-none"
-                  style={{ color: RATING_COLOR[f.rating] }}
+                  style={{ color: RATING_INK[f.rating] }}
                 >
                   {f.probability}
-                  <span className="text-small text-ink-500">%</span>
+                  <span className="text-body text-ink-500">%</span>
                 </div>
-                <div className="mt-1 text-readout font-semibold leading-tight text-ink-800">
+                <div className="mt-1 text-label font-semibold leading-tight text-ink-800">
                   {words[f.rating]}
                 </div>
                 <div className="mt-1.5 font-mono text-label leading-snug text-ink-500">
@@ -267,7 +267,7 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
                 {f.official_warning && (
                   <div className="mt-1.5 inline-flex items-center gap-1 border border-risk-extreme bg-paper-50 px-1.5 py-0.5 text-risk-extreme">
                     <WarnGlyph size={10} />
-                    <span className="font-mono text-micro font-bold uppercase tracking-[0.08em]">
+                    <span className="font-mono text-label font-bold uppercase tracking-[0.08em]">
                       {t.warning}
                     </span>
                   </div>
@@ -389,18 +389,18 @@ function GroundCard({
 
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-            <span className="font-mono text-subtitle font-bold tabular-nums leading-none text-ink-900">
+            <span className="font-mono text-lead font-bold tabular-nums leading-none text-ink-900">
               {Math.round(a.distance_km)}
-              <span className="ml-[3px] text-readout">km</span>
+              <span className="ml-[3px] text-label">km</span>
             </span>
-            <span className="font-mono text-readout font-semibold text-ink-500">{a.bearing}</span>
+            <span className="font-mono text-label font-semibold text-ink-500">{a.bearing}</span>
             {a.recommended && (
-              <span className="stamp !px-1.5 !py-0.5 !text-micro text-risk-low">{t.bestTrip}</span>
+              <span className="stamp !px-1.5 !py-0.5 !text-label text-risk-low">{t.bestTrip}</span>
             )}
           </span>
           {species.length > 0 && (
             <span
-              className="mt-1.5 flex items-start gap-2 text-small leading-snug"
+              className="mt-1.5 flex items-start gap-2 text-body leading-snug"
               title={`${t.likely}: ${t.likelyNote}`}
             >
               <FishGlyph size={13} className="mt-[2px] shrink-0 text-chart-600" />
@@ -418,7 +418,10 @@ function GroundCard({
         </span>
 
         <span className="shrink-0 text-right">
-          <span className="sounding block text-headline leading-none" style={{ color }}>
+          <span
+            className="sounding block text-headline leading-none"
+            style={{ color: RATING_INK[a.rating] }}
+          >
             {a.probability}
             <span className="text-body text-ink-500">%</span>
           </span>
@@ -488,7 +491,7 @@ function Trip({ data, t }: { data: FishingOutlook; t: Strings }) {
           <div key={x.k} className={x.hero ? "bg-risk-low/[0.07]" : ""}>
             <dt className="label">{x.k}</dt>
             <dd
-              className={`mt-1 font-mono text-figure font-bold tabular-nums leading-none ${
+              className={`mt-1 font-mono text-title font-bold tabular-nums leading-none ${
                 x.hero ? "text-risk-low" : "text-ink-900"
               }`}
             >

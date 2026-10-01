@@ -44,7 +44,7 @@ import {
   type MobileStrings,
 } from "../i18n/mobile";
 import { PORTS } from "../ports";
-import { RATING_COLOR, RISK_BANDS, RISK_COLOR } from "../risk";
+import { RATING_COLOR, RATING_INK, RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
 import {
   askInput,
   getRecognition,
@@ -247,7 +247,7 @@ function ListenButton({
           {speaking ? t.stop : t.listen}
         </>
       ) : (
-        <span className="text-small normal-case tracking-normal">{t.noVoiceOut}</span>
+        <span className="text-body normal-case tracking-normal">{t.noVoiceOut}</span>
       )}
     </button>
   );
@@ -273,7 +273,7 @@ function OfflineNotice({
       <div className="min-w-0 flex-1">
         <p className="font-display text-lead font-bold leading-snug text-ink-900">{e.offlineTitle}</p>
         <p className="mt-1 text-body leading-relaxed text-ink-700">{body}</p>
-        {note && <p className="mt-1.5 font-mono text-readout text-ink-500">{note}</p>}
+        {note && <p className="mt-1.5 font-mono text-label text-ink-500">{note}</p>}
         <button
           type="button"
           onClick={onRetry}
@@ -362,7 +362,7 @@ function Sheet({
           className="flex items-center justify-between gap-3 border-b py-1.5 pl-4 pr-1.5"
           style={{ borderColor: "var(--rule-faint)" }}
         >
-          <h2 id={titleId} className="label !text-readout !text-ink-700">
+          <h2 id={titleId} className="label !text-label !text-ink-700">
             {title}
           </h2>
           <button
@@ -407,7 +407,7 @@ function SheetRow({
       {icon}
       <span className="min-w-0 flex-1">
         <span className="block text-title font-bold leading-snug text-ink-900">{title}</span>
-        {detail && <span className="block font-mono text-readout text-ink-500">{detail}</span>}
+        {detail && <span className="block font-mono text-label text-ink-500">{detail}</span>}
       </span>
       {current && <CheckGlyph size={18} className="shrink-0 text-chart-600" />}
     </button>
@@ -421,7 +421,7 @@ function TodayDraft({ label }: { label: string }) {
   return (
     <div className="space-y-3" role="status" aria-live="polite">
       <div className="panel rule-double px-4 pb-4 pt-3">
-        <div className="flex items-center gap-2 font-mono text-readout font-bold uppercase tracking-[0.14em] text-chart-700">
+        <div className="flex items-center gap-2 font-mono text-label font-bold uppercase tracking-[0.14em] text-chart-700">
           <CompassMark size={18} className="text-chart-600" />
           {label}
         </div>
@@ -475,7 +475,7 @@ function MapDraft({ label, height }: { label: string; height: number }) {
       <div className="chart-frame m-draft-chart grid place-items-center" style={{ height }}>
         <div className="flex flex-col items-center gap-2 rounded-[2px] border border-ink-700/40 bg-paper-50/95 px-4 py-3">
           <CompassMark size={40} className="text-ink-800" />
-          <span className="font-mono text-readout font-bold uppercase tracking-[0.14em] text-ink-700">
+          <span className="font-mono text-label font-bold uppercase tracking-[0.14em] text-ink-700">
             {label}
           </span>
         </div>
@@ -514,6 +514,7 @@ function Verdict({
 
   const { score, category, wave_height_m: wave, wind_speed_kmh: wind } = outlook.safety;
   const color = RISK_COLOR[category];
+  const printed = RISK_INK[category];
   const danger = category === "HIGH" || category === "EXTREME";
   const counted = useCountUp(score, enter);
   const read = parseClock(outlook.generated_at);
@@ -542,26 +543,26 @@ function Verdict({
       {/* the verdict — colour and symbol first, words second */}
       <div className="flex items-center gap-4 px-4 pt-3.5">
         <Ring score={score} color={color} size={128}>
-          <span style={{ color }}>
+          <span style={{ color: printed }}>
             {danger ? <WarnGlyph size={26} /> : <BoatGlyph size={28} />}
           </span>
           <span
             className="font-display text-dial font-black leading-none tabular-nums"
-            style={{ color }}
+            style={{ color: printed }}
           >
             {counted}
           </span>
-          <span className="mt-0.5 font-mono text-readout font-bold text-ink-500">/ 100</span>
+          <span className="mt-0.5 font-mono text-label font-bold text-ink-500">/ 100</span>
         </Ring>
         <div className="min-w-0">
-          <span className="m-stamp" style={{ color }}>
+          <span className="m-stamp" style={{ color: printed }}>
             {CATEGORY[language][category]}
           </span>
-          <p className="mt-3 text-subtitle font-semibold leading-tight text-ink-900">
+          <p className="mt-3 text-lead font-semibold leading-tight text-ink-900">
             {fill(t.riskOutOf, { n: score })}
           </p>
           {readings.length > 0 && (
-            <p className="mt-1.5 font-mono text-readout leading-relaxed text-ink-500">
+            <p className="mt-1.5 font-mono text-label leading-relaxed text-ink-500">
               {readings.map((r) => (
                 <span key={String(r)} className="block">
                   {r}
@@ -572,7 +573,7 @@ function Verdict({
         </div>
       </div>
 
-      <p className="px-4 pt-3.5 font-display text-heading font-semibold leading-snug text-ink-900 [text-wrap:balance]">
+      <p className="px-4 pt-3.5 font-display text-title font-semibold leading-snug text-ink-900 [text-wrap:balance]">
         {outlook.advice[0]}
       </p>
 
@@ -603,6 +604,7 @@ function AnswerCard({
   const { headline, reasons } = readAnswer(res.answer);
   const risk = res.risk;
   const color = risk ? RISK_COLOR[risk.category] : ink[500];
+  const printed = risk ? RISK_INK[risk.category] : ink[500];
   const why = reasons.length ? reasons : (risk?.factors ?? []).slice(0, 3).map((f) => f.detail);
 
   return (
@@ -616,13 +618,13 @@ function AnswerCard({
           <Ring score={risk.score} color={color} size={84} stroke={10}>
             <span
               className="font-display text-numeral font-black leading-none tabular-nums"
-              style={{ color }}
+              style={{ color: printed }}
             >
               {Math.round(risk.score)}
             </span>
           </Ring>
           <div className="min-w-0">
-            <span className="m-stamp" style={{ color }}>
+            <span className="m-stamp" style={{ color: printed }}>
               {CATEGORY[language][risk.category as RiskCategory]}
             </span>
             <p className="mt-2.5 text-lead font-semibold leading-tight text-ink-900">
@@ -632,7 +634,7 @@ function AnswerCard({
         </div>
       )}
 
-      <p className="px-4 pt-3.5 font-display text-heading font-semibold leading-snug text-ink-900 [text-wrap:balance]">
+      <p className="px-4 pt-3.5 font-display text-title font-semibold leading-snug text-ink-900 [text-wrap:balance]">
         {headline}
       </p>
 
@@ -654,7 +656,7 @@ function AnswerCard({
             {why.map((reason, i) => (
               <li
                 key={reason}
-                className="flex items-baseline gap-2.5 border-b py-2 text-subtitle leading-snug text-ink-800 last:border-b-0"
+                className="flex items-baseline gap-2.5 border-b py-2 text-lead leading-snug text-ink-800 last:border-b-0"
                 style={{ borderColor: "var(--rule-faint)" }}
               >
                 <span className="sounding w-4 shrink-0 text-lead text-chart-700">{i + 1}</span>
@@ -1041,7 +1043,7 @@ export default function MobileApp() {
         <button
           type="button"
           onClick={locateMe}
-          className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-readout font-bold uppercase tracking-[0.08em]"
+          className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-label font-bold uppercase tracking-[0.08em]"
         >
           {t.useMyPosition}
         </button>
@@ -1050,7 +1052,7 @@ export default function MobileApp() {
           type="button"
           onClick={() => setSheet("harbour")}
           aria-haspopup="dialog"
-          className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-readout font-bold uppercase tracking-[0.08em]"
+          className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-label font-bold uppercase tracking-[0.08em]"
         >
           {t.chooseHarbour}
         </button>
@@ -1074,10 +1076,10 @@ export default function MobileApp() {
       <header className="m-header">
         <CompassMark size={34} className="shrink-0 text-ink-900" />
         <div className="min-w-0 flex-1">
-          <h1 className="font-display text-figure font-black leading-none text-ink-900" translate="no">
+          <h1 className="font-display text-headline font-black leading-none text-ink-900" translate="no">
             ORCA
           </h1>
-          <p className="mt-1 truncate text-small leading-tight text-ink-500">{t.purpose}</p>
+          <p className="mt-1 truncate text-body leading-tight text-ink-500">{t.purpose}</p>
         </div>
         <button
           type="button"
@@ -1131,7 +1133,7 @@ export default function MobileApp() {
                   className="panel hatch-danger m-press flex min-h-[56px] w-full items-center gap-3 border-risk-extreme/70 px-4 py-3 text-left"
                 >
                   <WarnGlyph size={30} className="shrink-0 text-risk-extreme" />
-                  <span className="font-display text-subtitle font-bold leading-tight text-risk-extreme">
+                  <span className="font-display text-lead font-bold leading-tight text-risk-extreme">
                     {t.warnSpeak}
                   </span>
                   <span className="ml-auto shrink-0 text-risk-extreme">
@@ -1146,7 +1148,7 @@ export default function MobileApp() {
                   <div className="font-display text-title font-bold leading-tight text-ink-900">
                     {t.noTrip}
                   </div>
-                  <p className="mt-1 text-prose leading-snug text-ink-700">
+                  <p className="mt-1 text-lead leading-snug text-ink-700">
                     {outlook.safety.improves_after
                       ? fill(t.noTripUntil, { t: outlook.safety.improves_after })
                       : t.noTripBody}
@@ -1160,10 +1162,10 @@ export default function MobileApp() {
                   {windowText && (
                     <div className="px-3.5 py-3">
                       <div className="label">{t.bestTime}</div>
-                      <div className="mt-1.5 font-display text-heading font-bold leading-tight text-ink-900">
+                      <div className="mt-1.5 font-display text-title font-bold leading-tight text-ink-900">
                         {windowText}
                       </div>
-                      <div className="mt-1 text-small text-ink-500">{t.dayToday}</div>
+                      <div className="mt-1 text-body text-ink-500">{t.dayToday}</div>
                     </div>
                   )}
                   {back && (
@@ -1172,10 +1174,10 @@ export default function MobileApp() {
                       style={{ borderColor: "var(--rule-faint)" }}
                     >
                       <div className="label">{t.returnBy}</div>
-                      <div className="mt-1.5 font-display text-heading font-bold leading-tight text-ink-900">
+                      <div className="mt-1.5 font-display text-title font-bold leading-tight text-ink-900">
                         {unbroken(back.time)}
                       </div>
-                      <div className="mt-1 text-small text-ink-500">{back.day}</div>
+                      <div className="mt-1 text-body text-ink-500">{back.day}</div>
                     </div>
                   )}
                 </div>
@@ -1205,7 +1207,7 @@ export default function MobileApp() {
                           className="m-row flex min-h-[68px] w-full items-center gap-3 px-3.5 py-2.5 text-left"
                         >
                           <span
-                            className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-4 bg-paper-50 font-display text-heading font-extrabold text-ink-900"
+                            className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-4 bg-paper-50 font-display text-title font-extrabold text-ink-900"
                             style={{ borderColor: RATING_COLOR[a.rating] }}
                           >
                             {a.rank}
@@ -1214,16 +1216,16 @@ export default function MobileApp() {
                             <span className="block text-title font-bold leading-tight text-ink-900">
                               {Math.round(a.distance_km)} {t.km}
                             </span>
-                            <span className="mt-0.5 block truncate font-mono text-readout text-chart-700">
+                            <span className="mt-0.5 block truncate font-mono text-label text-chart-700">
                               {speciesLine(a.likely_species, " · ")}
                             </span>
                           </span>
                           <span
                             className="sounding shrink-0 text-numeral leading-none"
-                            style={{ color: RATING_COLOR[a.rating] }}
+                            style={{ color: RATING_INK[a.rating] }}
                           >
                             {a.probability}
-                            <span className="text-prose">%</span>
+                            <span className="text-body">%</span>
                             <span className="m-sr"> {t.chance}.</span>
                           </span>
                           <SpeakerGlyph size={18} className="shrink-0 text-chart-600" />
@@ -1240,13 +1242,13 @@ export default function MobileApp() {
                 <div className="panel grid grid-cols-2">
                   <div className="px-3.5 py-3">
                     <div className="label">{t.fuel}</div>
-                    <div className="mt-1.5 font-mono text-heading font-bold leading-tight text-ink-900">
+                    <div className="mt-1.5 font-mono text-title font-bold leading-tight text-ink-900">
                       ₹{outlook.economics.fuel_cost_inr.toLocaleString("en-IN")}
                     </div>
                   </div>
                   <div className="border-l px-3.5 py-3" style={{ borderColor: "var(--rule-faint)" }}>
                     <div className="label">{t.profit}</div>
-                    <div className="mt-1.5 font-mono text-heading font-bold leading-tight text-risk-low">
+                    <div className="mt-1.5 font-mono text-title font-bold leading-tight text-risk-low">
                       ₹{outlook.economics.profit_inr.toLocaleString("en-IN")}
                     </div>
                   </div>
@@ -1327,13 +1329,13 @@ export default function MobileApp() {
                   {listening ? t.tapMicStop : busy ? t.thinking : t.tapMic}
                 </p>
                 {issueText && (
-                  <p role="alert" className="m-rise text-center text-prose leading-snug text-ink-800">
+                  <p role="alert" className="m-rise text-center text-lead leading-snug text-ink-800">
                     {issueText}
                   </p>
                 )}
               </div>
             ) : (
-              <p className="panel-tint flex items-start gap-3 px-3.5 py-3 text-prose leading-snug text-ink-800">
+              <p className="panel-tint flex items-start gap-3 px-3.5 py-3 text-lead leading-snug text-ink-800">
                 <MicGlyph size={22} className="mt-0.5 shrink-0 text-ink-500" />
                 {micBlocked ? t.micBlocked : t.cannotListen}
               </p>
@@ -1367,7 +1369,7 @@ export default function MobileApp() {
                 <div className="font-mono text-label font-semibold uppercase tracking-[0.16em] text-chart-300">
                   {t.youAsked}
                 </div>
-                <p className="mt-1 text-subtitle leading-snug text-paper-50">{question}</p>
+                <p className="mt-1 text-lead leading-snug text-paper-50">{question}</p>
               </div>
             )}
 
@@ -1407,7 +1409,7 @@ export default function MobileApp() {
                     key={s}
                     type="button"
                     onClick={() => void sendAsk(s)}
-                    className="m-press m-btn-line flex min-h-[48px] w-full items-center gap-3 rounded-[2px] px-3.5 py-2 text-left text-subtitle font-medium leading-snug"
+                    className="m-press m-btn-line flex min-h-[48px] w-full items-center gap-3 rounded-[2px] px-3.5 py-2 text-left text-lead font-medium leading-snug"
                   >
                     <span className="min-w-0 flex-1">{s}</span>
                     <CourseArrow size={16} className="shrink-0 text-chart-600" />
@@ -1430,7 +1432,7 @@ export default function MobileApp() {
             className="m-tab"
           >
             {m === "today" ? <BoatGlyph size={26} /> : m === "map" ? <MapGlyph size={26} /> : <MicGlyph size={26} />}
-            <span className="font-mono text-readout font-bold uppercase tracking-wide">{t[m]}</span>
+            <span className="font-mono text-label font-bold uppercase tracking-wide">{t[m]}</span>
           </button>
         ))}
         <button
@@ -1442,9 +1444,9 @@ export default function MobileApp() {
           {/* the अ is set in the phone's own Devanagari face: one glyph must not
               cost the 127 KB serif */}
           <span className="flex h-[26px] items-center text-title font-bold leading-none" aria-hidden>
-            अ<span className="px-0.5 font-mono text-readout text-ink-400">/</span>A
+            अ<span className="px-0.5 font-mono text-label text-ink-400">/</span>A
           </span>
-          <span className="font-mono text-readout font-bold uppercase tracking-wide" aria-hidden>
+          <span className="font-mono text-label font-bold uppercase tracking-wide" aria-hidden>
             {LANGUAGE_MARK[language]}
           </span>
           <span className="m-sr">
@@ -1569,7 +1571,7 @@ function MapPane({
           <button
             type="button"
             onClick={onRetryZones}
-            className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-readout font-bold uppercase tracking-[0.08em]"
+            className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-label font-bold uppercase tracking-[0.08em]"
           >
             {ERRORS[language].retry}
           </button>

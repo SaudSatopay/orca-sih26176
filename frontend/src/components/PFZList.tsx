@@ -2,7 +2,7 @@ import { useId } from "react";
 import type { Language, PFZZone } from "../types";
 import { SchoolGlyph } from "./glyphs";
 import { L } from "../i18n/pfz";
-import { chart, risk } from "../tokens";
+import { chart, risk, riskInk } from "../tokens";
 import "./views.css";
 
 /**
@@ -46,15 +46,15 @@ export default function PFZList({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                     <span className="sr-only">{z.rank}. </span>
-                    <span className="font-mono text-subtitle font-bold tabular-nums leading-none text-ink-900">
+                    <span className="font-mono text-lead font-bold tabular-nums leading-none text-ink-900">
                       {z.distance_km}
-                      <span className="ml-[3px] text-readout">km</span>
+                      <span className="ml-[3px] text-label">km</span>
                     </span>
-                    <span className="font-mono text-readout font-semibold text-ink-500">
+                    <span className="font-mono text-label font-semibold text-ink-500">
                       {z.bearing}
                     </span>
                     {best && (
-                      <span className="stamp !px-1.5 !py-0.5 !text-micro text-risk-low">{t.best}</span>
+                      <span className="stamp !px-1.5 !py-0.5 !text-label text-risk-low">{t.best}</span>
                     )}
                   </div>
                   <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-label leading-snug text-ink-500">
@@ -72,7 +72,10 @@ export default function PFZList({
                   </div>
                 </div>
                 <div className="shrink-0 text-right">
-                  <div className="sounding text-headline leading-none" style={{ color: ring }}>
+                  <div
+                    className="sounding text-headline leading-none"
+                    style={{ color: best ? riskInk.low : chart[600] }}
+                  >
                     {Math.round(z.confidence * 100)}
                     <span className="text-body text-ink-500">%</span>
                   </div>

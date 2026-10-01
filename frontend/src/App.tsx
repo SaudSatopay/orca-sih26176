@@ -52,7 +52,7 @@ import { CATEGORY } from "./i18n/riskCard";
 import { TOUR } from "./i18n/tour";
 import { useFittedHeight, useMediaQuery, usePageTop } from "./layout";
 import { PORTS } from "./ports";
-import { RISK_COLOR } from "./risk";
+import { RISK_INK } from "./risk";
 import { SPEECH_LOCALE } from "./speech";
 import { readBootParams } from "./boot";
 import { ink, risk } from "./tokens";
@@ -438,7 +438,7 @@ export default function App() {
       k: ui.safety,
       v: outlook ? `${outlook.safety.score}` : "—",
       s: outlook ? (bands[outlook.safety.category] ?? outlook.safety.category) : "",
-      color: outlook ? RISK_COLOR[outlook.safety.category] : undefined,
+      color: outlook ? RISK_INK[outlook.safety.category] : undefined,
     },
     { k: ui.waves, v: outlook ? `${outlook.safety.wave_height_m ?? "—"}` : "—", s: "m" },
     {
@@ -481,11 +481,11 @@ export default function App() {
             <span className="min-w-0">
               <span
                 translate="no"
-                className="block font-display text-display font-black leading-none tracking-tight text-ink-900"
+                className="block font-display text-numeral font-black leading-none tracking-tight text-ink-900"
               >
                 ORCA
               </span>
-              <span className="mt-1 block font-mono text-micro font-semibold uppercase tracking-[0.18em] text-chart-600">
+              <span className="mt-1 block font-mono text-label font-semibold uppercase tracking-[0.18em] text-chart-600">
                 {ui.tagline}
               </span>
               <span className="sr-only">. {ui.frontPage}</span>
@@ -670,7 +670,7 @@ export default function App() {
                     >
                       <dt className="label truncate">{x.k}</dt>
                       <dd
-                        className="mt-1 truncate font-mono text-figure font-bold tabular-nums leading-none text-ink-900"
+                        className="mt-1 truncate font-mono text-headline font-bold tabular-nums leading-none text-ink-900"
                         style={x.color ? { color: x.color } : undefined}
                       >
                         {x.v}
@@ -793,7 +793,7 @@ export default function App() {
                         <circle cx="38" cy="38" r="36.5" fill="none" stroke={ink[300]} strokeWidth="0.8" />
                       </svg>
                       <div className="min-w-0">
-                        <h2 className="font-display text-heading font-bold leading-snug text-ink-900">
+                        <h2 className="font-display text-title font-bold leading-snug text-ink-900">
                           {ui.pendingTitle}
                         </h2>
                         <p className="mt-1 max-w-[62ch] text-body leading-relaxed text-ink-700">
@@ -831,7 +831,7 @@ export default function App() {
                           <h3 className="font-display text-lead font-bold leading-snug text-risk-extreme">
                             {a.headline}
                           </h3>
-                          <p className="mt-1 text-small leading-relaxed text-ink-700">{a.detail}</p>
+                          <p className="mt-1 text-body leading-relaxed text-ink-700">{a.detail}</p>
                           <p className="mt-1 font-mono text-label uppercase tracking-wide text-ink-500">
                             {a.source} · {a.severity}
                             {a.valid_till ? ` · ${ui.validTill} ${a.valid_till}` : ""}
@@ -863,7 +863,7 @@ export default function App() {
                           style={r.recommended ? undefined : { borderColor: "var(--rule)" }}
                         >
                           <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                            <h3 className="flex items-center gap-2.5 font-display text-prose font-bold text-ink-900">
+                            <h3 className="flex items-center gap-2.5 font-display text-body font-bold text-ink-900">
                               {/* course symbology, drawn as plotted */}
                               <svg width="26" height="8" className="shrink-0" aria-hidden>
                                 <line
@@ -878,16 +878,16 @@ export default function App() {
                               </svg>
                               {r.name}
                               {r.recommended && (
-                                <span className="stamp !px-1.5 !py-0.5 !text-micro text-risk-low">
+                                <span className="stamp !px-1.5 !py-0.5 !text-label text-risk-low">
                                   {ui.recommended}
                                 </span>
                               )}
                             </h3>
-                            <span className="shrink-0 font-mono text-readout tabular-nums text-ink-500">
+                            <span className="shrink-0 font-mono text-label tabular-nums text-ink-500">
                               {r.distance_km} km · {Math.round(r.eta_minutes)} min
                             </span>
                           </div>
-                          <p className="mt-1 max-w-[78ch] pl-[36px] text-readout leading-relaxed text-ink-500">
+                          <p className="mt-1 max-w-[78ch] pl-[36px] text-label leading-relaxed text-ink-500">
                             {r.notes}
                           </p>
                         </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { RISK_BANDS, RISK_COLOR } from "../risk";
+import { RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
 import type { RiskCategory } from "../types";
 import { alpha, ink, paper } from "../tokens";
 
@@ -134,11 +134,11 @@ export default function RiskDial({
         <div className="text-center leading-none">
           <div
             className="font-display text-dial font-black tabular-nums tracking-tight"
-            style={{ color }}
+            style={{ color: RISK_INK[category] }}
           >
             {Math.max(0, shown)}
           </div>
-          <div className="mt-1 font-mono text-micro font-semibold uppercase tracking-[0.2em] text-ink-400">
+          <div className="mt-1 font-mono text-label font-semibold uppercase tracking-[0.2em] text-ink-400">
             / 100
           </div>
         </div>

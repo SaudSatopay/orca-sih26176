@@ -364,7 +364,7 @@ export default function MarineMap({
         .bindPopup(
           `<b>${esc(course[r.kind] ?? r.name)}</b><br/>` +
             `${r.distance_km} km · ${Math.round(r.eta_minutes)} ${esc(t.minutes)}<br/>` +
-            small(esc(r.notes), typePx.readout),
+            small(esc(r.notes), typePx.label),
         )
         .addTo(group);
     });
@@ -393,8 +393,8 @@ export default function MarineMap({
                        border:${best ? 4 : 3.5}px solid ${color};display:flex;flex-direction:column;
                        align-items:center;justify-content:center;line-height:1;gap:1px;
                        box-shadow:0 3px 10px ${alpha(ink[900], 0.4)};color:${ink[900]}">
-                       <span style="font:${best ? `800 ${typePx.subtitle}px` : `700 ${typePx.prose}px`} ${SERIF}">${a.rank}</span>
-                       <span style="font:600 ${typePx.micro}px ${MONO};color:${ink[500]}">${a.probability}%</span>
+                       <span style="font:${best ? `800 ${typePx.lead}px` : `700 ${typePx.body}px`} ${SERIF}">${a.rank}</span>
+                       <span style="font:600 ${typePx.label}px ${MONO};color:${ink[500]}">${a.probability}%</span>
                      </div>
                    </div>`,
           }),
@@ -426,7 +426,7 @@ export default function MarineMap({
             html: `<div class="bob" style="width:${size}px;height:${size}px;animation-delay:${((z.rank * 7) % 10) / 3}s">
                      <div class="buoy" style="width:100%;height:100%;border-radius:50%;background:${paper[50]};
                        border:${best ? 4 : 3}px solid ${color};display:grid;place-items:center;
-                       color:${ink[900]};font:${best ? `800 ${typePx.subtitle}px` : `700 ${typePx.body}px`} ${SERIF};
+                       color:${ink[900]};font:${best ? `800 ${typePx.lead}px` : `700 ${typePx.body}px`} ${SERIF};
                        box-shadow:0 3px 10px ${alpha(ink[900], 0.4)}">${z.rank}</div>
                    </div>`,
           }),
@@ -556,7 +556,7 @@ export default function MarineMap({
         <div className="absolute left-3 top-[92px] z-[500] rounded-[2px] border border-ink-700/50 bg-paper-50/95 px-2 pb-2 pt-1.5 shadow-md">
           <div
             id={`${keyId}-flow`}
-            className="mb-1 font-mono text-micro font-bold uppercase tracking-[0.16em] text-ink-500"
+            className="mb-1 font-mono text-label font-bold uppercase tracking-[0.16em] text-ink-500"
           >
             {legend.flow}
           </div>
@@ -589,7 +589,7 @@ export default function MarineMap({
             aria-controls={keyId}
             title={keyOpen ? tx.hideKey : tx.showKey}
             onClick={() => setKeyOpen((v) => !v)}
-            className="flex w-full items-center justify-between gap-3 px-3 py-1.5 font-mono text-micro font-bold uppercase tracking-[0.16em] text-ink-500"
+            className="flex w-full items-center justify-between gap-3 px-3 py-1.5 font-mono text-label font-bold uppercase tracking-[0.16em] text-ink-500"
           >
             {legend.symbols}
             <span className="rotate-180 text-ink-700">
@@ -630,7 +630,7 @@ export default function MarineMap({
             )}
             {flowMode !== "off" && (
               <div
-                className="mt-1 flex items-center gap-1.5 border-t pt-1 text-micro font-medium text-ink-700"
+                className="mt-1 flex items-center gap-1.5 border-t pt-1 text-label font-medium text-ink-700"
                 style={{ borderColor: "var(--rule-faint)" }}
               >
                 <span className="sr-only">{legend.sstLabel}: </span>
@@ -659,7 +659,7 @@ export default function MarineMap({
           <div className="pointer-events-none absolute inset-x-0 top-3 z-[500] flex justify-center px-3">
             <div
               role="status"
-              className={`v-enter pointer-events-auto max-w-[78%] rounded-[2px] px-3.5 py-2 text-small font-semibold text-paper-50 shadow-lg ${banner.style}`}
+              className={`v-enter pointer-events-auto max-w-[78%] rounded-[2px] px-3.5 py-2 text-body font-semibold text-paper-50 shadow-lg ${banner.style}`}
             >
               <div>{banner.text}</div>
               {banner.sub && <div className="mt-0.5 font-mono text-label font-normal">{banner.sub}</div>}
@@ -680,10 +680,10 @@ export default function MarineMap({
 
       {/* sheet margin note */}
       <div className="mt-[7px] flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
-        <span className="font-mono text-micro font-semibold uppercase tracking-[0.18em] text-ink-500">
+        <span className="font-mono text-label font-semibold uppercase tracking-[0.18em] text-ink-500">
           {legend.marginL}
         </span>
-        <span className="font-mono text-micro uppercase tracking-[0.18em] text-ink-500">
+        <span className="font-mono text-label uppercase tracking-[0.18em] text-ink-500">
           {legend.marginR}
         </span>
       </div>

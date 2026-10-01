@@ -119,7 +119,7 @@ export default function SystemPanel({
 
   const crew = CREW_TEXT[language] ?? CREW_TEXT.en;
   const feedHeads = [t.hPort, t.wave, t.wind, t.sst, t.vis, t.hSource, t.hMode, t.hLatency, t.hAt];
-  const headClass = "py-2 text-left text-micro font-bold uppercase tracking-[0.14em] text-ink-500";
+  const headClass = "py-2 text-left text-label font-bold uppercase tracking-[0.14em] text-ink-500";
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
@@ -155,18 +155,18 @@ export default function SystemPanel({
                   style={{ background: p.color, color: p.color }}
                   aria-hidden
                 />
-                <h4 className="min-w-0 font-display text-prose font-bold leading-tight text-ink-900">
+                <h4 className="min-w-0 font-display text-body font-bold leading-tight text-ink-900">
                   {p.name}
                 </h4>
               </div>
               {/* the dot and the rule carry the status colour; the words stay in ink */}
               <div
-                className="mt-2 inline-block border px-1.5 py-px font-mono text-micro font-bold uppercase tracking-[0.12em] text-ink-800"
+                className="mt-2 inline-block border px-1.5 py-px font-mono text-label font-bold uppercase tracking-[0.12em] text-ink-800"
                 style={{ borderColor: p.color }}
               >
                 {p.status}
               </div>
-              <p className="mt-2 text-readout leading-relaxed text-ink-700">{p.gives}</p>
+              <p className="mt-2 text-label leading-relaxed text-ink-700">{p.gives}</p>
               <p className="mt-1 text-label italic leading-snug text-ink-500">{p.note}</p>
             </div>
           ))}
@@ -183,8 +183,8 @@ export default function SystemPanel({
           <span className="v-connector-down !m-0 lg:hidden" aria-hidden />
           <div className="min-w-0 rounded-[2px] border-2 border-chart-600 bg-chart-100/40 px-4 py-3 text-center lg:max-w-[520px] lg:flex-[3_1_0]">
             <h4 className="font-display text-lead font-bold text-ink-900">{t.cacheTitle}</h4>
-            <p className="mt-1 text-readout leading-relaxed text-ink-700">{t.cacheBody}</p>
-            <p className="mt-1.5 font-mono text-micro uppercase tracking-[0.1em] text-chart-700">
+            <p className="mt-1 text-label leading-relaxed text-ink-700">{t.cacheBody}</p>
+            <p className="mt-1.5 font-mono text-label uppercase tracking-[0.1em] text-chart-700">
               {t.cacheMeta}
             </p>
           </div>
@@ -198,7 +198,7 @@ export default function SystemPanel({
         </div>
 
         <p
-          className="border-t px-4 py-2.5 text-readout italic leading-relaxed text-ink-700"
+          className="border-t px-4 py-2.5 text-label italic leading-relaxed text-ink-700"
           style={{ borderColor: "var(--rule-faint)" }}
         >
           {t.degrade}
@@ -233,9 +233,9 @@ export default function SystemPanel({
                 className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5"
                 style={{ gridColumn: i * 2 + 1, gridRow: 1 }}
               >
-                <h4 className="font-display text-subtitle font-bold text-ink-900">{c.phase}</h4>
+                <h4 className="font-display text-lead font-bold text-ink-900">{c.phase}</h4>
                 {c.agents.length > 2 && (
-                  <span className="flex items-center gap-1.5 font-mono text-micro font-bold uppercase tracking-[0.08em] text-chart-700">
+                  <span className="flex items-center gap-1.5 font-mono text-label font-bold uppercase tracking-[0.08em] text-chart-700">
                     <svg width="7" height="10" viewBox="0 0 7 10" aria-hidden>
                       <path d="M1.5 1 V9 M5.5 1 V9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
                     </svg>
@@ -263,7 +263,7 @@ export default function SystemPanel({
                 ))}
               </ul>
               <p
-                className="mt-2 text-readout italic leading-snug text-ink-700 lg:mt-0"
+                className="mt-2 text-label italic leading-snug text-ink-700 lg:mt-0"
                 style={{ gridColumn: i * 2 + 1, gridRow: 3 }}
               >
                 {c.note}
@@ -281,13 +281,13 @@ export default function SystemPanel({
           </h3>
         </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4">
-          <span className="stamp text-small text-risk-extreme">{t.stamp}</span>
-          <ul className="min-w-0 space-y-1 font-mono text-readout text-ink-800">
+          <span className="stamp text-body text-risk-extreme">{t.stamp}</span>
+          <ul className="min-w-0 space-y-1 font-mono text-label text-ink-800">
             <li>{t.law1}</li>
             <li>{t.law2}</li>
             <li>{t.law3}</li>
           </ul>
-          <p className="min-w-0 max-w-[44ch] flex-1 basis-[260px] text-readout italic leading-relaxed text-ink-800">
+          <p className="min-w-0 max-w-[44ch] flex-1 basis-[260px] text-label italic leading-relaxed text-ink-800">
             <LockGlyph size={12} className="mr-1 inline text-risk-extreme" />
             {t.lawNote}
           </p>
@@ -334,7 +334,7 @@ export default function SystemPanel({
               {/* the port's name steps in with each reading; the figures never hide */}
               <div
                 key={tick}
-                className="v-enter mt-0.5 font-display text-heading font-bold leading-tight text-ink-900"
+                className="v-enter mt-0.5 font-display text-title font-bold leading-tight text-ink-900"
               >
                 {latest.port}
               </div>
@@ -350,7 +350,7 @@ export default function SystemPanel({
             ].map((x) => (
               <div key={x.k} className="px-3 py-3">
                 <div className="label truncate">{x.k}</div>
-                <div className="mt-1 font-mono text-subtitle font-bold tabular-nums text-ink-900">{x.v}</div>
+                <div className="mt-1 font-mono text-lead font-bold tabular-nums text-ink-900">{x.v}</div>
               </div>
             ))}
           </div>
@@ -375,7 +375,7 @@ export default function SystemPanel({
         {/* the log */}
         {rows.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse font-mono text-readout">
+            <table className="w-full min-w-[720px] border-collapse font-mono text-label">
               <caption className="sr-only">{t.feedCaption}</caption>
               <thead>
                 <tr className="border-b" style={{ borderColor: "var(--rule)" }}>
@@ -403,7 +403,7 @@ export default function SystemPanel({
                     <td className="px-3 py-2 font-sans text-ink-700">{sourceName(r.source)}</td>
                     <td className="px-3 py-2">
                       <span
-                        className="border px-1.5 py-px text-micro font-bold tracking-[0.08em] text-ink-800"
+                        className="border px-1.5 py-px text-label font-bold tracking-[0.08em] text-ink-800"
                         style={{ borderColor: r.mode === "LIVE" ? risk.low : risk.moderate }}
                       >
                         {r.mode}
@@ -419,7 +419,7 @@ export default function SystemPanel({
         )}
 
         <p
-          className="flex items-start gap-2 border-t px-4 py-2.5 text-readout italic leading-relaxed text-ink-700"
+          className="flex items-start gap-2 border-t px-4 py-2.5 text-label italic leading-relaxed text-ink-700"
           style={{ borderColor: "var(--rule-faint)" }}
         >
           <FishGlyph size={16} className="swim mt-0.5 shrink-0 text-chart-500" />
@@ -441,9 +441,9 @@ export default function SystemPanel({
             <div key={x.h} className="px-5 py-4">
               <div className="flex items-center gap-2">
                 <CourseArrow size={13} className="shrink-0 text-chart-600" />
-                <h4 className="font-display text-subtitle font-bold text-ink-900">{x.h}</h4>
+                <h4 className="font-display text-lead font-bold text-ink-900">{x.h}</h4>
               </div>
-              <p className="mt-1.5 text-small leading-relaxed text-ink-700">{x.d}</p>
+              <p className="mt-1.5 text-body leading-relaxed text-ink-700">{x.d}</p>
             </div>
           ))}
         </div>

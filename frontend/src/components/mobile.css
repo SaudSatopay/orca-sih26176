@@ -203,7 +203,7 @@ html.phone:has(.m-app) .shell-sea {
   border-radius: 2px;
   background: theme(colors.paper.50);
   color: theme(colors.ink.900);
-  font-size: theme(fontSize.subtitle);
+  font-size: theme(fontSize.lead);
 }
 .m-field::placeholder {
   color: theme(colors.ink.400);
@@ -273,7 +273,7 @@ html.phone:has(.m-app) .shell-sea {
   border-radius: 2px;
   box-shadow: inset 0 0 0 1px currentColor;
   font-family: "Fraunces Variable", "Noto Serif Devanagari Variable", Georgia, serif;
-  font-size: theme(fontSize.heading);
+  font-size: theme(fontSize.title);
   font-weight: 900;
   line-height: 1.15;
   letter-spacing: 0.12em;

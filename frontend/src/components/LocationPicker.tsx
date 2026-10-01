@@ -150,7 +150,7 @@ export default function LocationPicker({
               {current?.label ?? t.locating}
             </span>
             {current?.source === "gps" && (
-              <span className="shrink-0 border border-risk-low px-1.5 py-px font-mono text-micro font-bold uppercase tracking-[0.1em] text-ink-800">
+              <span className="shrink-0 border border-risk-low px-1.5 py-px font-mono text-label font-bold uppercase tracking-[0.1em] text-ink-800">
                 {t.gps}
               </span>
             )}
@@ -194,7 +194,7 @@ export default function LocationPicker({
           className="v-prohibit v-enter mt-2.5 flex-wrap !items-center !border-risk-high/60"
         >
           <WarnGlyph size={15} className="shrink-0 text-risk-high" />
-          <p className="min-w-0 flex-1 basis-[180px] text-small font-medium leading-snug text-ink-900">
+          <p className="min-w-0 flex-1 basis-[180px] text-body font-medium leading-snug text-ink-900">
             {status === "denied" ? t.denied : t.unavailable}
           </p>
           <button type="button" onClick={openList} className="btn-ink shrink-0 !px-3 !py-1.5">
@@ -250,7 +250,7 @@ export default function LocationPicker({
                 style={{ borderColor: "var(--rule-faint)" }}
               >
                 <span className="text-body font-semibold text-ink-900">{p.name}</span>
-                <span className="text-readout text-ink-500">{p.state}</span>
+                <span className="text-label text-ink-500">{p.state}</span>
                 <span className="ml-auto font-mono text-label tabular-nums text-ink-500">
                   {coords(p.lat, p.lon)}
                 </span>
@@ -258,7 +258,7 @@ export default function LocationPicker({
             ))}
           </ul>
           {!matches.length && (
-            <p role="status" className="px-4 pb-3.5 pt-2 text-small leading-relaxed text-ink-700">
+            <p role="status" className="px-4 pb-3.5 pt-2 text-body leading-relaxed text-ink-700">
               <span className="font-semibold text-ink-900">{fill(t.noMatch, { q: query.trim() })}</span>{" "}
               {t.noMatchHint}
             </p>

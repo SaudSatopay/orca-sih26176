@@ -156,7 +156,7 @@ function Summary({ data, language, t }: { data: AuthorityDashboard; language: La
       <div className="col-span-2 px-5 py-4 md:col-span-1">
         <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
           <div>
-            <div className="font-display text-tile font-black leading-none text-ink-900">
+            <div className="font-display text-display font-black leading-none text-ink-900">
               {data.summary.monitored ?? total}
             </div>
             <div className="label mt-1.5">{t.centres}</div>
@@ -189,7 +189,7 @@ function Summary({ data, language, t }: { data: AuthorityDashboard; language: La
       {tiles.map((x) => (
         <div key={x.key} className={`px-5 py-4 ${x.n > 0 && x.hatch ? "hatch-danger" : ""}`}>
           <div
-            className={`flex items-center gap-2 font-display text-tile font-black leading-none ${
+            className={`flex items-center gap-2 font-display text-display font-black leading-none ${
               x.n > 0 ? x.on : "text-ink-400"
             }`}
           >
@@ -238,7 +238,7 @@ function CoastProfile({ rows, language, t }: { rows: AuthorityRow[]; language: L
             {[0, ...EDGES, 100].map((v) => (
               <span
                 key={v}
-                className="absolute right-2 translate-y-1/2 font-mono text-micro tabular-nums leading-none text-ink-500"
+                className="absolute right-2 translate-y-1/2 font-mono text-label tabular-nums leading-none text-ink-500"
                 style={{ bottom: `${v}%` }}
               >
                 {v}
@@ -288,7 +288,7 @@ function CoastProfile({ rows, language, t }: { rows: AuthorityRow[]; language: L
           {groups.map((g, i) => (
             <div
               key={g.stretch}
-              className="row-start-3 mx-1.5 mt-2 truncate border-t pt-1.5 text-center font-mono text-micro uppercase tracking-[0.12em] text-ink-500"
+              className="row-start-3 mx-1.5 mt-2 truncate border-t pt-1.5 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-500"
               style={{
                 gridColumn: `${offset[i] + 2} / span ${g.rows.length}`,
                 borderColor: "var(--rule-strong)",
@@ -322,7 +322,7 @@ function CoastProfile({ rows, language, t }: { rows: AuthorityRow[]; language: L
 
 /* ------------------------------------------------------------------- table */
 
-const HEAD = "py-2.5 font-mono text-micro font-bold uppercase tracking-[0.14em] text-ink-500";
+const HEAD = "py-2.5 font-mono text-label font-bold uppercase tracking-[0.14em] text-ink-500";
 
 /** A column head that orders the board: a real button inside a real `<th>`. */
 function SortHead({
@@ -424,7 +424,7 @@ function BoardTable({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] border-collapse text-small">
+          <table className="w-full min-w-[900px] border-collapse text-body">
             <caption className="sr-only">{t.caption}</caption>
             <thead>
               <tr className="border-b" style={{ borderColor: "var(--rule-strong)" }}>
@@ -499,7 +499,7 @@ function BoardTable({
                       {row.headline ? (
                         <span className="flex items-start gap-2">
                           {row.official_warning && (
-                            <span className="mt-px shrink-0 border border-risk-extreme bg-paper-50 px-1.5 py-px font-mono text-micro font-bold uppercase tracking-[0.1em] text-risk-extreme">
+                            <span className="mt-px shrink-0 border border-risk-extreme bg-paper-50 px-1.5 py-px font-mono text-label font-bold uppercase tracking-[0.1em] text-risk-extreme">
                               {t.official}
                             </span>
                           )}
@@ -525,7 +525,7 @@ function BoardTable({
         className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t px-4 py-2.5"
         style={{ borderColor: "var(--rule-faint)" }}
       >
-        <p role="status" className="min-w-0 flex-1 basis-[260px] text-readout leading-relaxed text-ink-700">
+        <p role="status" className="min-w-0 flex-1 basis-[260px] text-label leading-relaxed text-ink-700">
           {rows.length === 0 ? null : changes == null ? (
             t.changesFirst
           ) : changes.length === 0 ? (

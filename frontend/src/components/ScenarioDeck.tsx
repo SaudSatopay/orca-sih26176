@@ -31,7 +31,7 @@ export default function ScenarioDeck({
           <h2 id="deck-title" className="font-display text-lead font-bold text-ink-900">
             {open ? ui.deckLead : ui.scenarios}
           </h2>
-          <p className="mt-0.5 text-readout leading-relaxed text-ink-500">{ui.deckSub}</p>
+          <p className="mt-0.5 text-label leading-relaxed text-ink-500">{ui.deckSub}</p>
         </div>
       </div>
 
@@ -55,7 +55,7 @@ export default function ScenarioDeck({
           >
             <span
               className={`grid shrink-0 place-items-center rounded-full bg-ink-900 font-display font-bold leading-none text-paper-50 ${
-                open ? "mt-0.5 h-6 w-6 text-small" : "h-[18px] w-[18px] text-label"
+                open ? "mt-0.5 h-6 w-6 text-body" : "h-[18px] w-[18px] text-label"
               }`}
               aria-hidden
             >
@@ -71,7 +71,7 @@ export default function ScenarioDeck({
                     {s.hint}
                   </span>
                 </span>
-                <span className="mt-1 block text-small leading-snug text-ink-700">{s.ask}</span>
+                <span className="mt-1 block text-body leading-snug text-ink-700">{s.ask}</span>
               </span>
             ) : (
               <>

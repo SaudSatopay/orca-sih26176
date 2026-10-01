@@ -44,7 +44,7 @@ export default function EvidenceLedger({
           <span className="label">
             {ui.ledger} · {evidence.length} {ui.traced}
           </span>
-          <span className="flex items-center gap-1.5 font-mono text-readout font-bold text-chart-700">
+          <span className="flex items-center gap-1.5 font-mono text-label font-bold text-chart-700">
             {open ? ui.hide : ui.show}
             <svg
               width="10"
@@ -68,14 +68,14 @@ export default function EvidenceLedger({
       </h2>
 
       <div id={tableId} hidden={!open} className="overflow-x-auto px-4 pb-3 pt-1">
-        <table className="w-full min-w-[520px] text-left font-mono text-readout">
+        <table className="w-full min-w-[520px] text-left font-mono text-label">
           <thead>
             <tr className="border-b" style={{ borderColor: "var(--rule)" }}>
               {[colValue, colReading, colSource, colUpdated].map((c) => (
                 <th
                   key={c}
                   scope="col"
-                  className="py-2 pr-3 text-micro font-bold uppercase tracking-[0.12em] text-ink-400 last:pr-0"
+                  className="py-2 pr-3 text-label font-bold uppercase tracking-[0.12em] text-ink-400 last:pr-0"
                 >
                   {c}
                 </th>

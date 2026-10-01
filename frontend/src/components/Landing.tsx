@@ -172,7 +172,7 @@ export default function Landing({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <span className="flex items-center gap-2.5">
             <CompassMark size={34} className="text-ink-900" />
-            <span className="font-display text-display font-black leading-none tracking-tight text-ink-900">
+            <span className="font-display text-numeral font-black leading-none tracking-tight text-ink-900">
               ORCA
             </span>
           </span>
@@ -182,7 +182,7 @@ export default function Landing({
           {/* full reload on purpose: phone vs console is decided at boot */}
           <a
             href={`/?m=1&lang=${language}`}
-            className="ml-auto inline-flex items-center gap-2 font-mono text-readout font-semibold uppercase tracking-[0.1em] text-chart-700 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
+            className="ml-auto inline-flex items-center gap-2 font-mono text-label font-semibold uppercase tracking-[0.1em] text-chart-700 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
           >
             <PhoneGlyph size={14} /> {t.ctaPhone}
           </a>
@@ -193,7 +193,7 @@ export default function Landing({
                 onClick={() => onLanguage(l)}
                 aria-pressed={language === l}
                 lang={l}
-                className={`rounded-[2px] border px-2 py-1 font-mono text-readout font-bold transition-colors ${
+                className={`rounded-[2px] border px-2 py-1 font-mono text-label font-bold transition-colors ${
                   language === l
                     ? "border-ink-900 bg-ink-900 text-paper-50"
                     : "text-ink-500 hover:text-ink-900"
@@ -259,9 +259,9 @@ export default function Landing({
               className={`group px-4 py-3.5 transition-colors hover:bg-chart-100/40 ${i > 0 ? "border-l" : ""}`}
               style={{ borderColor: "var(--rule-faint)" }}
             >
-              <div className="label min-h-[2lh] !text-micro leading-tight sm:min-h-0 lg:whitespace-nowrap">{x.k}</div>
+              <div className="label min-h-[2lh] !text-label leading-tight sm:min-h-0 lg:whitespace-nowrap">{x.k}</div>
               <div
-                className={`mt-1 font-mono text-figure font-bold tabular-nums leading-none transition-colors ${
+                className={`mt-1 font-mono text-headline font-bold tabular-nums leading-none transition-colors ${
                   x.warn ? "text-risk-extreme" : "text-ink-900 group-hover:text-chart-600"
                 }`}
               >
@@ -297,18 +297,18 @@ export default function Landing({
                       {c.kicker}
                       {i === 0 && <FishGlyph size={15} className="swim text-chart-500" />}
                     </span>
-                    <span className="mt-1.5 block font-display text-heading font-bold leading-snug text-ink-900">
+                    <span className="mt-1.5 block font-display text-title font-bold leading-snug text-ink-900">
                       {c.title}
                     </span>
                   </span>
-                  <span className="col-span-2 row-start-2 min-w-0 text-small leading-relaxed text-ink-700 md:col-span-1 md:col-start-2 md:row-start-1">
+                  <span className="col-span-2 row-start-2 min-w-0 text-body leading-relaxed text-ink-700 md:col-span-1 md:col-start-2 md:row-start-1">
                     {c.lines.map((l) => (
                       <span key={l} className="block">
                         {l}
                       </span>
                     ))}
                   </span>
-                  <span className="col-start-2 row-start-1 inline-flex items-center gap-1.5 whitespace-nowrap font-mono text-readout font-bold uppercase tracking-[0.1em] text-chart-700 md:col-start-3">
+                  <span className="col-start-2 row-start-1 inline-flex items-center gap-1.5 whitespace-nowrap font-mono text-label font-bold uppercase tracking-[0.1em] text-chart-700 md:col-start-3">
                     {t.openWord}
                     <CourseArrow size={13} className="sheet-row-arrow" />
                   </span>
@@ -341,10 +341,10 @@ export default function Landing({
                 <div className="flex items-baseline gap-2">
                   <span className="font-display text-lead font-bold text-ink-900">{p.t}</span>
                   {i === 1 && (
-                    <span className="font-mono text-micro font-bold text-chart-700">∥ 5</span>
+                    <span className="font-mono text-label font-bold text-chart-700">∥ 5</span>
                   )}
                 </div>
-                <p className="mt-1 text-readout italic leading-snug text-ink-500">{p.n}</p>
+                <p className="mt-1 text-label italic leading-snug text-ink-500">{p.n}</p>
                 {i < 3 && (
                   <CourseArrow
                     size={13}

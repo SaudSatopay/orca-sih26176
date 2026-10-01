@@ -104,10 +104,10 @@ export default function ChatPanel({
       }}
     >
       <div className="hd !block !py-3">
-        <h2 id="ask-title" className="font-display text-subtitle font-bold text-ink-900">
+        <h2 id="ask-title" className="font-display text-lead font-bold text-ink-900">
           {t.title}
         </h2>
-        <p className="mt-0.5 text-readout text-ink-500">{t.sub}</p>
+        <p className="mt-0.5 text-label text-ink-500">{t.sub}</p>
       </div>
 
       {/* the log */}
@@ -133,15 +133,15 @@ export default function ChatPanel({
               ))}
             </ul>
             <div className="wave-rule w-20" aria-hidden />
-            <p className="max-w-[46ch] text-small leading-relaxed text-ink-500">{t.emptySub}</p>
+            <p className="max-w-[46ch] text-body leading-relaxed text-ink-500">{t.emptySub}</p>
           </div>
         )}
 
         {messages.map((m) =>
           m.role === "user" ? (
             <div key={m.id} data-asked className="flex animate-rise flex-col items-end pl-8">
-              <div className="label mb-1 !text-micro">{t.youAsked}</div>
-              <p className="rounded-[3px] rounded-br-none bg-ink-900 px-3.5 py-2.5 font-display text-prose font-medium leading-snug text-paper-50">
+              <div className="label mb-1 !text-label">{t.youAsked}</div>
+              <p className="rounded-[3px] rounded-br-none bg-ink-900 px-3.5 py-2.5 font-display text-body font-medium leading-snug text-paper-50">
                 {m.text}
               </p>
             </div>
@@ -181,12 +181,12 @@ export default function ChatPanel({
       {/* follow-ups */}
       {suggestions.length > 0 && (
         <div className="border-t px-4 py-2.5" style={{ borderColor: "var(--rule-faint)" }}>
-          <div className="label mb-1.5 !text-micro">{t.follow}</div>
+          <div className="label mb-1.5 !text-label">{t.follow}</div>
           <div className="flex flex-wrap gap-1.5">
             {suggestions.slice(0, 4).map((s) => (
               <button
                 key={s}
-                className="chip !py-1 !text-readout disabled:opacity-50"
+                className="chip !py-1 !text-label disabled:opacity-50"
                 onClick={() => submit(s)}
                 disabled={busy}
               >
@@ -260,14 +260,14 @@ function Answer({ text }: { text: string }) {
     <article className="animate-rise pr-4">
       <div className="mb-1.5 flex items-center gap-2">
         <CompassMark size={22} className="shrink-0 text-ink-900" />
-        <span className="label !text-micro !text-ink-700">ORCA</span>
+        <span className="label !text-label !text-ink-700">ORCA</span>
       </div>
       <div className="max-w-[62ch]">
         {lead && (
-          <p className="font-display text-subtitle font-bold leading-snug text-ink-900">{lead}</p>
+          <p className="font-display text-lead font-bold leading-snug text-ink-900">{lead}</p>
         )}
         {body && (
-          <p className={`text-prose leading-relaxed text-ink-800 ${lead ? "mt-1.5" : ""}`}>{body}</p>
+          <p className={`text-body leading-relaxed text-ink-800 ${lead ? "mt-1.5" : ""}`}>{body}</p>
         )}
         {(sources || note) && (
           <footer

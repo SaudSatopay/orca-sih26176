@@ -1,4 +1,4 @@
-import { chance, risk } from "./tokens";
+import { chance, chanceInk, risk, riskInk } from "./tokens";
 import type { CatchRating, RiskCategory } from "./types";
 
 /**
@@ -27,6 +27,14 @@ export const RISK_COLOR: Record<RiskCategory, string> = {
   EXTREME: risk.extreme,
 };
 
+/** The same bands as text: the ink that holds 4.5:1 on chart paper (tokens.ts). */
+export const RISK_INK: Record<RiskCategory, string> = {
+  LOW: riskInk.low,
+  MODERATE: riskInk.moderate,
+  HIGH: riskInk.high,
+  EXTREME: riskInk.extreme,
+};
+
 /** The colour a bare score is drawn in. */
 export function riskColor(score: number): string {
   return RISK_COLOR[riskBand(score)];
@@ -38,4 +46,12 @@ export const RATING_COLOR: Record<CatchRating, string> = {
   good: chance.good,
   fair: chance.some,
   poor: chance.poor,
+};
+
+/** The same ratings as text. */
+export const RATING_INK: Record<CatchRating, string> = {
+  very_good: riskInk.low,
+  good: chanceInk.good,
+  fair: chanceInk.some,
+  poor: chanceInk.poor,
 };

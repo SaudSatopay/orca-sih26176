@@ -68,6 +68,34 @@ export const chance = {
   poor: "#9C5F44",
 } as const;
 
+/**
+ * Status colours print darker as text. The values above are fills: rings,
+ * bars, squares, hatching, the dial's arc. Set as text they fall under 4.5:1
+ * on chart paper (moderate is 4.06:1 on paper-50, "some chance" 3.31:1), so
+ * each has an ink of the same hue, the lightest that holds 4.6:1 on the
+ * darkest paper that carries text (paper-200). Tailwind's `text-risk-*`,
+ * `text-chance-*` and `text-signal` resolve to these inks, so a status word
+ * is legible wherever it is set; `bg-`, `border-`, `fill-` and `stroke-`
+ * keep the fill. In JavaScript: `RISK_INK` and `RATING_INK` (risk.ts).
+ */
+export const riskInk = {
+  low: "#1A6C47",
+  moderate: "#7E5800",
+  high: "#A0410F",
+  extreme: "#AF2318", // the fill already holds 4.92:1 on paper-200
+} as const;
+
+export const chanceInk = {
+  good: "#4C6721",
+  some: "#7B5900",
+  poor: "#86523A",
+} as const;
+
+export const signalInk = "#A83927";
+
+/** Tailwind `textColor` overrides: the status colours as text. */
+export const textColors = { risk: riskInk, chance: chanceInk, signal: signalInk } as const;
+
 /** Sea-surface temperature shade under the particle field, cold to hot. */
 export const sst = {
   cold: "#3E7A99", // up to 25.0 °C
@@ -99,26 +127,22 @@ export const rule = {
 } as const;
 
 /**
- * The type scale, in CSS pixels. One step per role; a size is never written
- * as a literal. Sizes only: line-height stays with the element.
+ * The type scale, in CSS pixels: nine steps, a minor third (x1.2) apart,
+ * counted from 16 and rounded to the pixel. Nothing is set smaller than 11.
+ * One step per role; a size is never written as a literal. Sizes only:
+ * line-height stays with the element.
  */
+export const TYPE_RATIO = 1.2;
+export const TYPE_BASE = 16;
 export const typePx = {
-  micro: 9, // table heads, stamps, chart margin notes, the smallest labels
-  label: 10, // the mono label, captions, hints, timestamps, footnotes
-  readout: 11, // buttons, folio tabs, mono readouts, secondary lines
-  small: 12, // chips, dense lists, alert detail
-  body: 13, // running text: conversation, advice, fields, tables
-  prose: 14, // the landing lead-in, row figures, loading lines
-  lead: 15, // lead lines, small panel headings
-  subtitle: 16, // panel titles, phone body copy
-  title: 17, // row titles, the phone's LISTEN button
-  heading: 19, // card headings, the advice headline
-  figure: 21, // instrument figures and the verdict line
-  headline: 24, // section headlines, a ground's chance of fish
-  numeral: 26, // large soundings, the landing tagline, return-by
-  display: 30, // the ORCA wordmark, the phone's score
-  tile: 34, // the authority board's totals
-  dial: 38, // the risk dial numeral, the landing wordmark
+  label: 11, // the mono label, table heads, stamps, buttons, readouts, footnotes
+  body: 13, // running text: conversation, advice, fields, tables, chips
+  lead: 16, // lead lines, panel titles, the phone's body copy
+  title: 19, // card and row titles, the advice headline, LISTEN
+  headline: 23, // section headlines, instrument figures, the verdict line
+  numeral: 28, // large soundings, the ORCA wordmark, return-by
+  display: 33, // the authority board's totals
+  dial: 40, // the risk dial numeral, the phone's score
   hero: 48, // the landing claim, the largest text in the product
 } as const;
 

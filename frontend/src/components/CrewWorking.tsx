@@ -33,7 +33,7 @@ export default function CrewWorking({ language = "en" }: { language?: Language }
       <div className="hd !items-center">
         <div className="min-w-0">
           <h2 className="font-display text-lead font-bold text-ink-900">{t.working}</h2>
-          <p className="mt-0.5 text-readout leading-relaxed text-ink-500">{t.workingSub}</p>
+          <p className="mt-0.5 text-label leading-relaxed text-ink-500">{t.workingSub}</p>
         </div>
         <div className="wave-rule w-16 shrink-0" aria-hidden />
       </div>
@@ -51,7 +51,7 @@ export default function CrewWorking({ language = "en" }: { language?: Language }
                 >
                   {t[phase.key]}
                 </span>
-                <span className="ml-auto font-mono text-micro font-semibold uppercase tracking-[0.14em] text-ink-400">
+                <span className="ml-auto font-mono text-label font-semibold uppercase tracking-[0.14em] text-ink-400">
                   {state === "next" ? t.waiting : t.called}
                 </span>
               </div>
@@ -60,7 +60,7 @@ export default function CrewWorking({ language = "en" }: { language?: Language }
               </div>
               <ul className="mt-2 space-y-1">
                 {phase.agents.map((a) => (
-                  <li key={a} className="flex items-center gap-2 text-readout text-ink-700">
+                  <li key={a} className="flex items-center gap-2 text-label text-ink-700">
                     <span
                       aria-hidden
                       className={`h-1.5 w-1.5 shrink-0 rotate-45 border border-chart-600 ${

@@ -351,7 +351,7 @@ button.v-card:active {
   transform: translateX(-50%);
   margin-bottom: 12px;
   font-family: "Spline Sans Mono Variable", Consolas, monospace;
-  font-size: theme(fontSize.readout);
+  font-size: theme(fontSize.label);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;

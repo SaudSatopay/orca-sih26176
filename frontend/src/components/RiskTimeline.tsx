@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import * as api from "../api";
 import type { Language, Location, TimelinePoint } from "../types";
-import { RISK_BANDS, RISK_COLOR } from "../risk";
+import { RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
 import { L } from "../i18n/riskTimeline";
 import { CATEGORY } from "../i18n/riskCard";
 import { chart, ink, paper, risk, typePx } from "../tokens";
@@ -58,7 +58,7 @@ export default function RiskTimeline({
   if (!location) return null;
   if (!points)
     return (
-      <div className="panel flex items-center gap-3 p-5 text-prose leading-5 text-ink-500" role="status">
+      <div className="panel flex items-center gap-3 p-5 text-body leading-5 text-ink-500" role="status">
         <span className="wave-rule w-12 shrink-0" aria-hidden />
         {t.loading}
       </div>
@@ -86,7 +86,7 @@ export default function RiskTimeline({
       <div className="hd !items-center">
         <div className="min-w-0">
           <h2 className="font-display text-lead font-bold text-ink-900">{t.title}</h2>
-          <p className="mt-0.5 text-readout text-ink-500">{t.sub}</p>
+          <p className="mt-0.5 text-label text-ink-500">{t.sub}</p>
         </div>
         {window ? (
           <span className="shrink-0 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-2.5 py-1 font-mono text-label font-bold tabular-nums text-risk-low">
@@ -94,7 +94,7 @@ export default function RiskTimeline({
             {String((points[window[1]].hour + 1) % 24).padStart(2, "0")}:00
           </span>
         ) : (
-          <span className="stamp shrink-0 !px-2 !py-0.5 !text-micro text-risk-extreme">
+          <span className="stamp shrink-0 !px-2 !py-0.5 !text-label text-risk-extreme">
             {t.none}
           </span>
         )}
@@ -223,8 +223,8 @@ export default function RiskTimeline({
           <text
             x={Math.min(W - 60, Math.max(30, x(points.indexOf(peak))))}
             y={Math.max(14, y(peak.score) - 7)}
-            fill={RISK_COLOR[peak.category]}
-            fontSize={typePx.small}
+            fill={RISK_INK[peak.category]}
+            fontSize={typePx.body}
             fontWeight="700"
             fontStyle="italic"
             textAnchor="middle"

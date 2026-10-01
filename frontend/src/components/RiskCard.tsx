@@ -1,6 +1,6 @@
 import type { Evidence, Language, RiskAssessment } from "../types";
 import { LockGlyph } from "./glyphs";
-import { RISK_COLOR } from "../risk";
+import { RISK_COLOR, RISK_INK } from "../risk";
 import { pairs } from "../crew";
 import RiskDial from "./RiskDial";
 import { CATEGORY, FACTOR, UI, VERDICT } from "../i18n/riskCard";
@@ -29,6 +29,7 @@ export default function RiskCard({
   const band = (CATEGORY[language] ?? CATEGORY.en)[risk.category] ?? risk.category;
   const names = FACTOR[language] ?? FACTOR.en;
   const color = RISK_COLOR[risk.category];
+  const printed = RISK_INK[risk.category];
   const reasons = risk.factors.filter((f) => f.contribution > 0);
   const ranked = reasons.slice(0, RANKED);
   const rest = reasons.slice(RANKED);
@@ -51,8 +52,8 @@ export default function RiskCard({
             </p>
             <h2
               id="verdict-words"
-              className="mt-1 font-display text-figure font-bold leading-tight tracking-tight"
-              style={{ color }}
+              className="mt-1 font-display text-headline font-bold leading-tight tracking-tight"
+              style={{ color: printed }}
             >
               {(VERDICT[language] ?? VERDICT.en)[risk.category]}
             </h2>
@@ -60,14 +61,14 @@ export default function RiskCard({
               {/* the verdict, stamped on the document */}
               <span
                 key={`${risk.category}-${risk.score}`}
-                className="stamp animate-stampIn text-readout"
-                style={{ color }}
+                className="stamp animate-stampIn text-label"
+                style={{ color: printed }}
               >
                 {band}
               </span>
               {risk.official_warning && (
                 <span
-                  className="stamp animate-stampIn text-readout text-risk-extreme"
+                  className="stamp animate-stampIn text-label text-risk-extreme"
                   style={{ animationDelay: "120ms" }}
                 >
                   {ui.warning}
@@ -98,8 +99,8 @@ export default function RiskCard({
                     {names[f.key] ?? f.label}
                   </span>
                   <span
-                    className="shrink-0 font-mono text-small font-bold tabular-nums leading-5"
-                    style={{ color }}
+                    className="shrink-0 font-mono text-body font-bold tabular-nums leading-5"
+                    style={{ color: printed }}
                   >
                     +{f.contribution.toFixed(1)}
                   </span>
@@ -111,13 +112,13 @@ export default function RiskCard({
                   />
                 </div>
                 {f.detail && (
-                  <p className="mt-1 text-readout leading-snug text-ink-500">{f.detail}</p>
+                  <p className="mt-1 text-label leading-snug text-ink-500">{f.detail}</p>
                 )}
               </li>
             ))}
           </ol>
           {rest.length > 0 && (
-            <p className="mt-2.5 text-readout leading-snug text-ink-500">
+            <p className="mt-2.5 text-label leading-snug text-ink-500">
               {ui.moreReasons}:{" "}
               {rest.map((f, i) => (
                 <span key={f.key}>
@@ -139,13 +140,13 @@ export default function RiskCard({
           <h3 className="label mb-2 !text-risk-extreme">{ui.overrides}</h3>
           <ul className="space-y-1.5">
             {risk.overrides.map((o, i) => (
-              <li key={i} className="flex items-start gap-2 text-small font-medium text-ink-800">
+              <li key={i} className="flex items-start gap-2 text-body font-medium text-ink-800">
                 <LockGlyph size={13} className="mt-0.5 shrink-0 text-risk-extreme" />
                 <span>{o}</span>
               </li>
             ))}
           </ul>
-          <p className="mt-2 max-w-[75ch] text-readout italic leading-relaxed text-ink-500">
+          <p className="mt-2 max-w-[75ch] text-label italic leading-relaxed text-ink-500">
             {ui.overrideNote}
           </p>
         </div>

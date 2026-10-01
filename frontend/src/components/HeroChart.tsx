@@ -289,7 +289,7 @@ function Sheet({
         <p
           lang={askLang}
           aria-label={ask}
-          className="mt-1.5 font-display text-heading font-semibold leading-snug text-ink-900"
+          className="mt-1.5 font-display text-title font-semibold leading-snug text-ink-900"
         >
           <span aria-hidden>{ask.slice(0, typed)}</span>
           <span aria-hidden className="invisible">
@@ -513,7 +513,7 @@ function Sheet({
               <span className="sounding text-dial tracking-normal">{p.score}</span>
               <span className="font-sans text-label font-bold tabular-nums tracking-normal text-ink-700 [text-shadow:none]">/100</span>
             </div>
-            <div className="mt-1 whitespace-nowrap text-readout leading-tight">{t.verdict[p.category]}</div>
+            <div className="mt-1 whitespace-nowrap text-label leading-tight">{t.verdict[p.category]}</div>
           </div>
         ) : (
           /* where the stamp will land: the same box, still empty */
@@ -522,7 +522,7 @@ function Sheet({
               <span className="sounding invisible text-dial tracking-normal">{p.score}</span>
               <span className="invisible font-sans text-label font-bold tabular-nums">/100</span>
             </div>
-            <div className="invisible mt-1 whitespace-nowrap text-readout leading-tight">{t.verdict[p.category]}</div>
+            <div className="invisible mt-1 whitespace-nowrap text-label leading-tight">{t.verdict[p.category]}</div>
           </div>
         )}
 
@@ -534,7 +534,7 @@ function Sheet({
               return (
                 <li
                   key={f.key}
-                  className={`grid grid-cols-[3.2rem_1fr] items-center gap-2 text-readout leading-tight text-ink-700 ${
+                  className={`grid grid-cols-[3.2rem_1fr] items-center gap-2 text-label leading-tight text-ink-700 ${
                     shown ? "hero-rise-in" : "invisible"
                   }`}
                 >
@@ -558,7 +558,7 @@ function Sheet({
           </ul>
           {(p.official || p.window) && (
             <p
-              className={`mt-2 text-readout font-semibold leading-snug text-risk-extreme ${
+              className={`mt-2 text-label font-semibold leading-snug text-risk-extreme ${
                 stage.note ? "hero-rise-in" : "invisible"
               }`}
             >

@@ -33,9 +33,9 @@ export default function ConditionsStrip({
           className="min-w-0 px-3 py-2.5"
           data-accent={tile.accent ? "" : undefined}
         >
-          <dt className="label truncate !text-micro">{tile.label}</dt>
+          <dt className="label truncate !text-label">{tile.label}</dt>
           <dd
-            className="mt-1 truncate font-mono text-prose font-bold tabular-nums leading-none text-ink-900"
+            className="mt-1 truncate font-mono text-body font-bold tabular-nums leading-none text-ink-900"
             title={tile.value ?? undefined}
           >
             {tile.value ?? "—"}

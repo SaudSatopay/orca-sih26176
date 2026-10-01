@@ -98,7 +98,7 @@ export default function GuidedTour({
 
         <div className="flex flex-wrap items-start gap-x-4 gap-y-3 px-4 py-3.5 sm:px-5 sm:py-4">
           <div
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-[2px] bg-ink-900 font-display text-subtitle font-black tabular-nums text-paper-50"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-[2px] bg-ink-900 font-display text-lead font-black tabular-nums text-paper-50"
             aria-hidden
           >
             {step + 1}
@@ -106,12 +106,12 @@ export default function GuidedTour({
 
           <div className="min-w-0 flex-1 basis-[260px]" aria-live="polite" aria-atomic="true">
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              <h2 id={titleId} className="font-display text-subtitle font-bold leading-snug text-ink-900">
+              <h2 id={titleId} className="font-display text-lead font-bold leading-snug text-ink-900">
                 <span className="sr-only">{ui.name}: </span>
                 {s.title[language] ?? s.title.en}
               </h2>
               {s.feature && (
-                <span className="border border-chart-500/60 bg-chart-100/50 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-[0.08em] text-chart-700">
+                <span className="border border-chart-500/60 bg-chart-100/50 px-2 py-0.5 font-mono text-label font-bold uppercase tracking-[0.08em] text-chart-700">
                   {s.feature[language] ?? s.feature.en}
                 </span>
               )}
@@ -163,7 +163,7 @@ export default function GuidedTour({
                 <CrossGlyph />
               </button>
             </div>
-            <div className="font-mono text-readout font-semibold tabular-nums text-ink-700">
+            <div className="font-mono text-label font-semibold tabular-nums text-ink-700">
               {paused && <span className="mr-2 text-ink-900">{ui.paused} ·</span>}
               {stepLabel}
             </div>
