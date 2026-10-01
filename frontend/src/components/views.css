@@ -158,6 +158,19 @@ button.v-card:active {
     0 -1px 0 var(--rule-faint);
 }
 
+/* Any grid of cells inside a panel: hairlines between them whichever way
+   the grid wraps, none on the outer edge. */
+.v-cells {
+  display: grid;
+  overflow: hidden;
+}
+.v-cells > * {
+  min-width: 0;
+  box-shadow:
+    -1px 0 0 var(--rule-faint),
+    0 -1px 0 var(--rule-faint);
+}
+
 /* The same cells set flush inside a panel, edge to edge. */
 .v-figures--flush {
   border: 0;
