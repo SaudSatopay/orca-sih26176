@@ -177,7 +177,7 @@ export default function GuidedTour({
           aria-valuemin={1}
           aria-valuemax={TOUR.length}
           aria-valuenow={step + 1}
-          className="flex gap-[2px] px-4 pb-3 sm:px-5"
+          className="flex gap-0.5 px-4 pb-3 sm:px-5"
         >
           {TOUR.map((_, i) => (
             <span

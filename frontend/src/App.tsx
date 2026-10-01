@@ -887,7 +887,7 @@ export default function App() {
                               {r.distance_km} km · {Math.round(r.eta_minutes)} min
                             </span>
                           </div>
-                          <p className="mt-1 max-w-[78ch] pl-[36px] text-label leading-relaxed text-ink-500">
+                          <p className="mt-1 max-w-[78ch] pl-9 text-label leading-relaxed text-ink-500">
                             {r.notes}
                           </p>
                         </div>

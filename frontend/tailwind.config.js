@@ -1,4 +1,4 @@
-import { colors, fontSize, textColors } from "./src/tokens.ts";
+import { colors, fontSize, shadow, textColors } from "./src/tokens.ts";
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -18,6 +18,8 @@ export default {
       textColor: textColors,
       // The nine-step type scale (label … hero), also from src/tokens.ts.
       fontSize,
+      // Elevation: a sheet on the table, a row under the pointer.
+      boxShadow: shadow,
       fontFamily: {
         display: [
           '"Fraunces Variable"',

@@ -25,16 +25,18 @@ export const paper = {
 } as const;
 
 /**
- * Marine ink. 400 is the lightest ink that may carry text: 4.51:1 on paper-100
- * and 4.88:1 on paper-50 (it was #5D7386, 4.26:1 on the sheet). 300 is
- * decoration only — rules and quiet icons — at 2.9:1.
+ * Marine ink. 400 is the lightest ink that may carry text. It holds 4.5:1 on
+ * every ground a label sits on: 5.50 on paper-50, 5.09 on the sheet, 4.73 on
+ * the hover tint, 5.00 on a tinted cell. (It was #5A6F81, which fell to 4.43
+ * on tinted cells and 4.20 on hover.) 300 is decoration only, rules and quiet
+ * icons, at 2.9:1.
  */
 export const ink = {
   900: "#12212D", // headings, primary buttons
   800: "#1B2F3E",
   700: "#263B4D", // body text
   500: "#42596D", // secondary text
-  400: "#5A6F81", // labels, placeholders, inactive tabs
+  400: "#526778", // labels, placeholders, inactive tabs
   300: "#82949F", // rules, quiet icons; never text
 } as const;
 
@@ -124,6 +126,27 @@ export const rule = {
   faint: alpha(ink[900], 0.14), // dividers inside a panel
   DEFAULT: alpha(ink[900], 0.28), // panel borders
   strong: alpha(ink[900], 0.55), // neatlines, the double rule
+} as const;
+
+/** The top edge of a sheet catching the light: the one use of white. */
+export const sheen = "#FFFFFF";
+
+/**
+ * Elevation. A sheet lies on the chart table, and a row lifts a little under
+ * the pointer; nothing floats higher than that. Tailwind: `shadow-sheet`,
+ * `shadow-lift`; in CSS: `theme(boxShadow.sheet)`.
+ */
+export const shadow = {
+  sheet: [
+    `inset 0 1px 0 ${alpha(sheen, 0.55)}`,
+    `0 1px 3px ${alpha(ink[900], 0.1)}`,
+    `0 14px 30px -20px ${alpha(ink[900], 0.35)}`,
+  ].join(", "),
+  lift: [
+    `inset 0 1px 0 ${alpha(sheen, 0.55)}`,
+    `0 3px 6px ${alpha(ink[900], 0.1)}`,
+    `0 22px 40px -22px ${alpha(ink[900], 0.45)}`,
+  ].join(", "),
 } as const;
 
 /**

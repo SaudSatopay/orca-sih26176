@@ -215,7 +215,7 @@ function Advice({ data, language, t }: { data: FishingOutlook; language: Languag
                 planWarns ? "font-semibold text-ink-900" : "text-ink-800"
               }`}
             >
-              {planWarns && <WarnGlyph size={14} className="mt-[3px] shrink-0 text-risk-high" />}
+              {planWarns && <WarnGlyph size={14} className="mt-0.5 shrink-0 text-risk-high" />}
               <span className="min-w-0">{line}</span>
             </p>
           ))}
@@ -391,7 +391,7 @@ function GroundCard({
           <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span className="font-mono text-lead font-bold tabular-nums leading-none text-ink-900">
               {Math.round(a.distance_km)}
-              <span className="ml-[3px] text-label">km</span>
+              <span className="ml-1 text-label">km</span>
             </span>
             <span className="font-mono text-label font-semibold text-ink-500">{a.bearing}</span>
             {a.recommended && (
@@ -403,7 +403,7 @@ function GroundCard({
               className="mt-1.5 flex items-start gap-2 text-body leading-snug"
               title={`${t.likely}: ${t.likelyNote}`}
             >
-              <FishGlyph size={13} className="mt-[2px] shrink-0 text-chart-600" />
+              <FishGlyph size={13} className="mt-0.5 shrink-0 text-chart-600" />
               <span className="sr-only">{t.likely}: </span>
               <span className="flex min-w-0 flex-wrap gap-x-2.5 gap-y-0.5">
                 {species.map((s) => (

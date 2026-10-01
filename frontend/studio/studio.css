@@ -1,0 +1,17 @@
+/* The studio is outside Tailwind's content globs on purpose (it never ships).
+   This sheet only pulls in the utilities that src/ components already use, so
+   ChartDividers renders here exactly as it does in the app. */
+@tailwind utilities;
+
+html,
+body {
+  margin: 0;
+}
+
+/* Mirrors .sounding in src/index.css. */
+.sounding {
+  font-family: "Fraunces Variable", Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+  font-variation-settings: "SOFT" 40;
+}

@@ -106,7 +106,11 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
-    css: false,
+    // Stylesheets are not processed in tests, with one exception: a `?raw`
+    // import returns the file's text, so tokens.test.ts can read the CSS it
+    // guards. (With `css: false` those imports came back empty and the guards
+    // passed without looking at anything.)
+    css: { include: [/[?&]raw\b/] },
     // Rendering a whole app cold takes seconds when the machine is busy
     // (CI, or other builds running). The default 5 s made those tests flake.
     testTimeout: 20_000,

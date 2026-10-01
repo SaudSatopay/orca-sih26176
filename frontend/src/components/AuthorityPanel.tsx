@@ -164,7 +164,7 @@ function Summary({ data, language, t }: { data: AuthorityDashboard; language: La
           {total > 0 && (
             <div className="min-w-0 flex-1 basis-[190px] pb-0.5">
               {/* how the coast divides across the four bands */}
-              <div className="flex h-[7px] gap-[2px]" aria-hidden>
+              <div className="flex h-2 gap-0.5" aria-hidden>
                 {BANDS_WORST_FIRST.filter((c) => counts[c] > 0).map((c) => (
                   <span key={c} style={{ flexGrow: counts[c], flexBasis: 0, background: RISK_COLOR[c] }} />
                 ))}

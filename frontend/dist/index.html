@@ -23,26 +23,52 @@
       property="og:description"
       content="Ten agents read the sea and return one safe, explainable decision for a fisher, in Marathi, Hindi or English."
     />
-    <meta property="og:image" content="/og.png" />
+    <meta property="og:url" content="https://orca-psi-one.vercel.app/" />
+    <meta property="og:image" content="https://orca-psi-one.vercel.app/og.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="The ORCA chart: a plotted course around a hatched no-go area, with the verdict stamped."
+      content="ORCA in wet ink on chart paper: ten agents read the sea, one safe, explainable decision."
     />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://orca-psi-one.vercel.app/og.png" />
+    <link rel="canonical" href="https://orca-psi-one.vercel.app/" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- iOS startup images, portrait: the wordmark in wet ink on the sheet,
+         stills captured from frontend/studio/ink.html?view=splash. iOS only
+         uses an image whose size matches the device exactly; any other
+         iPhone falls back to the plain paper background.
+         430 x 932 @3x: iPhone 14 Pro Max, 15 Plus, 15 Pro Max, 16 Plus.
+         393 x 852 @3x: iPhone 14 Pro, 15, 15 Pro, 16.
+         390 x 844 @3x: iPhone 12, 12 Pro, 13, 13 Pro, 14, 16e. -->
+    <link
+      rel="apple-touch-startup-image"
+      href="/splash-1290x2796.png"
+      media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/splash-1179x2556.png"
+      media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/splash-1170x2532.png"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="ORCA" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <style>
       /* Critical CSS for the static shell below: it paints before the bundle
-         arrives and is all a visitor without JavaScript sees. The values
-         MIRROR src/tokens.ts (paper-100, ink-900, ink-700, ink-500, chart-500,
-         chart-600, rule); if a token changes there, change it here. */
+         arrives and is all a visitor without JavaScript sees. The colours
+         and type sizes MIRROR src/tokens.ts (paper-100, ink-900, ink-700,
+         ink-500, chart-500, chart-600, rule; the type scale's steps), and
+         src/tokens.test.ts fails if one of them drifts from its token. */
       html {
         background: #f5eedd;
       }
@@ -74,7 +100,7 @@
       .shell-mark {
         margin: 0;
         font-family: "Fraunces Variable", Georgia, serif;
-        font-size: 30px;
+        font-size: 28px;
         font-weight: 900;
         line-height: 1;
         letter-spacing: 0.01em;
@@ -89,7 +115,7 @@
         margin: 0;
         color: #12212d;
         font-family: "Fraunces Variable", Georgia, serif;
-        font-size: 24px;
+        font-size: 23px;
         font-weight: 600;
         line-height: 1.25;
         text-wrap: balance;
@@ -97,8 +123,8 @@
       .shell-ask {
         margin: 0;
         color: #42596d;
-        font-size: 15px;
-        line-height: 1.6;
+        font-size: 16px;
+        line-height: 1.55;
       }
       .shell-status {
         margin: 6px 0 0;
@@ -133,14 +159,14 @@
         padding-top: 12px;
         border-top: 1px solid rgba(18, 33, 45, 0.28);
         color: #12212d;
-        font-size: 15px;
+        font-size: 16px;
         line-height: 1.5;
       }
       .shell-purpose {
         display: none;
         margin: 4px 0 0;
         color: #42596d;
-        font-size: 12px;
+        font-size: 13px;
         line-height: 1.25;
       }
       /* On a phone (the inline boot script sets html.phone before the body is
@@ -165,7 +191,7 @@
         height: 34px;
       }
       html.phone .shell-mark {
-        font-size: 21px;
+        font-size: 23px;
         letter-spacing: 0;
       }
       html.phone .shell-purpose {
@@ -191,10 +217,10 @@
         }
       </style>
     </noscript>
-    <script type="module" crossorigin src="/assets/index-DJOyVH1Y.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BCKNFGu6.css">
+    <script type="module" crossorigin src="/assets/index-DKtl-ZkR.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-DRiRJvn9.css">
     <link rel="preload" as="font" type="font/woff2" href="/assets/fraunces-latin-wght-normal-ukD16Tqj.woff2" crossorigin>
-    <script>(function(){var d=document,m=new URLSearchParams(location.search).get("m"),p=m==="1"||(m!=="0"&&matchMedia("(max-width: 640px)").matches),a=p?{"js":["/assets/MobileApp-CPwZXgWx.js","/assets/locate-0L-iFRDX.js"],"css":["/assets/MobileApp-R2MDZ9dH.css"]}:{"js":["/assets/App-DkWWZU8L.js","/assets/locate-0L-iFRDX.js","/assets/MarineMap-BeRosl4M.js"],"css":["/assets/App-CzC_SsMi.css","/assets/MarineMap-BJltxDJw.css"]};d.documentElement.classList.toggle("phone",p);function k(r,h){var l=d.createElement("link");l.rel=r;l.href=h;if(r==="modulepreload")l.crossOrigin="";d.head.appendChild(l)}a.js.forEach(function(h){k("modulepreload",h)});a.css.forEach(function(h){k("stylesheet",h)})})()</script>
+    <script>(function(){var d=document,m=new URLSearchParams(location.search).get("m"),p=m==="1"||(m!=="0"&&matchMedia("(max-width: 640px)").matches),a=p?{"js":["/assets/MobileApp-tPH63Jvl.js","/assets/locate-Dh2YgiEG.js"],"css":["/assets/MobileApp-DZm8cZfF.css"]}:{"js":["/assets/App-COB0XiF-.js","/assets/locate-Dh2YgiEG.js","/assets/MarineMap-BfnpmsIn.js"],"css":["/assets/App-CzC_SsMi.css","/assets/MarineMap-BJltxDJw.css"]};d.documentElement.classList.toggle("phone",p);function k(r,h){var l=d.createElement("link");l.rel=r;l.href=h;if(r==="modulepreload")l.crossOrigin="";d.head.appendChild(l)}a.js.forEach(function(h){k("modulepreload",h)});a.css.forEach(function(h){k("stylesheet",h)})})()</script>
   </head>
   <body>
     <!-- The sea at the foot of the sheet. It is outside #root on purpose: on a
@@ -236,6 +262,6 @@
           </p>
         </noscript>
       </div>
-    </div>
+    </div>
   </body>
 </html>

@@ -48,7 +48,7 @@ export default function PFZList({
                     <span className="sr-only">{z.rank}. </span>
                     <span className="font-mono text-lead font-bold tabular-nums leading-none text-ink-900">
                       {z.distance_km}
-                      <span className="ml-[3px] text-label">km</span>
+                      <span className="ml-1 text-label">km</span>
                     </span>
                     <span className="font-mono text-label font-semibold text-ink-500">
                       {z.bearing}

@@ -480,7 +480,7 @@ function MapDraft({ label, height }: { label: string; height: number }) {
           </span>
         </div>
       </div>
-      <div className="mt-[7px] h-[14px]" />
+      <div className="mt-2 h-3.5" />
     </div>
   );
 }
