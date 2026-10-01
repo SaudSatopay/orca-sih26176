@@ -8,9 +8,12 @@ Two deliberate rules:
 from __future__ import annotations
 
 import re
-from typing import Dict, List
+from datetime import datetime
+from typing import Dict, List, Optional
 
+from ..config import SOURCE_LABELS
 from ..schemas import Language
+from .plain_language import direction_words
 
 DEVANAGARI = re.compile(r"[ऀ-ॿ]")
 
@@ -92,6 +95,16 @@ T: Dict[str, Dict[Language, str]] = {
         "hi": "निकटतम संभावित मत्स्य क्षेत्र",
         "mr": "जवळची संभाव्य मासेमारी क्षेत्रे",
     },
+    # One ranked ground. Units stay as they are written on every chart
+    # (km, °C, mg/m3); the words around them are translated.
+    "pfz_line": {
+        "en": "#{rank} — {distance} km {direction}, SST {sst} °C, "
+              "chlorophyll {chl} mg/m3, chance of fish {chance}%.",
+        "hi": "#{rank} — {distance} किमी {direction} की ओर, समुद्र सतह का तापमान {sst} °C, "
+              "क्लोरोफिल {chl} mg/m3, मछली मिलने की संभावना {chance}%।",
+        "mr": "#{rank} — {distance} किमी {direction} दिशेला, समुद्रपृष्ठाचे तापमान {sst} °C, "
+              "क्लोरोफिल {chl} mg/m3, मासे मिळण्याची शक्यता {chance}%.",
+    },
     "pfz_note": {
         "en": "A potential fishing zone is a scientifically likely area — it is not a guarantee of fish.",
         "hi": "संभावित मत्स्य क्षेत्र वैज्ञानिक रूप से संभावित क्षेत्र है — मछली की गारंटी नहीं।",
@@ -117,15 +130,10 @@ T: Dict[str, Dict[Language, str]] = {
         "hi": "अलर्ट: आप {zone} के भीतर हैं। तुरंत क्षेत्र छोड़ें।",
         "mr": "सतर्कता: तुम्ही {zone} मध्ये आहात. ताबडतोब क्षेत्र सोडा.",
     },
-    "sources": {
-        "en": "Sources",
-        "hi": "स्रोत",
-        "mr": "स्रोत",
-    },
-    "updated": {
-        "en": "Updated",
-        "hi": "अपडेट",
-        "mr": "अपडेट",
+    "sources_line": {
+        "en": "Sources: {sources} · Updated {stamp}.",
+        "hi": "स्रोत: {sources} · अपडेट {stamp}।",
+        "mr": "स्रोत: {sources} · अपडेट {stamp}.",
     },
     "demo_mode": {
         "en": "Demo / simulated data — not a live government feed.",
@@ -157,6 +165,81 @@ SUGGESTIONS: Dict[Language, List[str]] = {
     "mr": ["दुपारी १२ वाजता काय?", "जवळचे PFZ दाखवा", "सुरक्षित मार्ग दाखवा",
            "जवळपास चक्रीवादळ आहे का?"],
 }
+
+
+# --------------------------------------------------------------------------
+# Provenance, places and dates
+# --------------------------------------------------------------------------
+# English labels live in config.SOURCE_LABELS (also served by /api/config).
+# Organisation names are proper nouns and stay in Latin script; everything
+# around them is translated. The simulated-data label must stay blunt in
+# every language: it is the line that stops a demo value being read as an
+# official one.
+SOURCE_LABELS_L10N: Dict[str, Dict[Language, str]] = {
+    "INCOIS": {"hi": "INCOIS", "mr": "INCOIS"},
+    "IMD": {"hi": "IMD", "mr": "IMD"},
+    "MOSDAC": {"hi": "ISRO MOSDAC", "mr": "ISRO MOSDAC"},
+    "OPEN_METEO": {"hi": "Open-Meteo Marine (खुला वैकल्पिक स्रोत)",
+                   "mr": "Open-Meteo Marine (खुला पर्यायी स्रोत)"},
+    "DEMO": {"hi": "ORCA डेमो डेटासेट — नकली आँकड़े, असली या आधिकारिक नहीं",
+             "mr": "ORCA डेमो माहितीसंच — नमुना माहिती, खरी किंवा अधिकृत नाही"},
+    "ORCA_GIS": {"hi": "ORCA भू-स्थानिक परत (OpenStreetMap से तैयार)",
+                 "mr": "ORCA भू-स्थानिक स्तर (OpenStreetMap वरून तयार)"},
+}
+
+
+def source_label(code: str, lang: Language) -> str:
+    """Human name of a data source, in the reader's language."""
+    english = SOURCE_LABELS.get(code, code)
+    if lang == "en":
+        return english
+    return SOURCE_LABELS_L10N.get(code, {}).get(lang, english)
+
+
+# The demo geofences (data/geo.py RESTRICTED_ZONES), by their English name.
+ZONE_NAMES: Dict[str, Dict[Language, str]] = {
+    "Mumbai Port approach channel": {
+        "hi": "मुंबई बंदरगाह का प्रवेश मार्ग", "mr": "मुंबई बंदराचा प्रवेश मार्ग"},
+    "Naval exercise area (notified)": {
+        "hi": "नौसेना अभ्यास क्षेत्र (अधिसूचित)", "mr": "नौदल सराव क्षेत्र (अधिसूचित)"},
+    "Malvan Marine Sanctuary": {
+        "hi": "मालवण समुद्री अभयारण्य", "mr": "मालवण सागरी अभयारण्य"},
+    "International Maritime Boundary (Palk Bay approach)": {
+        "hi": "अंतरराष्ट्रीय समुद्री सीमा (पाक खाड़ी के पास)",
+        "mr": "आंतरराष्ट्रीय सागरी सीमा (पाकच्या उपसागराजवळ)"},
+    "Kochi Port navigation channel": {
+        "hi": "कोच्चि बंदरगाह का नौवहन मार्ग", "mr": "कोची बंदराचा जलवाहतूक मार्ग"},
+}
+
+
+def zone_name(name: str, lang: Language) -> str:
+    return ZONE_NAMES.get(name, {}).get(lang, name)
+
+
+def direction(bearing: Optional[str], lang: Language) -> str:
+    """Compass label for the answer text: "WSW" in English, a plain direction
+    word ("नैऋत्य", "दक्षिण-पश्चिम") in Marathi and Hindi."""
+    if not bearing:
+        return ""
+    if lang == "en":
+        return bearing
+    return direction_words(bearing, lang) or bearing
+
+
+MONTHS: Dict[Language, List[str]] = {
+    "hi": ["जनवरी", "फ़रवरी", "मार्च", "अप्रैल", "मई", "जून", "जुलाई", "अगस्त",
+           "सितंबर", "अक्टूबर", "नवंबर", "दिसंबर"],
+    "mr": ["जानेवारी", "फेब्रुवारी", "मार्च", "एप्रिल", "मे", "जून", "जुलै", "ऑगस्ट",
+           "सप्टेंबर", "ऑक्टोबर", "नोव्हेंबर", "डिसेंबर"],
+}
+
+
+def format_stamp(when: datetime, lang: Language) -> str:
+    """"02 Oct 2026, 06:00 IST" / "2 ऑक्टोबर 2026, 06:00 IST". Digits are never
+    localised (module rule); only the month name is."""
+    if lang in MONTHS:
+        return f"{when.day} {MONTHS[lang][when.month - 1]} {when.year}, {when:%H:%M} IST"
+    return when.strftime("%d %b %Y, %H:%M IST")
 
 
 def t(key: str, lang: Language, **kwargs) -> str:

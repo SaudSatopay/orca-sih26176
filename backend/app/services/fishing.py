@@ -114,6 +114,19 @@ def probability(*, chlorophyll: Optional[float], sst: Optional[float],
     }
 
 
+def zone_chance(zone: Dict, *, ambient_sst: Optional[float], hour: int) -> Dict:
+    """`probability()` for one candidate ground.
+
+    The single place a ground's chance of fish is computed. The Today view
+    (/api/fishing) and the chat answer (PFZ agent) both call this, so the
+    number in a sentence is always the number on the chart.
+    """
+    return probability(
+        chlorophyll=zone.get("chlorophyll_mg_m3"), sst=zone.get("sst_c"),
+        ambient_sst=ambient_sst, wave_m=zone.get("wave_height_m"), hour=hour,
+    )
+
+
 # --- indicative species mix ----------------------------------------------
 # Coastal target species concentrate in documented SST/chlorophyll bands —
 # the same reasoning INCOIS applies, species-resolved. This is an INDICATIVE

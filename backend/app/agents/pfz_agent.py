@@ -10,11 +10,12 @@ claims to see fish.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List
+from typing import Dict, List, Optional
 
 from ..data import demo_store
 from ..data.geo import RESTRICTED_ZONES, point_in_polygon
 from ..schemas import AgentResult, Location, PFZZone
+from ..services import fishing
 from .base import timed
 
 
@@ -34,9 +35,30 @@ def _blocking_zone(lat: float, lon: float):
     return None
 
 
+def apply_chance(zones: List[Dict], ambient_sst: Optional[float], hour: int) -> List[Dict]:
+    """Stamp each ground with its chance of fish, as a 0..1 `confidence`.
+
+    Presentation only: the number comes from services/fishing.zone_chance,
+    the same call the Today view makes, and it never feeds the ranking, the
+    route or the risk score. Without it the field stayed at the 0.0
+    placeholder demo_store writes, and the answer read "confidence 0%" for a
+    ground the chart showed at 77%.
+    """
+    for z in zones:
+        chance = fishing.zone_chance(z, ambient_sst=ambient_sst, hour=hour)["probability"]
+        z["confidence"] = round(chance / 100.0, 2)
+    return zones
+
+
 @timed
-def run(location: Location, when: datetime, count: int = 3) -> AgentResult:
+def run(location: Location, when: datetime, count: int = 3,
+        ambient_sst: Optional[float] = None) -> AgentResult:
     stamp = when.isoformat(timespec="seconds")
+    if ambient_sst is None:
+        # What the Ocean agent reports for this place and hour in DEMO mode.
+        # The planner re-applies the chance with the Ocean agent's own reading
+        # once it has one, so LIVE mode agrees with the Today view as well.
+        ambient_sst = round(float(demo_store.conditions(location.name, when)["sst"]), 1)
     raw = demo_store.pfz_zones(location.latitude, location.longitude,
                                location.name, when, count=count)
 
@@ -54,6 +76,7 @@ def run(location: Location, when: datetime, count: int = 3) -> AgentResult:
 
     kept.sort(key=_score, reverse=True)
     kept = kept[:count]
+    apply_chance(kept, ambient_sst, when.hour)
 
     zones: List[PFZZone] = []
     for rank, z in enumerate(kept, start=1):

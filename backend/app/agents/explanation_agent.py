@@ -10,10 +10,10 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from ..config import SOURCE_LABELS
 from ..schemas import (AgentResult, Evidence, Language, Location, PFZZone,
                        RiskAssessment, RouteOption)
-from ..services.i18n import SUGGESTIONS, humanise_duration, t, verdict_key
+from ..services.i18n import (SUGGESTIONS, direction, format_stamp, humanise_duration,
+                             source_label, t, verdict_key, zone_name)
 from .base import timed
 
 # Localised names for the risk factors (rendering concern, kept next to the renderer)
@@ -69,8 +69,13 @@ def _short_value(key: str, weather: Dict, ocean: Dict, cyclone: Dict, gis: Dict,
 
 
 def build_evidence(weather: Dict, ocean: Dict, cyclone: Dict, gis: Dict,
-                   agents: Dict[str, AgentResult]) -> List[Evidence]:
-    """The 'tap to see the source' table behind every recommendation."""
+                   agents: Dict[str, AgentResult], lang: Language = "en") -> List[Evidence]:
+    """The 'tap to see the source' table behind every recommendation.
+
+    `label` is a stable English key (the frontend looks rows up by it and
+    shows its own translated heading); `source` is prose, so it is written in
+    the reader's language.
+    """
     rows: List[Evidence] = []
 
     def add(label: str, value: str, agent_key: str):
@@ -78,7 +83,7 @@ def build_evidence(weather: Dict, ocean: Dict, cyclone: Dict, gis: Dict,
         if not a:
             return
         rows.append(Evidence(label=label, value=value,
-                             source=SOURCE_LABELS.get(a.source, a.source),
+                             source=source_label(a.source, lang),
                              timestamp=a.timestamp, confidence=a.confidence,
                              mode=a.mode))
 
@@ -89,7 +94,7 @@ def build_evidence(weather: Dict, ocean: Dict, cyclone: Dict, gis: Dict,
     if ocean.get("sea_state"):
         add("Sea state", str(ocean["sea_state"]), "ocean")
     if ocean.get("sst_c") is not None:
-        add("Sea surface temperature", f"{ocean['sst_c']:.1f} deg C", "ocean")
+        add("Sea surface temperature", f"{ocean['sst_c']:.1f} °C", "ocean")
     if weather.get("wind_speed_kmh") is not None:
         add("Wind", f"{weather['wind_speed_kmh']:.0f} km/h {weather.get('wind_direction', '')}".strip(), "weather")
     if weather.get("rain_probability_pct") is not None:
@@ -142,9 +147,14 @@ def run(*, intent, risk: Optional[RiskAssessment], pfz: List[PFZZone],
     if pfz and intent.intent in ("find_pfz", "route"):
         top = pfz[0]
         parts.append(
-            f"{t('pfz_intro', lang)}: #{top.rank} — {top.distance_km} km {top.bearing}, "
-            f"SST {top.sst_c} deg C, chlorophyll {top.chlorophyll_mg_m3} mg/m3, "
-            f"confidence {int(top.confidence * 100)}%."
+            f"{t('pfz_intro', lang)}: "
+            + t("pfz_line", lang, rank=top.rank, distance=top.distance_km,
+                direction=direction(top.bearing, lang),
+                sst="-" if top.sst_c is None else top.sst_c,
+                chl="-" if top.chlorophyll_mg_m3 is None else top.chlorophyll_mg_m3,
+                # The same chance of fish the Today view and the map show for
+                # this ground (PFZ agent -> services/fishing.zone_chance).
+                chance=round(top.confidence * 100))
         )
         parts.append(t("pfz_note", lang))
 
@@ -160,14 +170,15 @@ def run(*, intent, risk: Optional[RiskAssessment], pfz: List[PFZZone],
     # ---- geofence --------------------------------------------------------
     for alert in geofence[:2]:
         key = "geofence_inside" if alert.inside else "geofence_warn"
-        parts.append(t(key, lang, zone=alert.zone_name, distance=alert.distance_km))
+        parts.append(t(key, lang, zone=zone_name(alert.zone_name, lang),
+                       distance=alert.distance_km))
 
     # ---- provenance ------------------------------------------------------
     # Only real data providers belong in the citation line — "ORCA" is us.
-    srcs = sorted({SOURCE_LABELS.get(a.source, a.source)
+    srcs = sorted({source_label(a.source, lang)
                    for a in agents.values() if a.ok and a.source not in ("ORCA",)})
-    parts.append(f"{t('sources', lang)}: {', '.join(srcs)} · "
-                 f"{t('updated', lang)} {when.strftime('%d %b %Y, %H:%M IST')}")
+    parts.append(t("sources_line", lang, sources=", ".join(srcs),
+                   stamp=format_stamp(when, lang)))
     if mode == "DEMO":
         parts.append(t("demo_mode", lang))
 
@@ -178,7 +189,7 @@ def run(*, intent, risk: Optional[RiskAssessment], pfz: List[PFZZone],
         ok=True,
         data={
             "answer": answer,
-            "evidence": [e.model_dump() for e in build_evidence(weather, ocean, cyclone, gis, agents)],
+            "evidence": [e.model_dump() for e in build_evidence(weather, ocean, cyclone, gis, agents, lang)],
             "suggestions": SUGGESTIONS.get(lang, SUGGESTIONS["en"]),
             "disclaimer": t("disclaimer", lang),
         },
