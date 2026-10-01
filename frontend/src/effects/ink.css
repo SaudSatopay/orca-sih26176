@@ -21,6 +21,15 @@
   transition: opacity 0.3s ease;
 }
 
+/* The mark leading the hero: the same wet ink as the cartouche, letters
+   around 120 px tall beside the chart sheet, easing down with the column.
+   The aspect ratio comes inline from the measured geometry. */
+.ink-word-hero {
+  position: relative;
+  width: min(100%, 420px);
+  margin-bottom: 1.25rem;
+}
+
 /* The running ink: the canvas fills the same box the poster drew. */
 .ink-live {
   position: absolute;

@@ -35,7 +35,10 @@ export type EffectName = "ink" | "glass" | "relief";
 export const ALL_EFFECTS: readonly EffectName[] = ["ink", "glass", "relief"];
 
 /** Live WebGL contexts each effect holds at rest. */
-export const CONTEXTS: Record<EffectName, number> = { ink: 1, glass: 0, relief: 1 };
+// ink is 2: the mark flies twice, at the masthead and in the closing
+// cartouche, and each holds its canvas while mounted. With relief's one and
+// glass's zero at rest the landing sits exactly on the cap of three.
+export const CONTEXTS: Record<EffectName, number> = { ink: 2, glass: 0, relief: 1 };
 
 export const WEBGL_CAP = 3;
 

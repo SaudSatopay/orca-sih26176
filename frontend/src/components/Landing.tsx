@@ -6,6 +6,7 @@ import { L10N } from "../i18n/landing";
 import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
 import GlassLoupe from "../effects/GlassLoupe";
+import { InkMark } from "../effects/InkWordmark";
 import InkCartouche from "../effects/InkWordmark";
 import { countContexts } from "../effects/ledger";
 
@@ -209,6 +210,9 @@ export default function Landing({
       <div className="mt-9 grid items-center gap-x-12 gap-y-9 lg:mt-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
         <div>
           <Reveal delay={60}>
+            {/* the wordmark in wet ink leads the hero — the same mark as the
+                closing cartouche, at full size, poster-first */}
+            <InkMark className="ink-word-hero" />
             <h1
               className="max-w-[520px] font-display text-hero font-semibold leading-[1.06] tracking-tight text-ink-900"
               style={{ textWrap: "balance" }}

@@ -39,6 +39,26 @@ function InkPoster() {
 const BOX: CSSProperties = { aspectRatio: `${WORD.w} / ${WORD.h}` };
 
 /**
+ * The wordmark itself, poster-first, at whatever size its container gives it
+ * (`.ink-word` in the cartouche, `.ink-word-mast` in the landing's masthead).
+ * One component so the foot and the masthead can never drift apart.
+ */
+export function InkMark({ className = "ink-word" }: { className?: string }) {
+  return (
+    <div translate="no">
+      <EffectSlot
+        name="ink"
+        Effect={InkLive}
+        className={className}
+        style={BOX}
+        effectClassName="ink-live"
+        poster={<InkPoster />}
+      />
+    </div>
+  );
+}
+
+/**
  * Effect 1 — the closing cartouche: the title block of the chart folio,
  * at the foot of the landing. The ORCA wordmark set large, the sea-surface
  * rule beneath it, and the name written out in the fisher's language. On a
@@ -50,16 +70,7 @@ export default function InkCartouche({ language }: { language: Language }) {
   return (
     <section className="ink-cartouche mt-16 text-center" aria-label={WORD.text}>
       {/* the mark is the mark in every language */}
-      <div translate="no">
-        <EffectSlot
-          name="ink"
-          Effect={InkLive}
-          className="ink-word"
-          style={BOX}
-          effectClassName="ink-live"
-          poster={<InkPoster />}
-        />
-      </div>
+      <InkMark />
       <div className="wave-rule mx-auto mt-5 max-w-[300px]" aria-hidden />
       <p className="label mt-4">{t.folioTagline}</p>
     </section>
