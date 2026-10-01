@@ -13,9 +13,14 @@ import { chance, chart, flow, risk, sst } from "../tokens";
  *     current, with fading trails.
  *
  * Doctrine: this layer is pure decoration. It never carries safety
- * information, so it may pause (hidden tab), skip (reduced motion → one
- * static frame of streaks), or fail to fetch (drawn empty) without any
- * fallback machinery.
+ * information, so it may pause (hidden tab, chart scrolled out of view),
+ * skip (reduced motion → one static frame of streaks), or fail to fetch
+ * (drawn empty) without any fallback machinery.
+ *
+ * The motion budget: the loop runs only while the chart is on screen AND the
+ * tab is visible AND the reader has not asked for reduced motion. What it is
+ * doing is written on the canvas as `data-flow` (running, paused, still,
+ * off) so it can be checked from outside.
  */
 
 export type FlowMode = "wind" | "current" | "off";
@@ -59,6 +64,10 @@ export class FlowLayer {
   private fetchTimer = 0;
   private fetchSeq = 0;
   private destroyed = false;
+  /** The chart is at least partly inside the viewport. */
+  private onScreen = true;
+  private observer: IntersectionObserver | null = null;
+  private motionQuery: MediaQueryList | null = null;
 
   constructor(map: L.Map) {
     this.map = map;
@@ -66,7 +75,35 @@ export class FlowLayer {
     this.flowCanvas = this.makeCanvas("401");
     map.on("moveend zoomend resize", this.onViewChange);
     map.on("movestart zoomstart", this.pause);
+
+    // Off-screen or on a hidden tab, nobody is watching the sea move.
+    document.addEventListener("visibilitychange", this.onAttention);
+    if (typeof IntersectionObserver !== "undefined") {
+      this.observer = new IntersectionObserver((entries) => {
+        this.onScreen = entries[entries.length - 1]?.isIntersecting ?? true;
+        this.onAttention();
+      });
+      this.observer.observe(map.getContainer());
+    }
+    // The reader can change the reduced-motion setting while the chart is open.
+    this.motionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)") ?? null;
+    this.motionQuery?.addEventListener?.("change", this.onAttention);
+
     this.onViewChange();
+  }
+
+  /** Something about who is watching changed: start, stop or redraw to match. */
+  private onAttention = () => {
+    if (this.destroyed) return;
+    this.run();
+  };
+
+  private get watched(): boolean {
+    return this.onScreen && !document.hidden;
+  }
+
+  private mark(state: "running" | "paused" | "still" | "off") {
+    this.flowCanvas.dataset.flow = state;
   }
 
   private makeCanvas(z: string): HTMLCanvasElement {
@@ -84,6 +121,7 @@ export class FlowLayer {
       this.pause();
       this.clear(this.flowCanvas);
       this.clear(this.sstCanvas);
+      this.mark("off");
       return;
     }
     this.seed();
@@ -95,6 +133,10 @@ export class FlowLayer {
     this.destroyed = true;
     this.pause();
     window.clearTimeout(this.fetchTimer);
+    document.removeEventListener("visibilitychange", this.onAttention);
+    this.observer?.disconnect();
+    this.observer = null;
+    this.motionQuery?.removeEventListener?.("change", this.onAttention);
     this.map.off("moveend zoomend resize", this.onViewChange);
     this.map.off("movestart zoomstart", this.pause);
     this.sstCanvas.remove();
@@ -105,6 +147,12 @@ export class FlowLayer {
   private onViewChange = () => {
     if (this.destroyed) return;
     this.layoutCanvases();
+    // Resizing a canvas wipes it, and the pan paused the loop: redraw from the
+    // field in hand straight away, so a failed refetch cannot leave it frozen.
+    if (this.field && this.mode !== "off") {
+      this.repaintSst();
+      this.run();
+    }
     window.clearTimeout(this.fetchTimer);
     this.fetchTimer = window.setTimeout(() => this.fetchField(), 350);
   };
@@ -307,11 +355,15 @@ export class FlowLayer {
 
   private run() {
     this.pause();
-    if (this.mode === "off" || !this.field) return;
+    if (this.mode === "off") return this.mark("off");
+    if (!this.field) return;
     if (prefersStill()) {
+      // One still frame, drawn once per field and view; nothing loops.
       this.drawStaticStreaks();
-      return;
+      return this.mark("still");
     }
+    if (!this.watched) return this.mark("paused");
+    this.mark("running");
     const tick = () => {
       this.step();
       this.raf = requestAnimationFrame(tick);

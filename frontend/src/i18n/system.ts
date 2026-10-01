@@ -44,6 +44,9 @@ export const L10N: Record<Language, Record<string, string>> = {
     hMode: "Mode",
     hLatency: "Latency",
     hAt: "At",
+    concurrent: "{n} at once",
+    demoStore: "Demo store",
+    feedCaption: "The last six readings of the coast, newest first, with the source and mode of each.",
     feedNote:
       "These are the same readings the fishing model and the risk engine consume — wave and wind feed the safety score, SST and chlorophyll feed the chance-of-fish, and the provenance column is what the evidence table shows a fisher.",
     outVerdict: "A verdict",
@@ -98,6 +101,9 @@ export const L10N: Record<Language, Record<string, string>> = {
     hMode: "मोड",
     hLatency: "लेटेंसी",
     hAt: "समय",
+    concurrent: "{n} एक साथ",
+    demoStore: "डेमो स्टोर",
+    feedCaption: "तट की पिछली छह रीडिंग, सबसे नई पहले, हर एक के स्रोत और मोड के साथ।",
     feedNote:
       "यही रीडिंग मत्स्य मॉडल और रिस्क इंजन खाते हैं — लहर-हवा सुरक्षा स्कोर में, तापमान-क्लोरोफिल मछली की संभावना में, और स्रोत वाला कॉलम वही है जो मछुआरे को प्रमाण तालिका में दिखता है।",
     outVerdict: "फ़ैसला",
@@ -152,6 +158,9 @@ export const L10N: Record<Language, Record<string, string>> = {
     hMode: "मोड",
     hLatency: "लेटन्सी",
     hAt: "वेळ",
+    concurrent: "{n} एकाच वेळी",
+    demoStore: "डेमो स्टोअर",
+    feedCaption: "किनाऱ्याची शेवटची सहा वाचने, सर्वात नवीन आधी, प्रत्येकाच्या स्रोत आणि मोडसह.",
     feedNote:
       "हेच वाचन मासेमारी मॉडेल आणि रिस्क इंजिन वापरतात — लाट-वारा सुरक्षा गुणांत, तापमान-क्लोरोफिल माशांच्या शक्यतेत, आणि स्रोताचा स्तंभ तोच जो मच्छीमाराला पुरावा तक्त्यात दिसतो.",
     outVerdict: "निर्णय",
@@ -167,27 +176,27 @@ export const L10N: Record<Language, Record<string, string>> = {
 };
 
 /** What each data provider contributes, in intake order. */
-export const PROVIDER_TEXT: Record<Language, { gives: string; note: string }[]> = {
+export const PROVIDER_TEXT: Record<Language, { status: string; gives: string; note: string }[]> = {
   en: [
-    { gives: "wave height · wave period · sea-surface temperature · currents", note: "keyless public API — verified working" },
-    { gives: "wind · rain probability · visibility · air temperature", note: "keyless public API — verified working" },
-    { gives: "PFZ advisories · marine warnings · satellite SST", note: "no open public JSON API — slots in behind the same interface" },
-    { gives: "species occurrence records, Indian coastal waters", note: "open biodiversity data, bundled as a dated snapshot — offline-safe" },
-    { gives: "rehearsed sea states, keyed by hour of day", note: "every synthetic value is labelled simulated" },
+    { status: "Live", gives: "wave height · wave period · sea-surface temperature · currents", note: "keyless public API — verified working" },
+    { status: "Live", gives: "wind · rain probability · visibility · air temperature", note: "keyless public API — verified working" },
+    { status: "Interface ready", gives: "PFZ advisories · marine warnings · satellite SST", note: "no open public JSON API — slots in behind the same interface" },
+    { status: "Bundled snapshot", gives: "species occurrence records, Indian coastal waters", note: "open biodiversity data, bundled as a dated snapshot — offline-safe" },
+    { status: "Always on", gives: "rehearsed sea states, keyed by hour of day", note: "every synthetic value is labelled simulated" },
   ],
   hi: [
-    { gives: "लहर की ऊँचाई · अवधि · समुद्री सतह तापमान · धाराएँ", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
-    { gives: "हवा · वर्षा संभावना · दृश्यता · तापमान", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
-    { gives: "PFZ सलाह · समुद्री चेतावनियाँ · उपग्रह SST", note: "खुला JSON API नहीं — उसी इंटरफ़ेस के पीछे जुड़ते हैं" },
-    { gives: "प्रजातियों की उपस्थिति के रिकॉर्ड, भारतीय तटीय जल", note: "खुला जैवविविधता डेटा, दिनांकित स्नैपशॉट — ऑफ़लाइन-सुरक्षित" },
-    { gives: "घंटे के हिसाब से तैयार समुद्री स्थितियाँ", note: "हर नक़ली मान पर 'सिम्युलेटेड' लेबल" },
+    { status: "लाइव", gives: "लहर की ऊँचाई · अवधि · समुद्री सतह तापमान · धाराएँ", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
+    { status: "लाइव", gives: "हवा · वर्षा संभावना · दृश्यता · तापमान", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
+    { status: "इंटरफ़ेस तैयार", gives: "PFZ सलाह · समुद्री चेतावनियाँ · उपग्रह SST", note: "खुला JSON API नहीं — उसी इंटरफ़ेस के पीछे जुड़ते हैं" },
+    { status: "बंडल स्नैपशॉट", gives: "प्रजातियों की उपस्थिति के रिकॉर्ड, भारतीय तटीय जल", note: "खुला जैवविविधता डेटा, दिनांकित स्नैपशॉट — ऑफ़लाइन-सुरक्षित" },
+    { status: "हमेशा चालू", gives: "घंटे के हिसाब से तैयार समुद्री स्थितियाँ", note: "हर नक़ली मान पर 'सिम्युलेटेड' लेबल" },
   ],
   mr: [
-    { gives: "लाटेची उंची · कालावधी · समुद्र पृष्ठ तापमान · प्रवाह", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
-    { gives: "वारा · पावसाची शक्यता · दृश्यमानता · तापमान", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
-    { gives: "PFZ सल्ले · सागरी इशारे · उपग्रह SST", note: "खुले JSON API नाही — त्याच इंटरफेसमागे जोडले जातात" },
-    { gives: "प्रजातींच्या उपस्थितीच्या नोंदी, भारतीय किनारी पाणी", note: "खुला जैवविविधता डेटा, दिनांकित स्नॅपशॉट — ऑफलाइन-सुरक्षित" },
-    { gives: "तासागणिक तयार समुद्री स्थिती", note: "प्रत्येक नमुना मूल्यावर 'सिम्युलेटेड' लेबल" },
+    { status: "लाइव्ह", gives: "लाटेची उंची · कालावधी · समुद्र पृष्ठ तापमान · प्रवाह", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
+    { status: "लाइव्ह", gives: "वारा · पावसाची शक्यता · दृश्यमानता · तापमान", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
+    { status: "इंटरफेस तयार", gives: "PFZ सल्ले · सागरी इशारे · उपग्रह SST", note: "खुले JSON API नाही — त्याच इंटरफेसमागे जोडले जातात" },
+    { status: "बंडल स्नॅपशॉट", gives: "प्रजातींच्या उपस्थितीच्या नोंदी, भारतीय किनारी पाणी", note: "खुला जैवविविधता डेटा, दिनांकित स्नॅपशॉट — ऑफलाइन-सुरक्षित" },
+    { status: "नेहमी चालू", gives: "तासागणिक तयार समुद्री स्थिती", note: "प्रत्येक नमुना मूल्यावर 'सिम्युलेटेड' लेबल" },
   ],
 };
 

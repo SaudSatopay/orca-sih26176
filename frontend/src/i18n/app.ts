@@ -60,7 +60,6 @@ export const UI: Record<Language, Record<string, string>> = {
     wind: "Wind",
     areas: "Areas",
     inRadius: "in {km} km",
-    readingSea: "Reading the sea at your location…",
     skip: "Skip to the sheet",
     frontPage: "ORCA — back to the front page",
     tagline: "Marine EcOsystem Reasoning · Collaborative Agents",
@@ -78,10 +77,6 @@ export const UI: Record<Language, Record<string, string>> = {
     pendingBody:
       "Ask, and this sheet fills in: a 0–100 risk score, the reasons ranked by weight, the course on the chart and every reading with its source.",
     stale: "Earlier answer. The crew is working on the new one.",
-    outlookFailTitle: "ORCA could not read the sea here",
-    outlookFailBody:
-      "The plan for this position did not load. Check the connection, then read it again. Always follow the official warning.",
-    outlookRetry: "Read it again",
   },
   hi: {
     chartNo: "चार्ट क्र.",
@@ -101,7 +96,6 @@ export const UI: Record<Language, Record<string, string>> = {
     wind: "हवा",
     areas: "जगहें",
     inRadius: "{km} किमी में",
-    readingSea: "आपके स्थान की जानकारी ले रहे हैं…",
     skip: "सीधे शीट पर जाएँ",
     frontPage: "ORCA — मुखपृष्ठ पर लौटें",
     tagline: "समुद्री तंत्र की समझ · मिलकर काम करते एजेंट",
@@ -119,10 +113,6 @@ export const UI: Record<Language, Record<string, string>> = {
     pendingBody:
       "पूछिए, और यह शीट भर जाएगी: 0–100 जोखिम स्कोर, वज़न के क्रम में कारण, चार्ट पर मार्ग और हर रीडिंग उसके स्रोत के साथ।",
     stale: "पिछला जवाब। टीम नए जवाब पर काम कर रही है।",
-    outlookFailTitle: "ORCA यहाँ का समुद्र नहीं पढ़ सका",
-    outlookFailBody:
-      "इस स्थान की योजना लोड नहीं हुई। कनेक्शन जाँचें, फिर दोबारा पढ़ें। आधिकारिक चेतावनी हमेशा मानें।",
-    outlookRetry: "दोबारा पढ़ें",
   },
   mr: {
     chartNo: "तक्ता क्र.",
@@ -142,7 +132,6 @@ export const UI: Record<Language, Record<string, string>> = {
     wind: "वारा",
     areas: "जागा",
     inRadius: "{km} किमीमध्ये",
-    readingSea: "तुमच्या ठिकाणाची माहिती घेत आहे…",
     skip: "थेट शीटवर जा",
     frontPage: "ORCA — मुखपृष्ठावर परत जा",
     tagline: "सागरी परिसंस्थेची समज · एकत्र काम करणारे एजंट",
@@ -160,9 +149,5 @@ export const UI: Record<Language, Record<string, string>> = {
     pendingBody:
       "विचारा, आणि ही शीट भरेल: 0–100 धोका गुण, वजनानुसार कारणे, चार्टवरील मार्ग आणि प्रत्येक नोंद तिच्या स्रोतासह.",
     stale: "आधीचे उत्तर. टीम नव्या उत्तरावर काम करत आहे.",
-    outlookFailTitle: "ORCA ला इथला समुद्र वाचता आला नाही",
-    outlookFailBody:
-      "या ठिकाणाची योजना लोड झाली नाही. कनेक्शन तपासा, मग पुन्हा वाचा. अधिकृत इशारा नेहमी पाळा.",
-    outlookRetry: "पुन्हा वाचा",
   },
 };

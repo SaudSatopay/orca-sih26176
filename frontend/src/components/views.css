@@ -1,0 +1,543 @@
+/* ============================================================
+   ORCA — the working views (Today, Authority, System, the chart,
+   the guided tour). Everything here is drawn in the chart language
+   of DESIGN.md and takes its values from src/tokens.ts through
+   Tailwind's theme(); nothing spells a colour or a size literally.
+
+   Motion rules for this file:
+   - hover only where a pointer can hover (hover: hover, pointer: fine)
+   - pressed states at 100–160 ms
+   - every transition names its properties
+   - entrances are transform-only and have no fill-mode, so content is
+     at rest, fully visible, if an animation never runs
+   ============================================================ */
+
+/* ------------------------------------------------ entrances */
+@keyframes v-rise {
+  from {
+    transform: translateY(8px);
+  }
+}
+@keyframes v-drop {
+  from {
+    transform: translateY(-8px);
+  }
+}
+.v-enter {
+  animation: v-rise 260ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+/* A fresh reading arrives at the top of a log. */
+.v-row-enter {
+  animation: v-drop 240ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* ------------------------------------------------ cards */
+/* One card for every ranked ground: the same edge, padding and radius
+   whether it is a button (Today) or a plain row (Ask). */
+.v-card {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: theme(colors.paper.100);
+  padding: 12px 14px;
+  text-align: left;
+}
+button.v-card {
+  cursor: pointer;
+  transition:
+    transform 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+button.v-card:active {
+  transform: scale(0.985);
+}
+@media (hover: hover) and (pointer: fine) {
+  button.v-card:hover {
+    border-color: theme(colors.ink.700);
+    background: theme(colors.paper.150);
+    box-shadow: 0 8px 18px -12px theme(colors.ink.900 / 45%);
+  }
+  button.v-card:hover .v-buoy-ping {
+    animation: ping2 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+}
+.v-buoy-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2.5px solid currentColor;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------ model factors */
+/* Five labelled meters on one common 0–100 scale. One hue for all five:
+   they are one series, and the rating colour already lives on the buoy. */
+.v-factors {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--rule-faint);
+}
+.v-factor {
+  min-width: 0;
+}
+.v-factor-label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: theme(fontSize.label);
+  line-height: 1.3;
+  color: theme(colors.ink.500);
+}
+.v-factor-track {
+  display: block;
+  height: 4px;
+  margin-top: 4px;
+  background: theme(colors.chart.100);
+}
+.v-factor-fill {
+  display: block;
+  height: 100%;
+  background: theme(colors.chart.600);
+  transform-origin: left center;
+  animation: growx 700ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.v-factor-value {
+  display: block;
+  margin-top: 3px;
+  font-family: "Spline Sans Mono Variable", Consolas, monospace;
+  font-size: theme(fontSize.label);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: theme(colors.ink.800);
+}
+
+/* ------------------------------------------------ prohibitions */
+/* A "do not" is drawn the way the chart draws a danger area: hatched,
+   ruled in signal red, with the no-entry mark at its head. */
+.v-prohibit {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid theme(colors.risk.extreme / 55%);
+  border-radius: 2px;
+  padding: 9px 12px;
+  background-color: theme(colors.paper.50);
+  background-image: repeating-linear-gradient(
+    45deg,
+    theme(colors.risk.extreme / 11%) 0 1.5px,
+    transparent 1.5px 8px
+  );
+}
+
+/* ------------------------------------------------ figures in a plan */
+.v-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: theme(colors.paper.100);
+  overflow: hidden;
+}
+.v-figures > * {
+  min-width: 0;
+  padding: 9px 12px;
+  /* hairlines between cells whichever way the grid wraps */
+  box-shadow:
+    -1px 0 0 var(--rule-faint),
+    0 -1px 0 var(--rule-faint);
+}
+
+/* Any grid of cells inside a panel: hairlines between them whichever way
+   the grid wraps, none on the outer edge. */
+.v-cells {
+  display: grid;
+  overflow: hidden;
+}
+.v-cells > * {
+  min-width: 0;
+  box-shadow:
+    -1px 0 0 var(--rule-faint),
+    0 -1px 0 var(--rule-faint);
+}
+
+/* The same cells set flush inside a panel, edge to edge. */
+.v-figures--flush {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.v-figures--flush > * {
+  padding: 12px 16px;
+}
+
+/* ------------------------------------------------ drafted skeletons */
+/* Loading is a sheet still being drafted: pencil construction boxes
+   with the hatch crawling through them, never a spinner. */
+@keyframes v-draft {
+  to {
+    background-position-x: 12px;
+  }
+}
+.v-draft {
+  display: block;
+  border: 1px dashed var(--rule);
+  border-radius: 2px;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    theme(colors.ink.900 / 7%) 0 1px,
+    transparent 1px 6px
+  );
+  background-size: 12px 100%;
+  animation: v-draft 0.9s linear infinite;
+}
+
+/* ------------------------------------------------ the risk meter */
+/* 0–100 on one scale for every row, band edges ruled at 25 / 50 / 79. */
+.v-meter {
+  position: relative;
+  display: block;
+  height: 6px;
+  background: theme(colors.ink.900 / 9%);
+}
+.v-meter-fill {
+  display: block;
+  height: 100%;
+  transform-origin: left center;
+  animation: growx 700ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.v-meter-tick {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: theme(colors.ink.900 / 45%);
+}
+
+/* ------------------------------------------------ the board */
+.v-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: -4px -6px;
+  padding: 4px 6px;
+  border-radius: 2px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    color 160ms ease,
+    background-color 160ms ease,
+    transform 120ms ease-out;
+}
+.v-sort:active {
+  transform: scale(0.97);
+}
+.v-sort[data-active="true"] {
+  color: theme(colors.ink.900);
+}
+.v-sort-mark {
+  color: theme(colors.ink.300);
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms ease;
+}
+.v-sort[data-active="true"] .v-sort-mark {
+  color: theme(colors.ink.900);
+}
+.v-sort[data-dir="ascending"] .v-sort-mark {
+  transform: rotate(180deg);
+}
+.v-row {
+  transition: background-color 160ms ease;
+}
+.v-row-warned {
+  background-image: repeating-linear-gradient(
+    45deg,
+    theme(colors.risk.extreme / 9%) 0 1.5px,
+    transparent 1.5px 8px
+  );
+}
+@media (hover: hover) and (pointer: fine) {
+  .v-sort:hover {
+    color: theme(colors.ink.900);
+    background: theme(colors.chart.100 / 70%);
+  }
+  .v-sort:hover .v-sort-mark {
+    color: theme(colors.ink.700);
+  }
+  .v-row:hover {
+    background-color: theme(colors.paper.150);
+  }
+  .v-cell-hover:hover {
+    background-color: theme(colors.chart.100 / 45%);
+  }
+}
+
+/* The refresh countdown: a hairline that runs out over the interval. */
+@keyframes v-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+.v-countdown {
+  display: block;
+  height: 2px;
+  background: theme(colors.chart.500 / 55%);
+  transform-origin: left center;
+  animation: v-countdown linear both;
+}
+
+/* The coast profile: stations along the shore, risk plotted upward. */
+.v-coast {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  height: 124px;
+}
+.v-coast-grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--rule-faint);
+}
+.v-coast-station {
+  position: relative;
+  min-width: 0;
+}
+.v-coast-stem {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 1px;
+  margin-left: -0.5px;
+  background: theme(colors.ink.900 / 30%);
+  transform-origin: center bottom;
+  animation: v-stem 600ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+@keyframes v-stem {
+  from {
+    transform: scaleY(0);
+  }
+}
+.v-coast-dot {
+  position: absolute;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin: 0 0 -7px -7px;
+  border-radius: 9999px;
+  /* the surface ring keeps a mark legible where it crosses a rule */
+  box-shadow: 0 0 0 2px theme(colors.paper.50);
+}
+.v-coast-score {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 12px;
+  font-family: "Spline Sans Mono Variable", Consolas, monospace;
+  font-size: theme(fontSize.readout);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: theme(colors.ink.900);
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------ quiet controls */
+.v-press {
+  transition:
+    transform 120ms ease-out,
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+.v-press:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.v-seg {
+  border: 1px solid theme(colors.ink.700 / 30%);
+  border-radius: 2px;
+  color: theme(colors.ink.500);
+}
+.v-seg[aria-checked="true"] {
+  border-color: theme(colors.ink.900);
+  background: theme(colors.ink.900);
+  color: theme(colors.paper.50);
+}
+/* Fingers need more room than a pointer does. */
+@media (pointer: coarse) {
+  .v-seg {
+    padding: 7px 10px;
+  }
+  .v-map-key > button {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+.v-option {
+  transition: background-color 140ms ease;
+}
+.v-option:focus-visible {
+  outline-offset: -2px;
+}
+.v-quiet-btn,
+.v-danger-btn {
+  border: 1px solid var(--rule-strong);
+  color: theme(colors.ink.700);
+}
+@media (hover: hover) and (pointer: fine) {
+  .v-seg:hover:not([aria-checked="true"]) {
+    color: theme(colors.ink.900);
+    border-color: theme(colors.ink.700);
+  }
+  .v-option:hover {
+    background-color: theme(colors.paper.150);
+  }
+  .v-quiet-btn:hover:not(:disabled) {
+    background-color: theme(colors.ink.900);
+    border-color: theme(colors.ink.900);
+    color: theme(colors.paper.50);
+  }
+  .v-danger-btn:hover:not(:disabled) {
+    background-color: theme(colors.risk.extreme);
+    border-color: theme(colors.risk.extreme);
+    color: theme(colors.paper.50);
+  }
+  .v-arrow-host:hover .v-arrow {
+    transform: translateX(3px);
+    color: theme(colors.chart.600);
+  }
+}
+.v-arrow {
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1), color 160ms ease;
+}
+
+/* ------------------------------------------------ the pipeline */
+/* A connector fills the gap between the two things it joins, and the
+   signals ride it on transform alone. */
+@keyframes v-travel {
+  from {
+    transform: translateX(-8px);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+.v-connector {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 28px;
+  height: 8px;
+  overflow: hidden;
+  background: linear-gradient(var(--rule), var(--rule)) center / 100% 1px no-repeat;
+}
+.v-connector > i {
+  position: absolute;
+  inset: 0;
+  animation: v-travel 2.6s linear infinite;
+}
+.v-connector > i::before {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--chart-teal);
+}
+.v-connector > i:nth-child(2) {
+  animation-delay: -0.87s;
+}
+.v-connector > i:nth-child(3) {
+  animation-delay: -1.73s;
+}
+/* Stacked (narrow) pipeline: the connector turns into a short drop line. */
+.v-connector-down {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin: 6px 0 6px 11px;
+  background: var(--rule);
+}
+
+/* ------------------------------------------------ the chart's furniture */
+.v-map-key {
+  transform-origin: left bottom;
+}
+.v-map-key-body {
+  animation: v-rise 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.v-chevron {
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+[aria-expanded="true"] .v-chevron {
+  transform: rotate(180deg);
+}
+/* On a narrow chart an open key takes the foot of the sheet: the drag hint
+   steps aside rather than sit on top of it. */
+@media (max-width: 480px) {
+  [data-key="open"] .v-map-hint {
+    display: none;
+  }
+}
+
+/* The tour panel takes focus when it opens so a screen reader announces it;
+   it is a container, not a control, so it wears no ring of its own. */
+.v-tour:focus-visible {
+  outline: none;
+}
+
+/* The tour's step timer: a bar that fills by transform, not by width. */
+.v-progress {
+  display: block;
+  height: 100%;
+  background: theme(colors.ink.900);
+  transform-origin: left center;
+  transition: transform 100ms linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v-enter,
+  .v-row-enter,
+  .v-map-key-body,
+  .v-coast-stem,
+  .v-factor-fill,
+  .v-meter-fill {
+    animation: none;
+  }
+  .v-draft,
+  .v-connector > i,
+  .v-countdown {
+    animation: none;
+  }
+  /* still signals sit along the line instead of travelling it */
+  .v-connector > i:nth-child(1) {
+    transform: translateX(20%);
+  }
+  .v-connector > i:nth-child(2) {
+    transform: translateX(50%);
+  }
+  .v-connector > i:nth-child(3) {
+    transform: translateX(80%);
+  }
+  .v-countdown {
+    transform: scaleX(0);
+  }
+}

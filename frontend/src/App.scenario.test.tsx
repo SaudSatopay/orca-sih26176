@@ -42,6 +42,7 @@ async function openApp(search: string) {
   api.resetSession.mockResolvedValue({} as Awaited<ReturnType<typeof api.resetSession>>);
   api.authority.mockRejectedValue(new Error("not under test"));
   api.fishingOutlook.mockRejectedValue(new Error("not under test"));
+  api.alerts.mockResolvedValue({ marine_alerts: [], geofence_alerts: [] });
   api.ask.mockResolvedValue(response);
   const { default: App } = await import("./App");
   // StrictMode, as main.tsx renders it: effects mount, unmount and mount again.

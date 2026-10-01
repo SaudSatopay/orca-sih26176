@@ -6,6 +6,37 @@ export const RATING_WORD: Record<Language, Record<CatchRating, string>> = {
   mr: { very_good: "खूप चांगली", good: "चांगली", fair: "थोडी शक्यता", poor: "कमी शक्यता" },
 };
 
+/**
+ * The five model factors behind a ground's chance of fish: the short name set
+ * over each meter, and the full name read out and shown on hover.
+ */
+export const FACTORS: Record<
+  Language,
+  Record<"chlorophyll" | "sst" | "front" | "sea_state" | "time_of_day", { short: string; full: string }>
+> = {
+  en: {
+    chlorophyll: { short: "Plankton", full: "Chlorophyll: food in the water" },
+    sst: { short: "Sea temp", full: "Sea-surface temperature band" },
+    front: { short: "Front", full: "Thermal front strength" },
+    sea_state: { short: "Calm sea", full: "Sea state" },
+    time_of_day: { short: "Hour", full: "Time of day" },
+  },
+  hi: {
+    chlorophyll: { short: "प्लवक", full: "क्लोरोफिल: पानी में चारा" },
+    sst: { short: "तापमान", full: "समुद्री सतह का तापमान" },
+    front: { short: "फ्रंट", full: "तापमान की सीमा (थर्मल फ्रंट)" },
+    sea_state: { short: "शांत समुद्र", full: "समुद्र की हालत" },
+    time_of_day: { short: "समय", full: "दिन का समय" },
+  },
+  mr: {
+    chlorophyll: { short: "प्लवक", full: "क्लोरोफिल: पाण्यातील खाद्य" },
+    sst: { short: "तापमान", full: "समुद्र पृष्ठभागाचे तापमान" },
+    front: { short: "फ्रंट", full: "तापमानाची सीमा (थर्मल फ्रंट)" },
+    sea_state: { short: "शांत समुद्र", full: "समुद्राची स्थिती" },
+    time_of_day: { short: "वेळ", full: "दिवसाची वेळ" },
+  },
+};
+
 export const T: Record<Language, Record<string, string>> = {
   en: {
     advice: "What you should do",
@@ -41,9 +72,23 @@ export const T: Record<Language, Record<string, string>> = {
     revenue: "Revenue",
     profit: "Profit estimate",
     econNote: "Planning estimate — never a promise.",
-    barsCaption: "Bars: chlorophyll · SST band · front · sea state · time of day",
     bestTrip: "Best trip",
     weatherShortens: "Weather shortens your window — come back earlier.",
+    plan: "Your plan",
+    calmer: "calmer sea",
+    rougher: "rougher sea",
+    waves: "waves",
+    warning: "Warning",
+    factorsCaption: "Five model factors, each scored 0 to 100",
+    factorsAria: "Model factors, out of 100",
+    showOnChart: "Area {rank}: show it on the chart",
+    loading: "Reading the sea around you…",
+    emptyTitle: "No fishing grounds within {km} km",
+    emptyBody:
+      "ORCA found no likely ground this close. Drag the boat on the chart to another spot, or start from another harbour.",
+    chooseHarbour: "Choose harbour",
+    noReading:
+      "Nothing has been read for this position yet. Check the connection, then try again. Always follow the official warning.",
   },
   hi: {
     advice: "आपको क्या करना चाहिए",
@@ -79,9 +124,23 @@ export const T: Record<Language, Record<string, string>> = {
     revenue: "आमदनी",
     profit: "अनुमानित मुनाफ़ा",
     econNote: "योजना के लिए अनुमान — कोई वादा नहीं।",
-    barsCaption: "पट्टियाँ: क्लोरोफिल · तापमान · फ्रंट · समुद्र · समय",
     bestTrip: "सुझाई गई",
     weatherShortens: "मौसम के कारण समय कम है — जल्दी लौटें।",
+    plan: "आपकी योजना",
+    calmer: "समुद्र शांत",
+    rougher: "समुद्र ज़्यादा खराब",
+    waves: "लहरें",
+    warning: "चेतावनी",
+    factorsCaption: "मॉडल के पाँच कारक, हर एक 0 से 100 तक",
+    factorsAria: "मॉडल के कारक, 100 में से",
+    showOnChart: "जगह {rank}: नक्शे पर दिखाएँ",
+    loading: "आपके आसपास का समुद्र पढ़ रहे हैं…",
+    emptyTitle: "{km} किमी के अंदर मछली की कोई जगह नहीं",
+    emptyBody:
+      "ORCA को इतने पास कोई संभावित जगह नहीं मिली। नक्शे पर नाव खींचकर दूसरी जगह रखें, या किसी दूसरे बंदरगाह से शुरू करें।",
+    chooseHarbour: "बंदरगाह चुनें",
+    noReading:
+      "इस जगह के लिए अभी कुछ पढ़ा नहीं गया। कनेक्शन जाँचें, फिर दोबारा कोशिश करें। आधिकारिक चेतावनी हमेशा मानें।",
   },
   mr: {
     advice: "तुम्ही काय करावे",
@@ -117,8 +176,22 @@ export const T: Record<Language, Record<string, string>> = {
     revenue: "उत्पन्न",
     profit: "अंदाजे नफा",
     econNote: "नियोजनासाठी अंदाज — हमी नाही.",
-    barsCaption: "पट्ट्या: क्लोरोफिल · तापमान · फ्रंट · समुद्र · वेळ",
     bestTrip: "सुचवलेली",
     weatherShortens: "हवामानामुळे वेळ कमी आहे — लवकर परत या.",
+    plan: "तुमची योजना",
+    calmer: "समुद्र शांत",
+    rougher: "समुद्र अधिक खवळलेला",
+    waves: "लाटा",
+    warning: "इशारा",
+    factorsCaption: "मॉडेलचे पाच घटक, प्रत्येक 0 ते 100",
+    factorsAria: "मॉडेलचे घटक, 100 पैकी",
+    showOnChart: "जागा {rank}: नकाशावर दाखवा",
+    loading: "तुमच्या भोवतालचा समुद्र वाचत आहे…",
+    emptyTitle: "{km} किमीच्या आत मासेमारीची जागा नाही",
+    emptyBody:
+      "ORCA ला इतक्या जवळ शक्यता असलेली जागा सापडली नाही. नकाशावर होडी ओढून दुसऱ्या ठिकाणी ठेवा, किंवा दुसऱ्या बंदरातून सुरुवात करा.",
+    chooseHarbour: "बंदर निवडा",
+    noReading:
+      "या ठिकाणासाठी अजून काही वाचलेले नाही. कनेक्शन तपासा, मग पुन्हा प्रयत्न करा. अधिकृत इशारा नेहमी पाळा.",
   },
 };

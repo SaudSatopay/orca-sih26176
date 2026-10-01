@@ -2,7 +2,9 @@ import type {
   AuthorityDashboard,
   ChatResponse,
   FishingOutlook,
+  GeofenceAlert,
   Language,
+  MarineAlert,
   PositionCheck,
   RiskCategory,
   ZoneFeature,
@@ -50,8 +52,18 @@ export function zones(): Promise<{ features: ZoneFeature[]; note: string }> {
   return json(`${BASE}/map/zones`);
 }
 
-export function authority(): Promise<AuthorityDashboard> {
-  return json(`${BASE}/authority/dashboard`);
+/** The coastal risk board. `lang` translates warning headlines, never figures. */
+export function authority(lang: Language = "en"): Promise<AuthorityDashboard> {
+  return json(`${BASE}/authority/dashboard?lang=${lang}`);
+}
+
+/** Official warnings and geofence alerts in force at a position. */
+export function alerts(
+  lat: number,
+  lon: number,
+  lang: Language = "en",
+): Promise<{ marine_alerts: MarineAlert[]; geofence_alerts: GeofenceAlert[] }> {
+  return json(`${BASE}/alerts?lat=${lat}&lon=${lon}&lang=${lang}`);
 }
 
 export function riskTimeline(lat: number, lon: number, hours = 24) {
@@ -69,8 +81,12 @@ export function riskTimeline(lat: number, lon: number, hours = 24) {
 }
 
 /** Fast geofence check — called while the vessel marker is dragged. */
-export function checkPosition(lat: number, lon: number): Promise<PositionCheck> {
-  return json<PositionCheck>(`${BASE}/position?lat=${lat}&lon=${lon}`);
+export function checkPosition(
+  lat: number,
+  lon: number,
+  lang: Language = "en",
+): Promise<PositionCheck> {
+  return json<PositionCheck>(`${BASE}/position?lat=${lat}&lon=${lon}&lang=${lang}`);
 }
 
 /** Everything a fisher needs for a position: safety, grounds, timing, forecast. */

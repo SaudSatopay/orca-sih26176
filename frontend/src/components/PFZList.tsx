@@ -1,8 +1,14 @@
+import { useId } from "react";
 import type { Language, PFZZone } from "../types";
 import { SchoolGlyph } from "./glyphs";
 import { L } from "../i18n/pfz";
 import { chart, risk } from "../tokens";
+import "./views.css";
 
+/**
+ * Potential fishing zones behind an answer, ranked. Drawn with the same card,
+ * buoy and sounding as Today's grounds, so area 1 reads the same everywhere.
+ */
 export default function PFZList({
   zones,
   language = "en",
@@ -10,72 +16,79 @@ export default function PFZList({
   zones: PFZZone[];
   language?: Language;
 }) {
+  const titleId = useId();
   if (!zones.length) return null;
   const t = L[language] ?? L.en;
 
   return (
-    <div className="panel overflow-hidden">
+    <section className="panel overflow-hidden" aria-labelledby={titleId}>
       <div className="hd">
-        <span className="label flex items-center gap-2">
+        <h2 id={titleId} className="label flex items-center gap-2">
           {t.title}
           <SchoolGlyph size={26} className="swim text-chart-500" />
-        </span>
+        </h2>
       </div>
-      <div className="space-y-2 px-4 py-3.5">
+      <ol className="space-y-2 px-4 py-3.5">
         {zones.map((z) => {
           const best = z.rank === 1;
           const ring = best ? risk.low : chart[500];
           return (
-            <div
-              key={z.rank}
-              className={`group flex items-center gap-3 rounded-[2px] border px-3 py-2.5 transition-all duration-200 hover:-translate-y-[2px] hover:shadow-md ${
-                best ? "border-risk-low/60 bg-risk-low/[0.05]" : "bg-paper-100 hover:border-ink-700"
-              }`}
-              style={best ? undefined : { borderColor: "var(--rule)" }}
-            >
-              {/* buoy badge — same symbology as the chart */}
-              <div className="relative shrink-0" style={{ color: ring }}>
-                <span className="badge-ping" />
+            <li key={z.rank} className="v-card">
+              <div className="flex items-center gap-3.5">
+                {/* the buoy: same symbology as the chart */}
                 <div
-                  className="grid h-9 w-9 place-items-center rounded-full border-[3px] bg-paper-50 font-display text-prose font-extrabold text-ink-900"
+                  className="grid h-11 w-11 shrink-0 place-items-center rounded-full border-[3.5px] bg-paper-50 font-display text-title font-extrabold text-ink-900 shadow-sm"
                   style={{ borderColor: ring }}
+                  aria-hidden
                 >
                   {z.rank}
                 </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span className="sr-only">{z.rank}. </span>
+                    <span className="font-mono text-subtitle font-bold tabular-nums leading-none text-ink-900">
+                      {z.distance_km}
+                      <span className="ml-[3px] text-readout">km</span>
+                    </span>
+                    <span className="font-mono text-readout font-semibold text-ink-500">
+                      {z.bearing}
+                    </span>
+                    {best && (
+                      <span className="stamp !px-1.5 !py-0.5 !text-micro text-risk-low">{t.best}</span>
+                    )}
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 font-mono text-label leading-snug text-ink-500">
+                    <span>
+                      {t.sst} {z.sst_c ?? "—"} °C
+                    </span>
+                    <span>
+                      {t.chl} {z.chlorophyll_mg_m3 ?? "—"} mg/m³
+                    </span>
+                    {z.wave_height_m != null && (
+                      <span>
+                        {z.wave_height_m} m {t.waves}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="shrink-0 text-right">
+                  <div className="sounding text-headline leading-none" style={{ color: ring }}>
+                    {Math.round(z.confidence * 100)}
+                    <span className="text-body text-ink-500">%</span>
+                  </div>
+                  <div className="mt-1 max-w-[92px] text-label leading-tight text-ink-500">{t.conf}</div>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="font-mono text-body font-bold tabular-nums text-ink-900">
-                    {z.distance_km} km
-                  </span>
-                  <span className="text-readout text-ink-500">{z.bearing}</span>
-                </div>
-                <div className="mt-0.5 truncate font-mono text-label text-ink-400">
-                  SST {z.sst_c ?? "—"}°C · Chl {z.chlorophyll_mg_m3 ?? "—"} mg/m³
-                  {z.wave_height_m != null ? ` · ${z.wave_height_m} m` : ""}
-                </div>
-              </div>
-              <div className="shrink-0 text-right">
-                <div
-                  className="sounding text-title tabular-nums"
-                  style={{ color: best ? risk.low : chart[500] }}
-                >
-                  {Math.round(z.confidence * 100)}%
-                </div>
-                <div className="font-mono text-micro uppercase tracking-wide text-ink-400">
-                  {t.conf}
-                </div>
-              </div>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ol>
       <p
-        className="border-t px-4 py-2.5 text-label italic leading-relaxed text-ink-400"
+        className="border-t px-4 py-2.5 text-label leading-relaxed text-ink-400"
         style={{ borderColor: "var(--rule-faint)" }}
       >
         {t.note}
       </p>
-    </div>
+    </section>
   );
 }

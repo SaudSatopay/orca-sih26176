@@ -42,6 +42,7 @@ async function openApp(search: string) {
   api.config.mockRejectedValue(new Error("not under test"));
   api.forecast.mockRejectedValue(new Error("not under test"));
   api.fishingOutlook.mockRejectedValue(new Error("offline"));
+  api.alerts.mockResolvedValue({ marine_alerts: [], geofence_alerts: [] });
   api.ask.mockResolvedValue(response);
   const { default: App } = await import("./App");
   render(<App />);
@@ -192,10 +193,10 @@ describe("the Today frame", () => {
   it("says what went wrong when the plan does not load, and reads it again on request", async () => {
     const api = await openApp("?tab=home&at=18.95,72.75");
     const alert = await screen.findByRole("alert");
-    expect(within(alert).getByRole("heading", { name: UI.en.outlookFailTitle })).toBeInTheDocument();
+    expect(within(alert).getByText(ERRORS.en.offlineTitle)).toBeInTheDocument();
     expect(api.fishingOutlook).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(within(alert).getByRole("button", { name: UI.en.outlookRetry }));
+    fireEvent.click(within(alert).getByRole("button", { name: ERRORS.en.retry }));
     await tick();
     expect(api.fishingOutlook).toHaveBeenCalledTimes(2);
   });

@@ -32,6 +32,7 @@ import type {
   ChatMessage,
   ChatResponse,
   FishingOutlook,
+  MarineAlert,
   Language,
   Location,
   ZoneFeature,
@@ -100,6 +101,12 @@ export default function App() {
     BOOT.at ? { ...BOOT.at, label: "", source: "map" } : null,
   );
   const [outlook, setOutlook] = useState<FishingOutlook | null>(null);
+  // The newest outlook request failed. The reading on screen, if any, is kept
+  // only when it is for this same position (see the effect below).
+  const [outlookErr, setOutlookErr] = useState(false);
+  const outlookAt = useRef<{ latitude: number; longitude: number } | null>(null);
+  // Official warnings in force here, so the home chart can draw them.
+  const [homeAlerts, setHomeAlerts] = useState<MarineAlert[]>([]);
   // Which request the outlook on screen answers. "Loading" and the focused
   // ground are derived from it, so a new position or language resets both
   // without an effect having to.
@@ -168,9 +175,27 @@ export default function App() {
         days: 3,
         lang: language,
       })
-      .then((d) => alive && setOutlook(d))
-      .catch(() => alive && setOutlook(null))
+      .then((d) => {
+        if (!alive) return;
+        outlookAt.current = { latitude: place.latitude, longitude: place.longitude };
+        setOutlook(d);
+        setOutlookErr(false);
+      })
+      .catch(() => {
+        if (!alive) return;
+        // A reading for somewhere else must never stand in for here: the last
+        // one stays on screen only if it answers this same position.
+        const kept = outlookAt.current;
+        if (!kept || kept.latitude !== place.latitude || kept.longitude !== place.longitude) {
+          setOutlook(null);
+        }
+        setOutlookErr(true);
+      })
       .finally(() => alive && setSettled({ place, language }));
+    api
+      .alerts(place.latitude, place.longitude, language)
+      .then((d) => alive && setHomeAlerts(d.marine_alerts))
+      .catch(() => alive && setHomeAlerts([]));
     return () => {
       alive = false;
     };
@@ -395,7 +420,6 @@ export default function App() {
 
   const cell = "flex flex-1 flex-col justify-center border-l px-5 py-3 xl:flex-none";
   const cellRule = { borderColor: "var(--rule-faint)" };
-  const outlookFailed = place != null && !loadingOutlook && !outlook;
   const readings = [
     {
       k: ui.safety,
@@ -662,6 +686,7 @@ export default function App() {
                         radiusKm={outlook?.radius_km ?? RADIUS_KM}
                         routes={outlook?.routes ?? []}
                         geofence={[]}
+                        alerts={homeAlerts}
                         language={language}
                         onPickLocation={pickLocation}
                         focusRank={focusRank}
@@ -673,39 +698,15 @@ export default function App() {
               </div>
 
               <div className="min-w-0 space-y-4">
-                {loadingOutlook && !outlook && (
-                  <div
-                    className="panel flex items-center gap-3 p-6 text-prose leading-5 text-ink-500"
-                    role="status"
-                  >
-                    <span className="wave-rule w-12 shrink-0" aria-hidden />
-                    {ui.readingSea}
-                  </div>
-                )}
-                {outlookFailed && (
-                  <div role="alert" className="panel-tint hatch-danger p-5">
-                    <div className="flex items-start gap-3">
-                      <WarnGlyph size={18} className="mt-0.5 shrink-0 text-risk-extreme" />
-                      <div className="min-w-0">
-                        <h2 className="font-display text-lead font-bold text-ink-900">
-                          {ui.outlookFailTitle}
-                        </h2>
-                        <p className="mt-1 max-w-[52ch] text-body leading-relaxed text-ink-700">
-                          {ui.outlookFailBody}
-                        </p>
-                        <button
-                          className="btn-line mt-3"
-                          onClick={() => place && setPlace({ ...place })}
-                        >
-                          {ui.outlookRetry}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                {outlook && (
+                {/* The panel draws its own states: a drafted sheet while the
+                    first reading is on its way, the offline notice when it
+                    fails, and the last reading kept under that notice. */}
+                {place && (
                   <FishingPanel
                     data={outlook}
+                    loading={loadingOutlook}
+                    error={outlookErr && !loadingOutlook}
+                    onRetry={() => setPlace({ ...place })}
                     language={language}
                     onSelectArea={(rank) => setFocus({ rank, place, language })}
                   />
