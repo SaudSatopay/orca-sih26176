@@ -1,0 +1,50 @@
+/* Effect 1 — the wet-ink wordmark in the closing cartouche.
+   The poster (InkWordmark.tsx) is the finished block: the wordmark flat in
+   ink-900. This file sizes the reserved box, places the live canvas over it,
+   and says what the poster does once the ink is really moving. Owned by the
+   ink effect. No colours here: the poster's ink and the live ramp both come
+   from tokens.ts in the components. */
+
+/* The wordmark box: letters about 160 px tall at 1440, easing down to about
+   130 px at 1024. The aspect ratio is set inline from the measured geometry
+   (inkRamp.ts), so the box is reserved before anything loads. */
+.ink-word {
+  position: relative;
+  width: min(63%, 760px);
+  margin-inline: auto;
+}
+
+.ink-poster {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: opacity 0.3s ease;
+}
+
+/* The running ink: the canvas fills the same box the poster drew. */
+.ink-live {
+  position: absolute;
+  inset: 0;
+}
+.ink-live-fill {
+  width: 100%;
+  height: 100%;
+}
+.ink-live-fill [data-paper-shader] {
+  width: 100%;
+  height: 100%;
+}
+.ink-defs {
+  position: absolute;
+}
+
+/* Once the ink is drawing, the poster steps back; if the effect ever fails,
+   data-live returns to 0 and the poster is simply there again. */
+[data-effect="ink"][data-live="1"] .ink-poster {
+  opacity: 0;
+}
+/* Until then the canvas is mounted but not shown, so a first frame that is
+   still compiling never covers the finished poster. */
+[data-effect="ink"][data-live="0"] .ink-live {
+  visibility: hidden;
+}
