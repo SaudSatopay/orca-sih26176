@@ -61,9 +61,8 @@ export default function RiskCard({
   const dataMode = pairs(ui.data)[risk.mode] ?? risk.mode;
   const spoke = answerLang && answerLang !== language ? LANG_NAME[answerLang] : null;
   const crewT = TRACE_T[language] ?? TRACE_T.en;
-  const gatherAgents = new Set(PHASES.find((p) => p.key === "gather")?.agents);
-  const gatherRan =
-    trace?.filter((x) => gatherAgents.has(x.agent) && x.status !== "skipped").length ?? 0;
+  // The roster's fan-out width, the same ∥5 the trace badge prints.
+  const gatherWide = PHASES.find((p) => p.key === "gather")?.agents.length ?? 5;
   // The stamp, the count and the bars belong to this reading. They play when
   // it arrives and stay still when the sheet is only opened again.
   const fresh = useFirstSight(`risk:${risk.generated_at}:${risk.category}:${risk.score}`);
@@ -206,7 +205,7 @@ export default function RiskCard({
           className="block border-t px-5 py-2.5 font-mono text-label leading-snug text-ink-500 underline-offset-2 hover:text-chart-700 hover:underline"
           style={{ borderColor: "var(--rule-faint)" }}
         >
-          {crewT.understand} · {crewT.gather} ∥{gatherRan || 5} ·{" "}
+          {crewT.understand} · {crewT.gather} ∥{gatherWide} ·{" "}
           {crewT.decide} · {crewT.explain} — {CREW_SIZE} {crewT.agents},{" "}
           <span className="tabular-nums">{elapsed ?? 0}</span> ms
         </a>
