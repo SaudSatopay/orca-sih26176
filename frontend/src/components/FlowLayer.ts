@@ -47,6 +47,19 @@ const prefersStill = () =>
   typeof window !== "undefined" &&
   !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
+/**
+ * A4: trails advance in degrees, so without correction a step tuned for the
+ * ~100 km view (zoom 9) becomes a screen-wide stripe at harbour zoom. Halve
+ * the step per zoom level in, double it per level out, clamped so neither
+ * end degenerates.
+ */
+export function flowZoomScale(zoom: number): number {
+  return Math.min(4, Math.max(0.08, 2 ** (9 - zoom)));
+}
+
+/** Close in, the sea quiets down so it never buries the harbour's detail. */
+const trailAlpha = (zoom: number, base: number) => (zoom > 9 ? base * 0.647 : base);
+
 interface Particle {
   lat: number;
   lon: number;
@@ -382,8 +395,10 @@ export class FlowLayer {
     const ctx = this.flowCanvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, this.flowCanvas.width, this.flowCanvas.height);
-    const scale = this.mode === "wind" ? 0.0016 : 0.011;
+    const zoom = this.map.getZoom();
+    const scale = (this.mode === "wind" ? 0.0016 : 0.011) * flowZoomScale(zoom);
     const ramp = this.mode === "wind" ? WIND_RAMP : CUR_RAMP;
+    const alpha = trailAlpha(zoom, 0.55);
     ctx.lineWidth = 1.2;
     for (let n = 0; n < 250; n++) {
       const start = this.randomSeaPoint();
@@ -392,7 +407,7 @@ export class FlowLayer {
       const first = this.sample(lat, lon);
       if (!first) continue;
       ctx.strokeStyle = rampColor(ramp, Math.hypot(first.u, first.v));
-      ctx.globalAlpha = 0.55;
+      ctx.globalAlpha = alpha;
       ctx.beginPath();
       const p0 = this.map.latLngToContainerPoint([lat, lon]);
       ctx.moveTo(p0.x, p0.y);
@@ -424,8 +439,11 @@ export class FlowLayer {
     ctx.globalCompositeOperation = "source-over";
 
     const wind = this.mode === "wind";
-    const scale = (wind ? 0.00042 : 0.0028) * k; // deg per (km/h · 60 Hz frame), tuned by eye
+    const zoom = this.map.getZoom();
+    // deg per (km/h · 60 Hz frame), tuned by eye at zoom 9, scaled to the view
+    const scale = (wind ? 0.00042 : 0.0028) * k * flowZoomScale(zoom);
     const ramp = wind ? WIND_RAMP : CUR_RAMP;
+    const alpha = trailAlpha(zoom, 0.85);
     ctx.lineWidth = 1.15;
 
     for (const p of this.particles) {
@@ -453,7 +471,7 @@ export class FlowLayer {
       p.lon = nlon;
       const to = this.map.latLngToContainerPoint([p.lat, p.lon]);
       ctx.strokeStyle = rampColor(ramp, Math.hypot(vec.u, vec.v));
-      ctx.globalAlpha = 0.85;
+      ctx.globalAlpha = alpha;
       ctx.beginPath();
       ctx.moveTo(from.x, from.y);
       ctx.lineTo(to.x, to.y);

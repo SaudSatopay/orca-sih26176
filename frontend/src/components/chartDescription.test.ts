@@ -179,6 +179,18 @@ describe("describeChart", () => {
     expect(lines.join(" ")).not.toMatch(/Strong wind/);
   });
 
+  it("marks a do-not-go day before it lists the grounds", () => {
+    for (const l of ["en", "hi", "mr"] as const) {
+      const lines = describeChart(
+        { ...EMPTY, origin: MUMBAI, areas: [area(1)], severe: true },
+        words(l),
+      );
+      const note = lines.indexOf(MAP[l].severeNote);
+      expect(note).toBeGreaterThanOrEqual(0);
+      expect(note).toBeLessThan(lines.findIndex((x) => x.includes("1:")));
+    }
+  });
+
   it("is written in Hindi and Marathi without leaving a slot unfilled", () => {
     for (const l of ["hi", "mr"] as const) {
       const lines = describeChart(
