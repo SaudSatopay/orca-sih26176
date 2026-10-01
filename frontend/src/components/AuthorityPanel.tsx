@@ -123,6 +123,7 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
       <BoardTable
         data={data}
         changes={changes}
+        stale={state === "stale"}
         sort={sort}
         onSort={(key) => setSort((s) => nextSort(s, key))}
         language={language}
@@ -366,6 +367,7 @@ function SortHead({
 function BoardTable({
   data,
   changes,
+  stale,
   sort,
   onSort,
   language,
@@ -373,6 +375,8 @@ function BoardTable({
 }: {
   data: AuthorityDashboard;
   changes: ScoreChange[] | null;
+  /** The newest refresh failed: this is the last reading, not a live one. */
+  stale: boolean;
   sort: Sort;
   onSort: (key: SortKey) => void;
   language: Language;
@@ -393,7 +397,11 @@ function BoardTable({
           {t.board}
         </h2>
         <span className="flex items-center gap-2 font-mono text-label tabular-nums text-ink-500">
-          <span className="pulse-dot text-risk-low" style={{ background: "currentColor" }} aria-hidden />
+          <span
+            className={`pulse-dot ${stale ? "pulse-dot--still text-risk-extreme" : "text-risk-low"}`}
+            style={{ background: "currentColor" }}
+            aria-hidden
+          />
           <span className="ml-1">
             {fill(t.updated, { time })} · {t.refresh}
           </span>
@@ -415,7 +423,7 @@ function BoardTable({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] border-collapse text-small">
+          <table className="w-full min-w-[900px] border-collapse text-small">
             <caption className="sr-only">{t.caption}</caption>
             <thead>
               <tr className="border-b" style={{ borderColor: "var(--rule-strong)" }}>
@@ -486,7 +494,7 @@ function BoardTable({
                       {row.wind_speed_kmh != null ? row.wind_speed_kmh.toFixed(1) : "—"}
                       <span className="ml-1 text-ink-500">km/h</span>
                     </td>
-                    <td className="py-2.5 pl-5 pr-4">
+                    <td className="min-w-[260px] py-2.5 pl-5 pr-4">
                       {row.headline ? (
                         <span className="flex items-start gap-2">
                           {row.official_warning && (
@@ -517,7 +525,7 @@ function BoardTable({
         style={{ borderColor: "var(--rule-faint)" }}
       >
         <p role="status" className="min-w-0 flex-1 basis-[260px] text-readout leading-relaxed text-ink-700">
-          {changes == null ? (
+          {rows.length === 0 ? null : changes == null ? (
             t.changesFirst
           ) : changes.length === 0 ? (
             t.changesNone

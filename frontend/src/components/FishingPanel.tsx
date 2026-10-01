@@ -323,7 +323,7 @@ function Grounds({
       </div>
 
       {top.length === 0 ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-3 px-5 py-5">
+        <div className="flex flex-wrap items-start gap-x-4 gap-y-3 px-5 py-5">
           <EmptySweepGlyph className="shrink-0 text-chart-500" />
           <div className="min-w-0 flex-1 basis-[200px]">
             <p className="font-display text-lead font-bold leading-snug text-ink-900">

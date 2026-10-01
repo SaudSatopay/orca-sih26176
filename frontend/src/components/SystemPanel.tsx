@@ -146,7 +146,7 @@ export default function SystemPanel({
           {providers.map((p) => (
             <div
               key={p.name}
-              className="min-w-0 flex-1 basis-[220px] rounded-[2px] border bg-paper-100 px-4 py-3"
+              className="min-w-0 flex-1 basis-[260px] rounded-[2px] border bg-paper-100 px-4 py-3"
               style={{ borderColor: "var(--rule)" }}
             >
               <div className="flex items-center gap-2.5">
@@ -173,24 +173,24 @@ export default function SystemPanel({
         </div>
 
         {/* the flow into the cache: each connector spans the gap it joins */}
-        <div className="flex flex-col items-center gap-1.5 px-4 pb-4 md:flex-row md:gap-3">
-          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 md:text-right">
+        <div className="flex flex-col items-center gap-1.5 px-4 pb-4 lg:flex-row lg:gap-3">
+          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 lg:text-right">
             {t.oneFetch}
             <br />
             <span className="text-ink-500">{t.perProvider}</span>
           </div>
-          <Connector className="hidden md:block" />
-          <span className="v-connector-down !m-0 md:hidden" aria-hidden />
-          <div className="min-w-0 rounded-[2px] border-2 border-chart-600 bg-chart-100/40 px-4 py-3 text-center md:max-w-[520px] md:flex-[3_1_0]">
+          <Connector className="hidden lg:block" />
+          <span className="v-connector-down !m-0 lg:hidden" aria-hidden />
+          <div className="min-w-0 rounded-[2px] border-2 border-chart-600 bg-chart-100/40 px-4 py-3 text-center lg:max-w-[520px] lg:flex-[3_1_0]">
             <h4 className="font-display text-lead font-bold text-ink-900">{t.cacheTitle}</h4>
             <p className="mt-1 text-readout leading-relaxed text-ink-700">{t.cacheBody}</p>
             <p className="mt-1.5 font-mono text-micro uppercase tracking-[0.1em] text-chart-700">
               {t.cacheMeta}
             </p>
           </div>
-          <Connector className="hidden md:block" />
-          <span className="v-connector-down !m-0 md:hidden" aria-hidden />
-          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 md:text-left">
+          <Connector className="hidden lg:block" />
+          <span className="v-connector-down !m-0 lg:hidden" aria-hidden />
+          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 lg:text-left">
             {t.everyAgent}
             <br />
             <span className="text-ink-500">{t.fromMemory}</span>

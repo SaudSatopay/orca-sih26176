@@ -212,7 +212,9 @@ export default function LocationPicker({
         >
           <input
             ref={inputRef}
-            type="search"
+            type="text"
+            inputMode="search"
+            enterKeyHint="go"
             role="combobox"
             aria-label={t.search}
             aria-expanded="true"

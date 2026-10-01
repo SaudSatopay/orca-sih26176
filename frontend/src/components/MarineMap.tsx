@@ -106,7 +106,9 @@ export default function MarineMap({
   const [probe, setProbe] = useState<PositionCheck | null>(null);
   const [dragging, setDragging] = useState(false);
   const [keyOpen, setKeyOpen] = useState(() => !startsNarrow());
-  const mapHeight = heightPx ?? (areas.length ? 540 : 420);
+  // The grounds view (a search radius is given) is tall from the first paint,
+  // so the sheet does not jump when the grounds arrive.
+  const mapHeight = heightPx ?? (areas.length || radiusKm ? 540 : 420);
   const keyId = useId();
 
   const legend = LEGEND[language] ?? LEGEND.en;
@@ -167,6 +169,12 @@ export default function MarineMap({
       window.clearTimeout(settle);
       flowRef.current?.destroy();
       flowRef.current = null;
+      // Leaflet leaves its zoom-animation timer running after remove(); if the
+      // chart is unmounted mid-zoom (a tab change during fitBounds) the timer
+      // fires on a dead map and throws. Stop the motion and tell it the
+      // animation is over before the map goes.
+      map.stop();
+      (map as unknown as { _animatingZoom?: boolean })._animatingZoom = false;
       map.remove();
       mapRef.current = null;
     };
@@ -647,12 +655,15 @@ export default function MarineMap({
 
         {/* live geofence banner */}
         {banner && (
-          <div
-            role="status"
-            className={`absolute left-1/2 top-3 z-[500] max-w-[78%] -translate-x-1/2 animate-rise rounded-[2px] px-3.5 py-2 text-small font-semibold text-paper-50 shadow-lg ${banner.style}`}
-          >
-            <div>{banner.text}</div>
-            {banner.sub && <div className="mt-0.5 font-mono text-label font-normal">{banner.sub}</div>}
+          // Centred by the row, not by a transform: the entrance owns the transform.
+          <div className="pointer-events-none absolute inset-x-0 top-3 z-[500] flex justify-center px-3">
+            <div
+              role="status"
+              className={`v-enter pointer-events-auto max-w-[78%] rounded-[2px] px-3.5 py-2 text-small font-semibold text-paper-50 shadow-lg ${banner.style}`}
+            >
+              <div>{banner.text}</div>
+              {banner.sub && <div className="mt-0.5 font-mono text-label font-normal">{banner.sub}</div>}
+            </div>
           </div>
         )}
       </div>

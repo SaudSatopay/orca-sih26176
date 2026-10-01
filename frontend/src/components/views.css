@@ -470,9 +470,10 @@ button.v-card:active {
 }
 /* Stacked (narrow) pipeline: the connector turns into a short drop line. */
 .v-connector-down {
+  flex: none;
   width: 1px;
-  height: 14px;
-  margin: 2px 0 2px 11px;
+  height: 18px;
+  margin: 6px 0 6px 11px;
   background: var(--rule);
 }
 
