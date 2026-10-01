@@ -35,6 +35,28 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- iOS startup images, portrait: the wordmark in wet ink on the sheet,
+         stills captured from frontend/studio/ink.html?view=splash. iOS only
+         uses an image whose size matches the device exactly; any other
+         iPhone falls back to the plain paper background.
+         430 x 932 @3x: iPhone 14 Pro Max, 15 Plus, 15 Pro Max, 16 Plus.
+         393 x 852 @3x: iPhone 14 Pro, 15, 15 Pro, 16.
+         390 x 844 @3x: iPhone 12, 12 Pro, 13, 13 Pro, 14, 16e. -->
+    <link
+      rel="apple-touch-startup-image"
+      href="/splash-1290x2796.png"
+      media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/splash-1179x2556.png"
+      media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="/splash-1170x2532.png"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)"
+    />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="ORCA" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
