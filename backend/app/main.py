@@ -9,6 +9,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -35,6 +36,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# The JS bundle and the JSON payloads compress to roughly a third; on a phone
+# over a coastal 3G link that is the difference between a 2 s and a 5 s paint.
+# Starlette skips bodies under `minimum_size` and already-compressed types.
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 app.include_router(chat.router)
 app.include_router(fishing.router)
 app.include_router(forecast.router)
@@ -53,8 +59,23 @@ def health() -> dict:
 
 # --- serve the built frontend if it exists --------------------------------
 _DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
+
+class _HashedAssets(StaticFiles):
+    """Vite writes a content hash into every file name under /assets, so a
+    given URL can never change its bytes: cache it for a year, immutable."""
+
+    _IMMUTABLE = "public, max-age=31536000, immutable"
+
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        if response.status_code in (200, 206, 304):
+            response.headers["Cache-Control"] = self._IMMUTABLE
+        return response
+
+
 if _DIST.is_dir():
-    app.mount("/assets", StaticFiles(directory=_DIST / "assets"), name="assets")
+    app.mount("/assets", _HashedAssets(directory=_DIST / "assets"), name="assets")
 
     # index.html must NEVER be cached: a browser tab holding yesterday's HTML
     # keeps loading yesterday's JS bundle, and the demo quietly runs old code
@@ -70,6 +91,9 @@ if _DIST.is_dir():
     def spa(full_path: str) -> FileResponse:
         candidate = _DIST / full_path
         if candidate.is_file():
+            # /index.html by name is the same entry document as "/".
+            if candidate.name == "index.html":
+                return FileResponse(candidate, headers=_NO_STORE)
             return FileResponse(candidate)
         return FileResponse(_DIST / "index.html", headers=_NO_STORE)
 else:

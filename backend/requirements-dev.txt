@@ -1,0 +1,4 @@
+# Test-only dependencies. Runtime deps live in requirements.txt.
+#   pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+#   python -m pytest backend -q
+pytest>=8.0
