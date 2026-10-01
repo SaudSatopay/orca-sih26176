@@ -23,9 +23,17 @@ function prefersStill(): boolean {
  * Entrance choreography with a projector fail-safe: visibility is driven by
  * STATE + CSS transitions, never by keyframes with fill-mode. If rAF is
  * suspended (hidden tab, non-compositing output) the timeout still flips the
- * state, so the end position — everything visible — is always reached; with
- * reduced motion the content simply starts there.
+ * state, so the end position is always reached; with reduced motion the
+ * content simply starts there.
+ *
+ * Transform ONLY, by doctrine and by measurement: the h1 inside the first
+ * Reveal is the page's LCP element, and fading it from opacity 0 put 99.7%
+ * of its LCP time into render delay on a 4x-throttled trace. Everything is
+ * readable from the first frame; the rise is the entrance. Delays are capped
+ * so nothing below the fold waits on a stagger.
  */
+const REVEAL_MAX_DELAY = 220;
+
 function Reveal({
   delay = 0,
   className = "",
@@ -50,11 +58,10 @@ function Reveal({
     <div
       className={className}
       style={{
-        opacity: on ? 1 : 0,
-        transform: on ? "none" : "translateY(16px)",
+        transform: on ? "none" : "translateY(10px)",
         transition: prefersStill()
           ? "none"
-          : `opacity 0.65s ease ${delay}ms, transform 0.65s cubic-bezier(0.2, 0.7, 0.3, 1) ${delay}ms`,
+          : `transform 0.26s var(--ease-out) ${Math.min(delay, REVEAL_MAX_DELAY)}ms`,
       }}
     >
       {children}
@@ -84,6 +91,15 @@ function useCountUp(target: number | null, ms = 1000): string {
     };
   }, [target, ms, still]);
   return target == null ? "—" : String(still ? target : v);
+}
+
+/**
+ * The counting number as its own leaf: the per-frame state lives here, so
+ * sixty renders a second touch this text node and nothing else. (Measured
+ * before: the whole landing, hero included, reconciled every frame for 1.3 s.)
+ */
+function Count({ to, ms }: { to: number | null; ms?: number }) {
+  return <>{useCountUp(to, ms)}</>;
 }
 
 /**
@@ -127,18 +143,13 @@ export default function Landing({
     };
   }, []);
 
-  const agentsN = useCountUp(10, 900);
-  const centresN = useCountUp(centres, 1100);
-  const warningsN = useCountUp(warnings, 1300);
-  const langsN = useCountUp(3, 800);
-
   const cardTabs: ("home" | "ask" | "authority" | "system")[] = ["home", "ask", "authority", "system"];
 
-  const stats = [
-    { k: t.stats[0], v: agentsN },
-    { k: t.stats[1], v: centresN },
-    { k: t.stats[2], v: warningsN, warn: (warnings ?? 0) > 0 },
-    { k: t.stats[3], v: langsN },
+  const stats: { k: string; v: ReactNode; warn?: boolean }[] = [
+    { k: t.stats[0], v: "10" },
+    { k: t.stats[1], v: <Count to={centres} ms={1100} /> },
+    { k: t.stats[2], v: <Count to={warnings} ms={1300} />, warn: (warnings ?? 0) > 0 },
+    { k: t.stats[3], v: "3" },
     { k: t.stats[4], v: mode },
   ];
 
@@ -179,7 +190,7 @@ export default function Landing({
                 onClick={() => onLanguage(l)}
                 aria-pressed={language === l}
                 lang={l}
-                className={`rounded-[2px] border px-2 py-1 font-mono text-label font-bold transition-colors ${
+                className={`press min-h-7 rounded-[2px] border px-2.5 py-1 font-mono text-label font-bold transition-colors ${
                   language === l
                     ? "border-ink-900 bg-ink-900 text-paper-50"
                     : "text-ink-500 hover:text-ink-900"
@@ -242,13 +253,13 @@ export default function Landing({
           {stats.map((x, i) => (
             <div
               key={x.k}
-              className={`group px-4 py-3.5 transition-colors hover:bg-chart-100/40 ${i > 0 ? "border-l" : ""}`}
+              className={`px-4 py-3.5 ${i > 0 ? "border-l" : ""}`}
               style={{ borderColor: "var(--rule-faint)" }}
             >
-              <div className="label min-h-[2lh] !text-label leading-tight sm:min-h-0 lg:whitespace-nowrap">{x.k}</div>
+              <div className="label min-h-[2lh] leading-tight sm:min-h-0 lg:whitespace-nowrap">{x.k}</div>
               <div
-                className={`mt-1 font-mono text-headline font-bold tabular-nums leading-none transition-colors ${
-                  x.warn ? "text-risk-extreme" : "text-ink-900 group-hover:text-chart-600"
+                className={`mt-1 font-mono text-headline font-bold tabular-nums leading-none ${
+                  x.warn ? "text-risk-extreme" : "text-ink-900"
                 }`}
               >
                 {x.v}
@@ -321,7 +332,7 @@ export default function Landing({
             {t.phases.map((p, i) => (
               <div
                 key={p.t}
-                className={`group relative px-4 py-3.5 transition-colors hover:bg-chart-100/40 ${i > 0 ? "sm:border-l" : ""}`}
+                className={`relative px-4 py-3.5 ${i > 0 ? "sm:border-l" : ""}`}
                 style={{ borderColor: "var(--rule-faint)" }}
               >
                 <div className="flex items-baseline gap-2">
@@ -334,7 +345,7 @@ export default function Landing({
                 {i < 3 && (
                   <CourseArrow
                     size={13}
-                    className="absolute -right-1.5 top-1/2 hidden -translate-y-1/2 text-ink-300 transition-[transform,color] group-hover:translate-x-0.5 group-hover:text-chart-600 sm:block"
+                    className="absolute -right-1.5 top-1/2 hidden -translate-y-1/2 text-ink-300 sm:block"
                   />
                 )}
               </div>
