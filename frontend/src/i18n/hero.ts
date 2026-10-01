@@ -76,7 +76,7 @@ export const HERO: Record<
     until: "until",
     storm: "Severe cyclonic storm",
     track: "forecast track",
-    live: "answered live by the crew",
+    live: "answered just now · simulated data",
     rehearsed: "rehearsed scenario · simulated data",
   },
   hi: {
@@ -116,7 +116,7 @@ export const HERO: Record<
     until: "तक",
     storm: "गंभीर चक्रवाती तूफ़ान",
     track: "अनुमानित मार्ग",
-    live: "टीम ने अभी जवाब दिया",
+    live: "अभी जवाब मिला · नक़ली डेटा",
     rehearsed: "तैयार परिदृश्य · नक़ली डेटा",
   },
   mr: {
@@ -156,7 +156,7 @@ export const HERO: Record<
     until: "पर्यंत",
     storm: "तीव्र चक्रीवादळ",
     track: "अंदाजित मार्ग",
-    live: "टीमने आत्ताच उत्तर दिले",
+    live: "आत्ताच उत्तर मिळाले · नमुना डेटा",
     rehearsed: "तयार परिस्थिती · नमुना डेटा",
   },
 };
