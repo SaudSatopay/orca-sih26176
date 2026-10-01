@@ -23,7 +23,30 @@ html.phone body {
   overflow: hidden;
 }
 
+/* The sea at the foot of the sheet is the static shell's own element
+   (.shell-sea in index.html), kept for the life of the page so the water is
+   there from the first paint. Here it starts to move: each swell layer travels
+   a whole number of its own tiles per loop, so none of them ever jumps. */
+@keyframes m-sea {
+  to {
+    background-position:
+      -420px 100%,
+      680px 100%,
+      -840px 100%;
+  }
+}
+html.phone .shell-sea {
+  animation: m-sea 31s linear infinite;
+}
+/* Once the app is up, the water stands on the tab bar instead of behind it.
+   A transform, so nothing on the page is counted as having moved. */
+html.phone:has(.m-app) .shell-sea {
+  transform: translateY(calc(-60px - env(safe-area-inset-bottom, 0px)));
+}
+
 .m-app {
+  position: relative;
+  z-index: 1;
   --m-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --m-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   --m-gutter: 12px;

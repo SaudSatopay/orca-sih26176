@@ -792,6 +792,16 @@ export default function MobileApp() {
     document.title = `${t[tab]} · ORCA`;
   }, [t, tab]);
 
+  // The address keeps up, so a reload or a shared link opens the same tab in
+  // the same language. replaceState: tabs are places, not history entries.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (tab === "today") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", tab);
+    url.searchParams.set("lang", language);
+    window.history.replaceState(window.history.state, "", url);
+  }, [tab, language]);
+
   // A new tab starts at the top of its pane.
   useEffect(() => {
     paneRef.current?.scrollTo?.(0, 0);
@@ -987,11 +997,28 @@ export default function MobileApp() {
   const askStatus = listening ? t.listening : busy ? t.thinking : "";
   const announce = askStatus || (speakingId ? t.speaking : "");
   const idle = !question && !busy;
+  // Said once the reading (or its failure) is on screen, never above content
+  // that has already been painted: a late notice must not push the verdict.
+  const locationNotice = (geo === "denied" || geo === "unavailable") && (
+    <div className="panel-tint flex items-center gap-3 py-2 pl-3.5 pr-2">
+      <CrosshairGlyph size={18} className="shrink-0 text-ink-500" />
+      <p className="min-w-0 flex-1 text-body leading-snug text-ink-800">
+        {fill(geo === "denied" ? t.locationOff : t.locationFailed, { p: placeName })}
+      </p>
+      <button
+        type="button"
+        onClick={() => setSheet("harbour")}
+        aria-haspopup="dialog"
+        className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-readout font-bold uppercase tracking-[0.08em]"
+      >
+        {t.chooseHarbour}
+      </button>
+    </div>
+  );
 
   return (
     <div className="m-app">
       <ChartDefs />
-      <div className="sea-drift" aria-hidden />
       <div className="m-sr" role="status" aria-live="polite">
         {announce}
       </div>
@@ -1000,7 +1027,9 @@ export default function MobileApp() {
       <header className="m-header">
         <CompassMark size={34} className="shrink-0 text-ink-900" />
         <div className="min-w-0 flex-1">
-          <h1 className="font-display text-figure font-black leading-none text-ink-900">ORCA</h1>
+          <h1 className="font-display text-figure font-black leading-none text-ink-900" translate="no">
+            ORCA
+          </h1>
           <p className="mt-1 truncate text-small leading-tight text-ink-500">{t.purpose}</p>
         </div>
         <button
@@ -1019,23 +1048,6 @@ export default function MobileApp() {
       {/* ================= TODAY ================= */}
       {tab === "today" && (
         <main ref={paneRef} className="m-main space-y-3" tabIndex={-1}>
-          {(geo === "denied" || geo === "unavailable") && (
-            <div className="panel-tint flex items-center gap-3 py-2 pl-3.5 pr-2">
-              <CrosshairGlyph size={18} className="shrink-0 text-ink-500" />
-              <p className="min-w-0 flex-1 text-body leading-snug text-ink-800">
-                {fill(geo === "denied" ? t.locationOff : t.locationFailed, { p: placeName })}
-              </p>
-              <button
-                type="button"
-                onClick={() => setSheet("harbour")}
-                aria-haspopup="dialog"
-                className="m-press m-btn-line min-h-[44px] shrink-0 rounded-[2px] px-3 font-mono text-readout font-bold uppercase tracking-[0.08em]"
-              >
-                {t.chooseHarbour}
-              </button>
-            </div>
-          )}
-
           {failedNow && (
             <OfflineNotice
               language={language}
@@ -1044,6 +1056,8 @@ export default function MobileApp() {
               onRetry={() => setAttempt((a) => a + 1)}
             />
           )}
+
+          {!outlook && failedNow && locationNotice}
 
           {!outlook && !failedNow && <TodayDraft label={place ? t.reading : t.locating} />}
 
@@ -1058,6 +1072,8 @@ export default function MobileApp() {
                 canSpeak={canSpeak}
                 onListen={speakPlan}
               />
+
+              {locationNotice}
 
               {/* official warning — red, loud, speaks itself */}
               {outlook.safety.official_warning && (
@@ -1125,7 +1141,6 @@ export default function MobileApp() {
                         <button
                           type="button"
                           onClick={() => speakArea(a)}
-                          aria-label={`${fill(t.hearArea, { n: a.rank })}. ${Math.round(a.distance_km)} ${t.km}, ${a.probability}% ${t.chance}. ${speciesLine(a.likely_species, ", ")}`}
                           className="m-row flex min-h-[68px] w-full items-center gap-3 px-3.5 py-2.5 text-left"
                         >
                           <span
@@ -1148,8 +1163,10 @@ export default function MobileApp() {
                           >
                             {a.probability}
                             <span className="text-prose">%</span>
+                            <span className="m-sr"> {t.chance}.</span>
                           </span>
                           <SpeakerGlyph size={18} className="shrink-0 text-chart-600" />
+                          <span className="m-sr">{fill(t.hearArea, { n: a.rank })}</span>
                         </button>
                       </li>
                     ))}
@@ -1269,6 +1286,7 @@ export default function MobileApp() {
                 onChange={(e) => setTyped(e.target.value)}
                 placeholder={t.typeHere}
                 aria-label={t.typeHere}
+                name="question"
                 lang={language}
                 enterKeyHint="send"
                 autoComplete="off"
@@ -1358,14 +1376,18 @@ export default function MobileApp() {
           type="button"
           onClick={() => setSheet("language")}
           aria-haspopup="dialog"
-          aria-label={`${t.language}: ${LANGUAGE_NAME[language]}`}
           className="m-tab m-tab--lang"
         >
-          <span className="flex h-[26px] items-center font-display text-title font-bold leading-none" aria-hidden>
+          {/* the अ is set in the phone's own Devanagari face: one glyph must not
+              cost the 127 KB serif */}
+          <span className="flex h-[26px] items-center text-title font-bold leading-none" aria-hidden>
             अ<span className="px-0.5 font-mono text-readout text-ink-400">/</span>A
           </span>
-          <span className="font-mono text-readout font-bold uppercase tracking-wide">
+          <span className="font-mono text-readout font-bold uppercase tracking-wide" aria-hidden>
             {LANGUAGE_MARK[language]}
+          </span>
+          <span className="m-sr">
+            {t.language}: {LANGUAGE_NAME[language]}
           </span>
         </button>
       </nav>

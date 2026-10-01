@@ -23,8 +23,23 @@ const language = readBootParams(window.location.search).lang ?? "en";
 const root = document.getElementById("root")!;
 document.documentElement.classList.toggle("phone", kind === "phone");
 
-ROOT_LOADERS[kind]()
-  .then(({ default: Root }) => {
+/**
+ * Resolves once the shell has had a frame on screen. On a slow connection that
+ * happened long before the app's chunk arrived and this costs nothing. On a
+ * fast one the chunk can beat the browser's first frame, and rendering straight
+ * away would make the first paint wait for React; there this costs a frame or
+ * two. The timer covers a tab that is not being painted at all, so the app
+ * never waits on a frame that will not come.
+ */
+const shellPainted = new Promise<void>((resolve) => {
+  window.setTimeout(resolve, 120);
+  requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+});
+
+Promise.all([ROOT_LOADERS[kind](), shellPainted])
+  .then(([{ default: Root }]) => {
+    // The console and the landing draw their own sea; the phone keeps the shell's.
+    if (kind === "console") document.getElementById("shell-sea")?.remove();
     ReactDOM.createRoot(root).render(
       <React.StrictMode>
         <ErrorBoundary language={language} className="m-4">

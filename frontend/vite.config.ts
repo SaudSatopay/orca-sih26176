@@ -20,8 +20,10 @@ type BundleChunk = {
  *   - a tiny inline script that applies the same rule as `isPhoneLayout` in
  *     src/boot.ts and adds `modulepreload` (and stylesheet) links for the
  *     chosen app only;
- *   - `preload` links for the two font faces the first paint uses (Fraunces
- *     and Archivo, Latin). Every other face waits for text that needs it.
+ *   - a `preload` link for the one face the first paint leans on (Fraunces
+ *     roman, Latin: the wordmark, the headline, the verdict). Every other face
+ *     waits for text that needs it; preloading a second one cost more in
+ *     contention with the app chunk than it saved.
  */
 function bootPreload(): Plugin {
   return {
@@ -61,7 +63,7 @@ function bootPreload(): Plugin {
 
         const fonts = files
           .map((f) => f.fileName)
-          .filter((f) => /(fraunces|archivo)-latin-wght-normal-[^.]+\.woff2$/.test(f));
+          .filter((f) => /fraunces-latin-wght-normal-[^.]+\.woff2$/.test(f));
 
         // Mirrors isPhoneLayout() and PHONE_QUERY in src/boot.ts.
         const script =
