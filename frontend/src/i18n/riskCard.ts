@@ -1,23 +1,49 @@
 import type { Language } from "../types";
 
+/**
+ * The one verdict vocabulary: the stamp prints these four phrases on every
+ * verdict surface — the same words the landing hero stamps.
+ */
 export const VERDICT: Record<Language, Record<string, string>> = {
   en: {
+    LOW: "Safe to go",
+    MODERATE: "Go with care",
+    HIGH: "Do not go",
+    EXTREME: "Do not launch",
+  },
+  hi: {
+    LOW: "जाना सुरक्षित",
+    MODERATE: "सावधानी से जाएँ",
+    HIGH: "न जाएँ",
+    EXTREME: "नाव न उतारें",
+  },
+  mr: {
+    LOW: "जाणे सुरक्षित",
+    MODERATE: "सावधगिरीने जा",
+    HIGH: "जाऊ नका",
+    EXTREME: "होडी उतरवू नका",
+  },
+};
+
+/** The headline under the eyebrow: the plain instruction as a sentence. */
+export const INSTRUCTION: Record<Language, Record<string, string>> = {
+  en: {
     LOW: "Conditions look safe",
-    MODERATE: "Go with caution",
-    HIGH: "High risk — not recommended",
-    EXTREME: "EXTREME — do not go to sea",
+    MODERATE: "Go, but with caution",
+    HIGH: "Going is not recommended",
+    EXTREME: "Do not go to sea",
   },
   hi: {
     LOW: "स्थिति सुरक्षित लग रही है",
-    MODERATE: "सावधानी से जाएँ",
-    HIGH: "जोखिम अधिक है — जाने की सलाह नहीं",
-    EXTREME: "अत्यधिक जोखिम — समुद्र में न जाएँ",
+    MODERATE: "जाएँ, पर सावधानी से",
+    HIGH: "जाने की सलाह नहीं",
+    EXTREME: "समुद्र में न जाएँ",
   },
   mr: {
     LOW: "परिस्थिती सुरक्षित दिसते",
-    MODERATE: "सावधगिरीने जा",
-    HIGH: "धोका जास्त आहे — जाऊ नका",
-    EXTREME: "अत्यंत धोका — समुद्रात जाऊ नका",
+    MODERATE: "जा, पण सावधगिरीने",
+    HIGH: "जाण्याचा सल्ला नाही",
+    EXTREME: "समुद्रात जाऊ नका",
   },
 };
 
@@ -61,6 +87,7 @@ export const UI: Record<Language, Record<string, string>> = {
     why: "Why: points each reading adds",
     verdict: "Verdict",
     outOf: "{n} out of 100",
+    answeredIn: "Answered in {lang}",
     data: "LIVE:live data|DEMO:simulated data|CACHE:cached data",
     moreReasons: "Also counted",
     ledger: "Evidence ledger",
@@ -80,6 +107,7 @@ export const UI: Record<Language, Record<string, string>> = {
     why: "क्यों: हर रीडिंग कितने अंक जोड़ती है",
     verdict: "फ़ैसला",
     outOf: "100 में से {n}",
+    answeredIn: "{lang} में उत्तर दिया गया",
     data: "LIVE:लाइव डेटा|DEMO:नकली आँकड़े|CACHE:कैश डेटा",
     moreReasons: "ये भी गिने गए",
     ledger: "प्रमाण बही",
@@ -99,6 +127,7 @@ export const UI: Record<Language, Record<string, string>> = {
     why: "का: प्रत्येक नोंद किती गुण वाढवते",
     verdict: "निर्णय",
     outOf: "100 पैकी {n}",
+    answeredIn: "{lang} मध्ये उत्तर दिले",
     data: "LIVE:लाइव्ह डेटा|DEMO:नमुना माहिती|CACHE:कॅशे डेटा",
     moreReasons: "हेही मोजले",
     ledger: "पुरावा वही",

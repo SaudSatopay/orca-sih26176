@@ -1,30 +1,49 @@
-import type { Evidence, Language, RiskAssessment } from "../types";
+import type { AgentTrace, Evidence, Language, RiskAssessment } from "../types";
 import { useFirstSight } from "../firstSight";
 import { LockGlyph } from "./glyphs";
 import { RISK_COLOR, RISK_INK } from "../risk";
-import { pairs } from "../crew";
+import { CREW_SIZE, PHASES, pairs } from "../crew";
 import RiskDial from "./RiskDial";
-import { CATEGORY, FACTOR, UI, VERDICT } from "../i18n/riskCard";
+import { CATEGORY, FACTOR, INSTRUCTION, UI, VERDICT } from "../i18n/riskCard";
+import { T as TRACE_T } from "../i18n/agentTrace";
+import { LANG_NAME } from "../i18n/app";
 
 /** How many reasons get a bar of their own; the rest share one line. */
 const RANKED = 4;
 
 /**
+ * One fixed scale for every "why" bar, on every answer: the largest factor
+ * weight in /api/config is 0.25 (wave and cyclone), so no reading can add
+ * more than 25 of the 100 points. +3.4 in a LOW answer now fills a seventh
+ * of the track, not the whole of it.
+ */
+const MAX_CONTRIBUTION = 25;
+
+/**
  * The verdict: the first thing the answer column shows. The dial and the
- * stamped band on the left, the ranked reasons beside them, and under both
+ * stamped verdict on the left, the ranked reasons beside them, and under both
  * the deterministic overrides — the rules no model can talk down.
  *
- * `evidence` is accepted so the count can be announced with the verdict; the
- * ledger itself is its own panel further down the sheet.
+ * Labels speak the reader's language; the backend's own sentences (factor
+ * details, overrides) keep the answer's language, marked with `lang=`.
  */
 export default function RiskCard({
   risk,
   evidence,
   language = "en",
+  answerLang,
+  trace,
+  elapsed,
 }: {
   risk: RiskAssessment;
   evidence: Evidence[];
+  /** The reader's language: every label prints in it. */
   language?: Language;
+  /** The language the answer itself was written in. */
+  answerLang?: Language;
+  /** The crew that produced this verdict, for the one-line foot. */
+  trace?: AgentTrace[];
+  elapsed?: number;
 }) {
   const ui = UI[language] ?? UI.en;
   const band = (CATEGORY[language] ?? CATEGORY.en)[risk.category] ?? risk.category;
@@ -34,13 +53,17 @@ export default function RiskCard({
   const reasons = risk.factors.filter((f) => f.contribution > 0);
   const ranked = reasons.slice(0, RANKED);
   const rest = reasons.slice(RANKED);
-  const max = Math.max(...ranked.map((f) => f.contribution), 1);
   const lead = ranked
     .slice(0, 2)
     .map((f) => f.detail)
     .filter(Boolean)
     .join(" · ");
   const dataMode = pairs(ui.data)[risk.mode] ?? risk.mode;
+  const spoke = answerLang && answerLang !== language ? LANG_NAME[answerLang] : null;
+  const crewT = TRACE_T[language] ?? TRACE_T.en;
+  const gatherAgents = new Set(PHASES.find((p) => p.key === "gather")?.agents);
+  const gatherRan =
+    trace?.filter((x) => gatherAgents.has(x.agent) && x.status !== "skipped").length ?? 0;
   // The stamp, the count and the bars belong to this reading. They play when
   // it arrives and stay still when the sheet is only opened again.
   const fresh = useFirstSight(`risk:${risk.generated_at}:${risk.category}:${risk.score}`);
@@ -48,27 +71,28 @@ export default function RiskCard({
   return (
     <section className="verdict panel rule-double overflow-hidden" aria-labelledby="verdict-words">
       <div className="verdict-body">
-        <div className="flex items-center gap-5 p-5">
+        <div className="flex items-start gap-5 p-5">
           <RiskDial score={risk.score} category={risk.category} label={band} size={124} fresh={fresh} />
           <div className="min-w-0 flex-1">
             <p className="label">
-              {ui.verdict} · {ui.outOf.replace("{n}", String(risk.score))}
+              {ui.verdict} · <span style={{ color: printed }}>{band}</span> ·{" "}
+              <span className="tabular-nums">{risk.score}/100</span>
             </p>
             <h2
               id="verdict-words"
               className="mt-1 font-display text-headline font-bold leading-tight tracking-tight"
               style={{ color: printed }}
             >
-              {(VERDICT[language] ?? VERDICT.en)[risk.category]}
+              {(INSTRUCTION[language] ?? INSTRUCTION.en)[risk.category]}
             </h2>
             <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-2">
-              {/* the verdict, stamped on the document */}
+              {/* the verdict, stamped on the document — the one verdict vocabulary */}
               <span
                 key={`${risk.category}-${risk.score}`}
                 className={`stamp ${fresh ? "animate-stampIn" : ""} text-label`}
                 style={{ color: printed }}
               >
-                {band}
+                {(VERDICT[language] ?? VERDICT.en)[risk.category]}
               </span>
               {/* No delay on the second stamp: without a fill-mode a delayed
                   stamp would sit at rest, jump out to 1.3x and land. The two
@@ -78,11 +102,20 @@ export default function RiskCard({
                   {ui.warning}
                 </span>
               )}
+              {spoke && (
+                <span className="chip !cursor-default !py-0.5 !text-label" lang={answerLang}>
+                  {ui.answeredIn.replace("{lang}", spoke)}
+                </span>
+              )}
               <span className="font-mono text-label uppercase tracking-[0.14em] text-ink-400">
                 {dataMode}
               </span>
             </div>
-            {lead && <p className="mt-2.5 text-body leading-snug text-ink-700">{lead}</p>}
+            {lead && (
+              <p className="mt-2.5 text-body leading-snug text-ink-700" lang={answerLang}>
+                {lead}
+              </p>
+            )}
             {risk.window && (
               <p className="mt-2.5 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-3 py-2 text-body leading-snug text-risk-low">
                 {ui.improves} <span className="font-display font-bold">{risk.window}</span>{" "}
@@ -111,12 +144,12 @@ export default function RiskCard({
                 </div>
                 <div className="mt-1 h-[3px] overflow-hidden bg-ink-900/10">
                   {/* Length by transform so a follow-up answer retargets the
-                      bar instead of snapping it; the grow-x entrance ends at
-                      the element's own scaleX, so the two compose. */}
+                      bar instead of snapping it. One fixed scale on every
+                      answer: the track's end is the 25-point maximum weight. */}
                   <div
                     className={`${fresh ? "grow-x" : ""} h-full`}
                     style={{
-                      transform: `scaleX(${f.contribution / max})`,
+                      transform: `scaleX(${Math.min(1, f.contribution / MAX_CONTRIBUTION)})`,
                       transformOrigin: "left center",
                       transition: "transform 400ms var(--ease-out)",
                       background: color,
@@ -124,7 +157,9 @@ export default function RiskCard({
                   />
                 </div>
                 {f.detail && (
-                  <p className="mt-1 text-label leading-snug text-ink-500">{f.detail}</p>
+                  <p className="mt-1 text-label leading-snug text-ink-500" lang={answerLang}>
+                    {f.detail}
+                  </p>
                 )}
               </li>
             ))}
@@ -150,7 +185,7 @@ export default function RiskCard({
       {risk.overrides.length > 0 && (
         <div className="hatch-danger border-t border-risk-extreme/40 px-5 py-3.5">
           <h3 className="label mb-2 !text-risk-extreme">{ui.overrides}</h3>
-          <ul className="space-y-1.5">
+          <ul className="space-y-1.5" lang={answerLang}>
             {risk.overrides.map((o, i) => (
               <li key={i} className="flex items-start gap-2 text-body font-medium text-ink-800">
                 <LockGlyph size={13} className="mt-0.5 shrink-0 text-risk-extreme" />
@@ -162,6 +197,19 @@ export default function RiskCard({
             {ui.overrideNote}
           </p>
         </div>
+      )}
+
+      {/* the crew's one-line foot: the proof stays with the verdict */}
+      {trace && trace.length > 0 && (
+        <a
+          href="#crew-trace"
+          className="block border-t px-5 py-2.5 font-mono text-label leading-snug text-ink-500 underline-offset-2 hover:text-chart-700 hover:underline"
+          style={{ borderColor: "var(--rule-faint)" }}
+        >
+          {crewT.understand} · {crewT.gather} ∥{gatherRan || 5} ·{" "}
+          {crewT.decide} · {crewT.explain} — {CREW_SIZE} {crewT.agents},{" "}
+          <span className="tabular-nums">{elapsed ?? 0}</span> ms
+        </a>
       )}
 
       <p className="sr-only">

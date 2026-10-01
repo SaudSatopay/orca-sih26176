@@ -695,6 +695,19 @@ html.phone .shell-sea > i {
     }
   }
 
+  /* ---- c3a: shell + ask (masthead, verdict slot, field) ----
+     Once a conversation exists the verdict slot keeps one reserved height
+     through pending → working → answer, so the chart below never jumps
+     when the occupants hand over (CLS on the rehearsed deep links). */
+  .ask-sheet [data-area="verdict"][data-settled] {
+    min-height: 19rem;
+  }
+  /* A placeholder that cannot fit ends in an ellipsis, never a cut word. */
+  .field:placeholder-shown {
+    text-overflow: ellipsis;
+  }
+  /* ---- end c3a ---- */
+
   /* The verdict panel answers to its own width, not the window's: the ranked
      reasons sit beside the verdict when there is room for both. */
   .verdict {

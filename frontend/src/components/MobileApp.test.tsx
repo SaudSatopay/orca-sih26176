@@ -140,7 +140,7 @@ describe("the phone's Today tab", () => {
     render(<MobileApp />);
 
     const alert = await screen.findByRole("alert");
-    expect(within(alert).getByText("ORCA cannot reach the crew")).toBeInTheDocument();
+    expect(within(alert).getByText("No signal")).toBeInTheDocument();
     fireEvent.click(within(alert).getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Risk 28 out of 100")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -156,7 +156,7 @@ describe("the phone's Today tab", () => {
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "हिंदी" }));
 
     const alert = await screen.findByRole("alert");
-    expect(within(alert).getByText("ORCA टीम तक नहीं पहुँच पा रहा")).toBeInTheDocument();
+    expect(within(alert).getByText("सिग्नल नहीं है")).toBeInTheDocument();
     expect(within(alert).getByText(/पिछली रीडिंग: Mumbai/)).toBeInTheDocument();
     // the verdict from the last good reading is still there
     expect(screen.getByText("जोखिम 100 में से 28")).toBeInTheDocument();

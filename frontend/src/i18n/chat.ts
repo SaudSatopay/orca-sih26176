@@ -1,9 +1,9 @@
 import type { Language } from "../types";
 
 export const PLACEHOLDER: Record<Language, string> = {
-  en: "Ask ORCA — can I go fishing tomorrow at 6 AM?",
-  hi: "ORCA से पूछें — क्या मैं कल सुबह 6 बजे जा सकता हूँ?",
-  mr: "ORCA ला विचारा — मी उद्या सकाळी ६ वाजता जाऊ शकतो का?",
+  en: "Ask in your own words",
+  hi: "अपने शब्दों में पूछें",
+  mr: "तुमच्या शब्दांत विचारा",
 };
 
 export const T: Record<Language, Record<string, string>> = {
