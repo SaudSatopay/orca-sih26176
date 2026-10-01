@@ -6,12 +6,13 @@ from typing import List
 
 from ..config import GEOFENCE_ALERT_KM, GEOFENCE_WARN_KM
 from ..data.geo import distance_from_shore_km, nearest_port, zones_near
-from ..schemas import AgentResult, GeofenceAlert, Location
+from ..schemas import AgentResult, GeofenceAlert, Language, Location
+from ..services.i18n import t, zone_name
 from .base import timed
 
 
 @timed
-def run(location: Location, when: datetime) -> AgentResult:
+def run(location: Location, when: datetime, lang: Language = "en") -> AgentResult:
     stamp = when.isoformat(timespec="seconds")
     lat, lon = location.latitude, location.longitude
 
@@ -21,15 +22,21 @@ def run(location: Location, when: datetime) -> AgentResult:
 
     alerts: List[GeofenceAlert] = []
     for z in zones:
+        # The alert is read by a person, so it names the area in their
+        # language; `zones_nearby` and `nearest_zone_name` below keep the
+        # chart's own name, which is what the rest of the system matches on.
+        name = zone_name(z["name"], lang)
         if z["inside"]:
-            severity, message = "critical", f"You are inside {z['name']}. Leave the area immediately."
+            severity, message = "critical", t("gf_msg_inside", lang, zone=name)
         elif z["distance_km"] <= GEOFENCE_ALERT_KM:
-            severity, message = "critical", f"{z['name']} is only {z['distance_km']} km away."
+            severity, message = "critical", t("gf_msg_close", lang, zone=name,
+                                              distance=z["distance_km"])
         elif z["distance_km"] <= GEOFENCE_WARN_KM:
-            severity, message = "warning", f"Approaching {z['name']} — {z['distance_km']} km away."
+            severity, message = "warning", t("gf_msg_approach", lang, zone=name,
+                                             distance=z["distance_km"])
         else:
             continue
-        alerts.append(GeofenceAlert(zone_name=z["name"], zone_type=z["zone_type"],
+        alerts.append(GeofenceAlert(zone_name=name, zone_type=z["zone_type"],
                                     distance_km=z["distance_km"], inside=z["inside"],
                                     severity=severity, message=message))  # type: ignore[arg-type]
 

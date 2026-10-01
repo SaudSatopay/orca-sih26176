@@ -28,25 +28,30 @@ from ..data.demo_store import IST, now_ist
 from ..schemas import (AgentTrace, ChatRequest, ChatResponse, Evidence,
                        GeofenceAlert, Intent, Location, PFZZone, RiskAssessment,
                        RouteOption)
-from ..services.i18n import t
+from ..services.i18n import RISK_BAND, sea_state, t
 from . import (cyclone_agent, explanation_agent, gis_agent, intent_agent,
                ocean_agent, pfz_agent, risk_agent, route_agent, weather_agent)
 
 # session_id -> last intent (gives follow-ups their context)
 _SESSIONS: Dict[str, Intent] = {}
 
+# One line per agent for the crew trace, in the reader's language (`g`).
+# The intent line stays as the parser wrote it: it is a readback of code names.
 AGENT_SUMMARY = {
-    "weather": lambda d: f"wind {d.get('wind_speed_kmh')} km/h, rain {d.get('rain_probability_pct')}%",
-    "ocean": lambda d: f"wave {d.get('wave_height_m')} m, {d.get('sea_state')}",
-    "pfz": lambda d: f"{len(d.get('zones', []))} zones ranked",
-    "cyclone": lambda d: (d.get("headline") or "no active warning"),
-    "gis": lambda d: f"{d.get('distance_from_shore_km')} km offshore, "
-                     f"{len(d.get('zones_nearby', []))} zones nearby",
-    "risk": lambda d: f"{d.get('score')}/100 {d.get('category')}",
-    "route": lambda d: (f"{d.get('recommended', {}).get('distance_km')} km recommended"
-                        if d.get("recommended") else "no route"),
-    "explanation": lambda d: "answer composed",
-    "intent": lambda d: f"{d.get('intent')} @ {d.get('location_text') or 'unknown'} {d.get('time')}",
+    "weather": lambda d, g: t("trace_weather", g, wind=d.get("wind_speed_kmh"),
+                              rain=d.get("rain_probability_pct")),
+    "ocean": lambda d, g: t("trace_ocean", g, wave=d.get("wave_height_m"),
+                            state=sea_state(d.get("sea_state"), g) if d.get("sea_state") else None),
+    "pfz": lambda d, g: t("trace_pfz", g, n=len(d.get("zones", []))),
+    "cyclone": lambda d, g: (d.get("headline") or t("trace_no_warning", g)),
+    "gis": lambda d, g: t("trace_gis", g, km=d.get("distance_from_shore_km"),
+                          n=len(d.get("zones_nearby", []))),
+    "risk": lambda d, g: f"{d.get('score')}/100 "
+                         f"{RISK_BAND.get(str(d.get('category')), {}).get(g, d.get('category'))}",
+    "route": lambda d, g: (t("trace_route", g, km=d.get("recommended", {}).get("distance_km"))
+                           if d.get("recommended") else t("trace_no_route", g)),
+    "explanation": lambda d, g: t("trace_explanation", g),
+    "intent": lambda d, g: f"{d.get('intent')} @ {d.get('location_text') or 'unknown'} {d.get('time')}",
 }
 
 
@@ -61,12 +66,12 @@ def _target_datetime(intent: Intent) -> datetime:
         return base
 
 
-def _trace(result, name: str) -> AgentTrace:
+def _trace(result, name: str, lang: str = "en") -> AgentTrace:
     status = "ok" if result.ok else "failed"
     if result.ok and result.unavailable:
         status = "degraded"
     try:
-        summary = AGENT_SUMMARY.get(name, lambda d: "")(result.data or {})
+        summary = AGENT_SUMMARY.get(name, lambda d, g: "")(result.data or {}, lang)
     except Exception:
         summary = ""
     return AgentTrace(agent=name, status=status,  # type: ignore[arg-type]
@@ -95,8 +100,11 @@ def handle(req: ChatRequest) -> ChatResponse:
     location = intent.location
     when = _target_datetime(intent)
     needs = set(intent.needs)
+    # The reader's language. It chooses words only: every agent computes the
+    # same numbers whatever it is.
+    lang = intent.language
 
-    trace: List[AgentTrace] = [_trace(intent_res, "intent")]
+    trace: List[AgentTrace] = [_trace(intent_res, "intent", lang)]
     agents: Dict[str, object] = {}
 
     # ---- node 2: specialists, concurrently -------------------------------
@@ -109,14 +117,14 @@ def handle(req: ChatRequest) -> ChatResponse:
         if "pfz" in needs:
             jobs["pfz"] = pool.submit(pfz_agent.run, location, when)
         if "cyclone" in needs:
-            jobs["cyclone"] = pool.submit(cyclone_agent.run, location, when)
+            jobs["cyclone"] = pool.submit(cyclone_agent.run, location, when, lang)
         if "gis" in needs:
-            jobs["gis"] = pool.submit(gis_agent.run, location, when)
+            jobs["gis"] = pool.submit(gis_agent.run, location, when, lang)
         results = {name: fut.result() for name, fut in jobs.items()}
 
     for name, res in results.items():
         agents[name] = res
-        trace.append(_trace(res, name))
+        trace.append(_trace(res, name, lang))
 
     weather_d = results["weather"].data if "weather" in results else {}
     ocean_d = results["ocean"].data if "ocean" in results else {}
@@ -132,9 +140,10 @@ def handle(req: ChatRequest) -> ChatResponse:
     risk: Optional[RiskAssessment] = None
     if "risk" in needs:
         risk_res = risk_agent.run(location, when, weather=weather_d, ocean=ocean_d,
-                                  cyclone=cyclone_d, gis=gis_d, sources=sources, mode=mode)
+                                  cyclone=cyclone_d, gis=gis_d, sources=sources, mode=mode,
+                                  lang=lang)
         agents["risk"] = risk_res
-        trace.append(_trace(risk_res, "risk"))
+        trace.append(_trace(risk_res, "risk", lang))
         if risk_res.ok:
             risk = RiskAssessment(**risk_res.data)
 
@@ -159,9 +168,9 @@ def handle(req: ChatRequest) -> ChatResponse:
                                     destination=(target.latitude, target.longitude),
                                     destination_name=f"PFZ #{target.rank}",
                                     ocean=ocean_d, weather=weather_d,
-                                    risk=(risk.model_dump() if risk else {}))
+                                    risk=(risk.model_dump() if risk else {}), lang=lang)
         agents["route"] = route_res
-        trace.append(_trace(route_res, "route"))
+        trace.append(_trace(route_res, "route", lang))
         if route_res.ok:
             routes = [RouteOption(**o) for o in route_res.data.get("options", [])]
 
@@ -173,7 +182,7 @@ def handle(req: ChatRequest) -> ChatResponse:
         weather=weather_d, ocean=ocean_d, cyclone=cyclone_d, gis=gis_d,
         agents=agents, mode=mode, when=when,  # type: ignore[arg-type]
     )
-    trace.append(_trace(expl_res, "explanation"))
+    trace.append(_trace(expl_res, "explanation", lang))
 
     evidence = [Evidence(**e) for e in expl_res.data.get("evidence", [])]
 

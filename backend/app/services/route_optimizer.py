@@ -19,7 +19,8 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 from ..data.geo import (Coord, distance_to_polygon_km, haversine_km,
                         point_in_polygon, RESTRICTED_ZONES, route_zone_conflicts)
-from ..schemas import RouteLeg, RouteOption
+from ..schemas import Language, RouteLeg, RouteOption
+from .i18n import t, zone_name
 
 GRID_STEPS = 20                # nodes per axis; 400-node graph — still instant
 ZONE_PENALTY_KM = 400.0        # effective cost of entering a restricted polygon
@@ -181,7 +182,8 @@ def _path_length(points: Sequence[Coord]) -> float:
 
 def plan_routes(origin: Coord, dest: Coord, *, wave_m: Optional[float] = None,
                 wind_kmh: Optional[float] = None, risk_score: int = 40,
-                risk_category: str = "MODERATE") -> List[RouteOption]:
+                risk_category: str = "MODERATE",
+                lang: Language = "en") -> List[RouteOption]:
     """Return the direct track and the risk-weighted safest track."""
     speed = _speed_for(wave_m, wind_kmh)
 
@@ -206,7 +208,7 @@ def plan_routes(origin: Coord, dest: Coord, *, wave_m: Optional[float] = None,
     options: List[RouteOption] = []
 
     safest = RouteOption(
-        name="Safest route",
+        name=t("route_name_safest", lang),
         kind="safest",
         legs=[RouteLeg(latitude=round(p[0], 4), longitude=round(p[1], 4)) for p in safe_pts],
         distance_km=round(safe_km, 1),
@@ -216,13 +218,13 @@ def plan_routes(origin: Coord, dest: Coord, *, wave_m: Optional[float] = None,
         penalties={"restricted_zones": float(len(safe_conflicts)),
                    "extra_km_vs_direct": round(max(0.0, safe_km - direct_km), 1)},
         recommended=True,
-        notes=("Avoids all restricted areas."
+        notes=(t("route_note_clear", lang)
                if not safe_conflicts else
-               "Best available track — some restricted areas remain close."),
+               t("route_note_close", lang)),
     )
 
     direct = RouteOption(
-        name="Direct route",
+        name=t("route_name_direct", lang),
         kind="shortest",
         legs=[RouteLeg(latitude=round(p[0], 4), longitude=round(p[1], 4)) for p in direct_pts],
         distance_km=round(direct_km, 1),
@@ -231,9 +233,9 @@ def plan_routes(origin: Coord, dest: Coord, *, wave_m: Optional[float] = None,
         risk_category="EXTREME" if direct_conflicts else risk_category,  # type: ignore[arg-type]
         penalties={"restricted_zones": float(len(direct_conflicts))},
         recommended=False,
-        notes=("Shortest track, but it passes through: "
-               + ", ".join(z["name"] for z in direct_conflicts)
-               if direct_conflicts else "Shortest track, no restricted areas on the way."),
+        notes=(t("route_note_through", lang,
+                 zones=", ".join(zone_name(z["name"], lang) for z in direct_conflicts))
+               if direct_conflicts else t("route_note_direct_clear", lang)),
     )
 
     # If the direct line is clean and barely shorter, don't invent a detour.

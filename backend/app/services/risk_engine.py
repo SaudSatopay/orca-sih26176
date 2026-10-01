@@ -17,7 +17,8 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from ..config import RISK
-from ..schemas import RiskAssessment, RiskFactor
+from ..schemas import Language, RiskAssessment, RiskFactor
+from . import i18n
 
 Breakpoints = Sequence[Tuple[float, float]]
 
@@ -123,39 +124,49 @@ def assess(
     sources: Sequence[str],
     mode: str = "DEMO",
     generated_at: str = "",
+    lang: Language = "en",
 ) -> RiskAssessment:
-    """Produce a fully explained 0-100 risk assessment."""
+    """Produce a fully explained 0-100 risk assessment.
+
+    `lang` only chooses the words of the explanation (factor names, the reason
+    under each, the floors that fired). The numbers are the same in every
+    language: nothing below reads `lang` to decide a score.
+    """
+
+    def say(key: str, **kw) -> str:
+        return i18n.t(key, lang, **kw)
 
     alert_f, official_warning, worst_alert = _alert_factor(alerts)
 
     factors_raw = {
         "wave": (_wave_factor(wave_height_m),
-                 f"Wave height {wave_height_m:.1f} m" if wave_height_m is not None
-                 else "Wave height unavailable"),
+                 say("rf_wave", v=f"{wave_height_m:.1f}") if wave_height_m is not None
+                 else say("rf_wave_na")),
         "cyclone": (alert_f,
-                    worst_alert["headline"] if worst_alert else "No active marine warning"),
+                    i18n.alert_text(worst_alert["headline"], lang) if worst_alert
+                    else say("rf_no_warning")),
         "wind": (_wind_factor(wind_speed_kmh),
-                 f"Wind {wind_speed_kmh:.0f} km/h" if wind_speed_kmh is not None
-                 else "Wind unavailable"),
+                 say("rf_wind", v=f"{wind_speed_kmh:.0f}") if wind_speed_kmh is not None
+                 else say("rf_wind_na")),
         "weather": (_weather_factor(rain_probability_pct, lightning, visibility_km),
-                    f"Rain probability {rain_probability_pct:.0f}%"
-                    + (", lightning likely" if lightning else "")
-                    + (f", visibility {visibility_km:.0f} km" if visibility_km is not None else "")
-                    if rain_probability_pct is not None else "Weather detail unavailable"),
+                    say("rf_rain", v=f"{rain_probability_pct:.0f}")
+                    + (say("rf_lightning") if lightning else "")
+                    + (say("rf_visibility", v=f"{visibility_km:.0f}")
+                       if visibility_km is not None else "")
+                    if rain_probability_pct is not None else say("rf_weather_na")),
         "ocean": (_ocean_factor(sea_state_label, current_speed_ms),
-                  f"Sea state {sea_state_label or 'unknown'}"
-                  + (f", current {current_speed_ms:.1f} m/s" if current_speed_ms is not None else "")),
+                  say("rf_sea_state", v=i18n.sea_state(sea_state_label, lang))
+                  + (say("rf_current", v=f"{current_speed_ms:.1f}")
+                     if current_speed_ms is not None else "")),
         "gis": (_gis_factor(distance_from_shore_km, nearest_zone_km, inside_zone),
-                ("Inside a restricted zone" if inside_zone else
-                 (f"{distance_from_shore_km:.0f} km offshore" if distance_from_shore_km is not None
-                  else "Position unavailable")
-                 + (f", restricted zone {nearest_zone_km:.1f} km away"
+                (say("rf_inside_zone") if inside_zone else
+                 (say("rf_offshore", v=f"{distance_from_shore_km:.0f}")
+                  if distance_from_shore_km is not None else say("rf_position_na"))
+                 + (say("rf_zone_near", v=f"{nearest_zone_km:.1f}")
                     if nearest_zone_km is not None and nearest_zone_km < 15 else ""))),
     }
 
-    labels = {"wave": "Wave height", "cyclone": "Official warnings", "wind": "Wind",
-              "weather": "Rain / visibility", "ocean": "Sea state & current",
-              "gis": "Position & zones"}
+    labels = {key: i18n.factor_label(key, lang) for key in factors_raw}
 
     factors: List[RiskFactor] = []
     score = 0.0
@@ -178,19 +189,17 @@ def assess(
 
     if worst_alert and str(worst_alert.get("severity")).lower() == "severe" and official_warning:
         floor(RISK.severe_warning_floor,
-              f"Official severe warning in force ({worst_alert.get('source', 'IMD')}) — "
-              "overrides model output")
+              say("floor_severe", source=worst_alert.get("source", "IMD")))
     if worst_alert and worst_alert.get("type") == "fishermen_warning" and official_warning:
         floor(RISK.fishermen_warning_floor,
-              f"{worst_alert.get('source', 'IMD')} fishermen warning active — "
-              "advisory overrides model output")
+              say("floor_fishermen", source=worst_alert.get("source", "IMD")))
     if wave_height_m is not None and wave_height_m >= RISK.wave_danger_m:
-        floor(RISK.wave_danger_floor, f"Wave height {wave_height_m:.1f} m exceeds the "
-                                      f"{RISK.wave_danger_m} m small-craft danger threshold")
+        floor(RISK.wave_danger_floor,
+              say("floor_wave", v=f"{wave_height_m:.1f}", limit=RISK.wave_danger_m))
     if wind_speed_kmh is not None and wind_speed_kmh >= RISK.wind_danger_kmh:
-        floor(RISK.wind_danger_floor, f"Wind {wind_speed_kmh:.0f} km/h at or above gale force")
+        floor(RISK.wind_danger_floor, say("floor_wind", v=f"{wind_speed_kmh:.0f}"))
     if inside_zone:
-        floor(RISK.restricted_zone_floor, "Position falls inside a restricted maritime zone")
+        floor(RISK.restricted_zone_floor, say("floor_zone"))
 
     score = max(0.0, min(100.0, score))
     category = RISK.categorise(score)

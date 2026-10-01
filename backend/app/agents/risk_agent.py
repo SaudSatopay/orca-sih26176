@@ -5,14 +5,15 @@ from datetime import datetime
 from typing import Dict, Optional
 
 from ..data import demo_store
-from ..schemas import AgentResult, Location
+from ..schemas import AgentResult, Language, Location
 from ..services import risk_engine
 from .base import timed
 
 
 @timed
 def run(location: Location, when: datetime, *, weather: Optional[Dict], ocean: Optional[Dict],
-        cyclone: Optional[Dict], gis: Optional[Dict], sources, mode: str) -> AgentResult:
+        cyclone: Optional[Dict], gis: Optional[Dict], sources, mode: str,
+        lang: Language = "en") -> AgentResult:
     stamp = when.isoformat(timespec="seconds")
     weather = weather or {}
     ocean = ocean or {}
@@ -35,6 +36,7 @@ def run(location: Location, when: datetime, *, weather: Optional[Dict], ocean: O
         sources=sources,
         mode=mode,
         generated_at=stamp,
+        lang=lang,
     )
 
     # When will it get better? (drives "ask me again at 11")

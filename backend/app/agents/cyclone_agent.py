@@ -10,16 +10,20 @@ from datetime import datetime
 from typing import Dict, List
 
 from ..data import demo_store
-from ..schemas import AgentResult, Location
+from ..schemas import AgentResult, Language, Location
+from ..services.i18n import localise_alert
 from .base import timed
 
 SEVERITY_RANK = {"low": 0, "moderate": 1, "high": 2, "severe": 3}
 
 
 @timed
-def run(location: Location, when: datetime) -> AgentResult:
+def run(location: Location, when: datetime, lang: Language = "en") -> AgentResult:
     stamp = when.isoformat(timespec="seconds")
-    alerts: List[Dict] = demo_store.alerts(location.name, when)
+    # Words only: the type, severity and "official" flag the risk engine
+    # reads are the same in every language.
+    alerts: List[Dict] = [localise_alert(a, lang)
+                          for a in demo_store.alerts(location.name, when)]
     alerts.sort(key=lambda a: SEVERITY_RANK.get(str(a.get("severity")).lower(), 0), reverse=True)
 
     worst = alerts[0] if alerts else None

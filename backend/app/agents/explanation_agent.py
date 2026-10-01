@@ -12,8 +12,9 @@ from typing import Dict, List, Optional
 
 from ..schemas import (AgentResult, Evidence, Language, Location, PFZZone,
                        RiskAssessment, RouteOption)
-from ..services.i18n import (SUGGESTIONS, direction, format_stamp, humanise_duration,
-                             source_label, t, verdict_key, zone_name)
+from ..services.i18n import (SEA_STATE_L10N, SUGGESTIONS, direction, format_stamp,
+                             humanise_duration, sea_state, source_label, t, verdict_key,
+                             zone_name)
 from .base import timed
 
 # Localised names for the risk factors (rendering concern, kept next to the renderer)
@@ -33,14 +34,6 @@ def _factor_label(key: str, lang: Language) -> str:
 
 WARNING_STATE = {"active": {"en": "active", "hi": "सक्रिय", "mr": "सक्रिय"},
                  "none": {"en": "none", "hi": "कोई नहीं", "mr": "नाही"}}
-SEA_STATE_L10N = {
-    "calm":       {"en": "calm", "hi": "शांत", "mr": "शांत"},
-    "slight":     {"en": "slight", "hi": "हल्का", "mr": "किंचित"},
-    "moderate":   {"en": "moderate", "hi": "मध्यम", "mr": "मध्यम"},
-    "rough":      {"en": "rough", "hi": "उग्र", "mr": "खवळलेला"},
-    "very rough": {"en": "very rough", "hi": "अति उग्र", "mr": "अतिशय खवळलेला"},
-    "phenomenal": {"en": "phenomenal", "hi": "अत्यंत भीषण", "mr": "अत्यंत धोकादायक"},
-}
 
 
 def _short_value(key: str, weather: Dict, ocean: Dict, cyclone: Dict, gis: Dict,
@@ -92,11 +85,12 @@ def build_evidence(weather: Dict, ocean: Dict, cyclone: Dict, gis: Dict,
     if ocean.get("wave_period_s") is not None:
         add("Wave period", f"{ocean['wave_period_s']:.1f} s", "ocean")
     if ocean.get("sea_state"):
-        add("Sea state", str(ocean["sea_state"]), "ocean")
+        add("Sea state", sea_state(str(ocean["sea_state"]), lang), "ocean")
     if ocean.get("sst_c") is not None:
         add("Sea surface temperature", f"{ocean['sst_c']:.1f} °C", "ocean")
     if weather.get("wind_speed_kmh") is not None:
-        add("Wind", f"{weather['wind_speed_kmh']:.0f} km/h {weather.get('wind_direction', '')}".strip(), "weather")
+        add("Wind", f"{weather['wind_speed_kmh']:.0f} km/h "
+                    f"{direction(weather.get('wind_direction'), lang)}".strip(), "weather")
     if weather.get("rain_probability_pct") is not None:
         add("Rain probability", f"{weather['rain_probability_pct']:.0f}%", "weather")
     if weather.get("visibility_km") is not None:
@@ -107,7 +101,7 @@ def build_evidence(weather: Dict, ocean: Dict, cyclone: Dict, gis: Dict,
         add("Distance from shore", f"{gis['distance_from_shore_km']:.1f} km", "gis")
     if gis.get("nearest_zone_name"):
         add("Nearest restricted zone",
-            f"{gis['nearest_zone_name']} ({gis.get('nearest_zone_km')} km)", "gis")
+            f"{zone_name(gis['nearest_zone_name'], lang)} ({gis.get('nearest_zone_km')} km)", "gis")
     return rows
 
 

@@ -30,7 +30,9 @@ def test_dangerous_scenario_mumbai_6am_is_70_high(ask):
     assert (r.risk.score, r.risk.category) == (70, "HIGH")
     assert r.risk.official_warning is True
     assert r.risk.go is False
-    assert any("fishermen warning" in o for o in r.risk.overrides)
+    # Asked in Marathi, so the floor that fired is named in Marathi
+    # (test_reader_language.py pins the English wording).
+    assert any("मच्छीमार इशारा" in o for o in r.risk.overrides)
     assert r.risk.window == "11:00"
 
 

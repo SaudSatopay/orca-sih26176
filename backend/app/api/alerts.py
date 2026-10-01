@@ -7,17 +7,20 @@ from ..agents import cyclone_agent, gis_agent, ocean_agent, risk_agent, weather_
 from ..data.demo_store import now_ist
 from ..data.geo import PORTS, nearest_port
 from ..schemas import Location
+from ..services.i18n import coerce_language
 
 router = APIRouter(prefix="/api", tags=["alerts"])
 
 
 @router.get("/alerts")
-def alerts(lat: float = Query(...), lon: float = Query(...)) -> dict:
+def alerts(lat: float = Query(...), lon: float = Query(...),
+           lang: str = Query("en")) -> dict:
+    language = coerce_language(lang)
     port = nearest_port(lat, lon)
     loc = Location(name=port["name"], latitude=lat, longitude=lon, state=port["state"])
     now = now_ist()
-    cyc = cyclone_agent.run(loc, now)
-    gis = gis_agent.run(loc, now)
+    cyc = cyclone_agent.run(loc, now, language)
+    gis = gis_agent.run(loc, now, language)
     return {
         "location": loc.model_dump(),
         "marine_alerts": cyc.data.get("alerts", []),
@@ -27,11 +30,13 @@ def alerts(lat: float = Query(...), lon: float = Query(...)) -> dict:
 
 
 @router.get("/authority/dashboard")
-def authority_dashboard() -> dict:
+def authority_dashboard(lang: str = Query("en")) -> dict:
     """Every monitored landing centre, scored — the authority view.
 
     Shows ORCA serving district administrations, not just individual fishers.
+    `lang` translates the warning headline; every figure is the same.
     """
+    language = coerce_language(lang)
     now = now_ist()
     rows = []
     for port in PORTS:
@@ -39,7 +44,7 @@ def authority_dashboard() -> dict:
                        longitude=port["lon"], state=port["state"])
         weather = weather_agent.run(loc, now)
         ocean = ocean_agent.run(loc, now)
-        cyclone = cyclone_agent.run(loc, now)
+        cyclone = cyclone_agent.run(loc, now, language)
         gis = gis_agent.run(loc, now)
         assessment = risk_agent.run(
             loc, now, weather=weather.data, ocean=ocean.data, cyclone=cyclone.data,
