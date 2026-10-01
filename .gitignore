@@ -27,3 +27,7 @@ Thumbs.db
 # Local secrets
 .env
 .env.local
+
+# Missile working files and browser-sensor scratch
+.missile/
+.playwright-cli/
