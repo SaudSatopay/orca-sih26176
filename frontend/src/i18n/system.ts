@@ -18,7 +18,7 @@ export const L10N: Record<Language, Record<string, string>> = {
     cacheTitle: "The series cache",
     cacheBody:
       "One response already holds 72 hours of hourly sea for that spot. We keep it — keyed to the kilometre, for ten minutes — so the 24-hour timeline, the safe-window scan and the authority board all answer from memory instead of hammering the provider.",
-    cacheMeta: "failures remembered 60 s · cleared on mode toggle · 32 s → 0.02 s",
+    cacheMeta: "failures remembered 60 s · cleared on mode toggle · first read 32 s, from cache 0.02 s",
     everyAgent: "every agent · every hour",
     fromMemory: "answered from memory",
     degrade:
@@ -38,7 +38,7 @@ export const L10N: Record<Language, Record<string, string>> = {
     sst: "Sea temp",
     vis: "Visibility",
     hailing: "Hailing the first landing centre…",
-    unreachable: "Backend unreachable — is uvicorn running on port 8000?",
+    feedRetry: "The feed is not answering. Next try in {n} s.",
     hPort: "Port",
     hSource: "Source",
     hMode: "Mode",
@@ -46,6 +46,11 @@ export const L10N: Record<Language, Record<string, string>> = {
     hAt: "At",
     concurrent: "{n} at once",
     demoStore: "Demo store",
+    inUse: "In use",
+    standby: "Standby",
+    standbyVerified: "Standby · verified",
+    hold: "Hold",
+    resume: "Resume",
     feedCaption: "The last six readings of the coast, newest first, with the source and mode of each.",
     feedNote:
       "These are the same readings the fishing model and the risk engine consume — wave and wind feed the safety score, SST and chlorophyll feed the chance-of-fish, and the provenance column is what the evidence table shows a fisher.",
@@ -75,7 +80,7 @@ export const L10N: Record<Language, Record<string, string>> = {
     cacheTitle: "सीरीज़ कैश",
     cacheBody:
       "एक जवाब में उस जगह के 72 घंटे का प्रति-घंटा समुद्र होता है। हम उसे रखते हैं — किलोमीटर पर, दस मिनट के लिए — ताकि 24 घंटे की टाइमलाइन, सुरक्षित-समय की जाँच और प्रशासन बोर्ड सब स्मृति से जवाब दें, स्रोत को बार-बार न पुकारें।",
-    cacheMeta: "विफलता 60 सेकंड याद · मोड बदलने पर साफ़ · 32 s → 0.02 s",
+    cacheMeta: "विफलता 60 सेकंड याद · मोड बदलने पर साफ़ · पहली रीडिंग 32 s, कैश से 0.02 s",
     everyAgent: "हर एजेंट · हर घंटा",
     fromMemory: "स्मृति से जवाब",
     degrade:
@@ -95,7 +100,7 @@ export const L10N: Record<Language, Record<string, string>> = {
     sst: "समुद्री तापमान",
     vis: "दृश्यता",
     hailing: "पहले लैंडिंग सेंटर से संपर्क…",
-    unreachable: "बैकएंड नहीं मिला — क्या uvicorn पोर्ट 8000 पर चल रहा है?",
+    feedRetry: "फ़ीड जवाब नहीं दे रही। अगली कोशिश {n} सेकंड में।",
     hPort: "बंदरगाह",
     hSource: "स्रोत",
     hMode: "मोड",
@@ -103,6 +108,11 @@ export const L10N: Record<Language, Record<string, string>> = {
     hAt: "समय",
     concurrent: "{n} एक साथ",
     demoStore: "डेमो स्टोर",
+    inUse: "उपयोग में",
+    standby: "स्टैंडबाय",
+    standbyVerified: "स्टैंडबाय · जाँचा हुआ",
+    hold: "रोकें",
+    resume: "फिर चालू करें",
     feedCaption: "तट की पिछली छह रीडिंग, सबसे नई पहले, हर एक के स्रोत और मोड के साथ।",
     feedNote:
       "यही रीडिंग मत्स्य मॉडल और रिस्क इंजन खाते हैं — लहर-हवा सुरक्षा स्कोर में, तापमान-क्लोरोफिल मछली की संभावना में, और स्रोत वाला कॉलम वही है जो मछुआरे को प्रमाण तालिका में दिखता है।",
@@ -132,7 +142,7 @@ export const L10N: Record<Language, Record<string, string>> = {
     cacheTitle: "मालिका कॅशे",
     cacheBody:
       "एका उत्तरात त्या जागेचा ७२ तासांचा तासागणिक समुद्र असतो. आम्ही तो ठेवतो — किलोमीटरवर, दहा मिनिटांसाठी — म्हणजे २४ तासांची टाइमलाइन, सुरक्षित-वेळ तपासणी आणि प्रशासन फलक सर्व स्मृतीतून उत्तर देतात, स्रोताला पुन्हा पुन्हा हाक मारत नाहीत.",
-    cacheMeta: "अपयश ६० सेकंद लक्षात · मोड बदलल्यावर साफ · 32 s → 0.02 s",
+    cacheMeta: "अपयश ६० सेकंद लक्षात · मोड बदलल्यावर साफ · पहिले वाचन 32 s, कॅशेतून 0.02 s",
     everyAgent: "प्रत्येक एजंट · प्रत्येक तास",
     fromMemory: "स्मृतीतून उत्तर",
     degrade:
@@ -152,7 +162,7 @@ export const L10N: Record<Language, Record<string, string>> = {
     sst: "समुद्र तापमान",
     vis: "दृश्यमानता",
     hailing: "पहिल्या लँडिंग सेंटरशी संपर्क…",
-    unreachable: "बॅकएंड मिळाले नाही — uvicorn पोर्ट 8000 वर चालू आहे का?",
+    feedRetry: "फीड उत्तर देत नाही. पुढचा प्रयत्न {n} सेकंदांत.",
     hPort: "बंदर",
     hSource: "स्रोत",
     hMode: "मोड",
@@ -160,6 +170,11 @@ export const L10N: Record<Language, Record<string, string>> = {
     hAt: "वेळ",
     concurrent: "{n} एकाच वेळी",
     demoStore: "डेमो स्टोअर",
+    inUse: "वापरात",
+    standby: "स्टँडबाय",
+    standbyVerified: "स्टँडबाय · तपासलेले",
+    hold: "थांबवा",
+    resume: "पुन्हा सुरू करा",
     feedCaption: "किनाऱ्याची शेवटची सहा वाचने, सर्वात नवीन आधी, प्रत्येकाच्या स्रोत आणि मोडसह.",
     feedNote:
       "हेच वाचन मासेमारी मॉडेल आणि रिस्क इंजिन वापरतात — लाट-वारा सुरक्षा गुणांत, तापमान-क्लोरोफिल माशांच्या शक्यतेत, आणि स्रोताचा स्तंभ तोच जो मच्छीमाराला पुरावा तक्त्यात दिसतो.",
@@ -176,27 +191,28 @@ export const L10N: Record<Language, Record<string, string>> = {
 };
 
 /** What each data provider contributes, in intake order. */
-export const PROVIDER_TEXT: Record<Language, { status: string; gives: string; note: string }[]> = {
+/** Entries without `status` take theirs from the data edition (S1). */
+export const PROVIDER_TEXT: Record<Language, { status?: string; gives: string; note: string }[]> = {
   en: [
-    { status: "Live", gives: "wave height · wave period · sea-surface temperature · currents", note: "keyless public API — verified working" },
-    { status: "Live", gives: "wind · rain probability · visibility · air temperature", note: "keyless public API — verified working" },
+    { gives: "wave height · wave period · sea-surface temperature · currents", note: "keyless public API — verified working" },
+    { gives: "wind · rain probability · visibility · air temperature", note: "keyless public API — verified working" },
     { status: "Interface ready", gives: "PFZ advisories · marine warnings · satellite SST", note: "no open public JSON API — slots in behind the same interface" },
     { status: "Bundled snapshot", gives: "species occurrence records, Indian coastal waters", note: "open biodiversity data, bundled as a dated snapshot — offline-safe" },
-    { status: "Always on", gives: "rehearsed sea states, keyed by hour of day", note: "every synthetic value is labelled simulated" },
+    { gives: "rehearsed sea states, keyed by hour of day", note: "every synthetic value is labelled simulated" },
   ],
   hi: [
-    { status: "लाइव", gives: "लहर की ऊँचाई · अवधि · समुद्री सतह तापमान · धाराएँ", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
-    { status: "लाइव", gives: "हवा · वर्षा संभावना · दृश्यता · तापमान", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
+    { gives: "लहर की ऊँचाई · अवधि · समुद्री सतह तापमान · धाराएँ", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
+    { gives: "हवा · वर्षा संभावना · दृश्यता · तापमान", note: "बिना कुंजी सार्वजनिक API — जाँचा हुआ" },
     { status: "इंटरफ़ेस तैयार", gives: "PFZ सलाह · समुद्री चेतावनियाँ · उपग्रह SST", note: "खुला JSON API नहीं — उसी इंटरफ़ेस के पीछे जुड़ते हैं" },
     { status: "बंडल स्नैपशॉट", gives: "प्रजातियों की उपस्थिति के रिकॉर्ड, भारतीय तटीय जल", note: "खुला जैवविविधता डेटा, दिनांकित स्नैपशॉट — ऑफ़लाइन-सुरक्षित" },
-    { status: "हमेशा चालू", gives: "घंटे के हिसाब से तैयार समुद्री स्थितियाँ", note: "हर नक़ली मान पर 'सिम्युलेटेड' लेबल" },
+    { gives: "घंटे के हिसाब से तैयार समुद्री स्थितियाँ", note: "हर नक़ली मान पर 'सिम्युलेटेड' लेबल" },
   ],
   mr: [
-    { status: "लाइव्ह", gives: "लाटेची उंची · कालावधी · समुद्र पृष्ठ तापमान · प्रवाह", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
-    { status: "लाइव्ह", gives: "वारा · पावसाची शक्यता · दृश्यमानता · तापमान", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
+    { gives: "लाटेची उंची · कालावधी · समुद्र पृष्ठ तापमान · प्रवाह", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
+    { gives: "वारा · पावसाची शक्यता · दृश्यमानता · तापमान", note: "किल्लीशिवाय सार्वजनिक API — तपासलेले" },
     { status: "इंटरफेस तयार", gives: "PFZ सल्ले · सागरी इशारे · उपग्रह SST", note: "खुले JSON API नाही — त्याच इंटरफेसमागे जोडले जातात" },
     { status: "बंडल स्नॅपशॉट", gives: "प्रजातींच्या उपस्थितीच्या नोंदी, भारतीय किनारी पाणी", note: "खुला जैवविविधता डेटा, दिनांकित स्नॅपशॉट — ऑफलाइन-सुरक्षित" },
-    { status: "नेहमी चालू", gives: "तासागणिक तयार समुद्री स्थिती", note: "प्रत्येक नमुना मूल्यावर 'सिम्युलेटेड' लेबल" },
+    { gives: "तासागणिक तयार समुद्री स्थिती", note: "प्रत्येक नमुना मूल्यावर 'सिम्युलेटेड' लेबल" },
   ],
 };
 
