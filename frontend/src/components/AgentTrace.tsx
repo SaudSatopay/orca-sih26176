@@ -48,7 +48,7 @@ export default function AgentTracePanel({
     <div className="panel overflow-hidden">
       <div className="hd">
         <span className="label">{t.crew}</span>
-        <span className="font-mono text-[10px] tabular-nums text-ink-400">
+        <span className="font-mono text-label tabular-nums text-ink-400">
           {trace.length} {t.agents} · {elapsed ?? trace.reduce((s, x) => s + x.latency_ms, 0)}{" "}
           {t.total}
         </span>
@@ -58,10 +58,10 @@ export default function AgentTracePanel({
         {ran.map((phase) => (
           <div key={phase.key}>
             <div className="mb-1.5 flex items-baseline gap-2">
-              <span className="font-display text-[13px] font-bold text-ink-900">{phase.title}</span>
-              <span className="text-[10.5px] italic text-ink-400">{phase.note}</span>
+              <span className="font-display text-body font-bold text-ink-900">{phase.title}</span>
+              <span className="text-label italic text-ink-400">{phase.note}</span>
               {phase.key === "gather" && phase.rows.length > 1 && (
-                <span className="ml-auto border border-chart-500/50 bg-chart-100/50 px-2 py-0.5 font-mono text-[9px] font-bold tracking-wide text-chart-700">
+                <span className="ml-auto border border-chart-500/50 bg-chart-100/50 px-2 py-0.5 font-mono text-micro font-bold tracking-wide text-chart-700">
                   ∥ {phase.rows.length} {t.concurrent}
                 </span>
               )}
@@ -91,7 +91,7 @@ export default function AgentTracePanel({
                           : alpha(STATUS_DOT[row.status], 0.4),
                     }}
                   >
-                    <div className="flex items-center gap-2 text-[11.5px]">
+                    <div className="flex items-center gap-2 text-readout">
                       <span
                         className="h-2 w-2 shrink-0 rotate-45"
                         style={{ background: STATUS_DOT[row.status] }}
@@ -102,7 +102,7 @@ export default function AgentTracePanel({
                       <span className="min-w-0 flex-1 truncate text-ink-500">
                         {row.summary || "—"}
                       </span>
-                      <span className="shrink-0 font-mono text-[9.5px] tabular-nums text-ink-400">
+                      <span className="shrink-0 font-mono text-label tabular-nums text-ink-400">
                         {row.latency_ms}ms
                       </span>
                     </div>
@@ -123,7 +123,7 @@ export default function AgentTracePanel({
       </div>
 
       <p
-        className="border-t px-4 py-2.5 text-[10.5px] italic leading-relaxed text-ink-400"
+        className="border-t px-4 py-2.5 text-label italic leading-relaxed text-ink-400"
         style={{ borderColor: "var(--rule-faint)" }}
       >
         {t.note}

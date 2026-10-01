@@ -130,12 +130,12 @@ export default function RiskDial({
       <div className="absolute inset-0 grid place-items-center">
         <div className="text-center leading-none">
           <div
-            className="font-display text-[38px] font-black tabular-nums tracking-tight"
+            className="font-display text-dial font-black tabular-nums tracking-tight"
             style={{ color }}
           >
             {Math.max(0, shown)}
           </div>
-          <div className="mt-1 font-mono text-[9px] font-semibold uppercase tracking-[0.2em] text-ink-400">
+          <div className="mt-1 font-mono text-micro font-semibold uppercase tracking-[0.2em] text-ink-400">
             / 100
           </div>
         </div>

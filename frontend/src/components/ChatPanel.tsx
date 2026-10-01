@@ -70,17 +70,17 @@ export default function ChatPanel({
       {/* header */}
       <div className="hd !py-3">
         <div>
-          <div className="font-display text-[16px] font-bold text-ink-900">
+          <div className="font-display text-subtitle font-bold text-ink-900">
             {(T[language] ?? T.en).title}
           </div>
-          <div className="mt-0.5 text-[11px] text-ink-400">{(T[language] ?? T.en).sub}</div>
+          <div className="mt-0.5 text-readout text-ink-400">{(T[language] ?? T.en).sub}</div>
         </div>
         <div className="flex gap-1">
           {(["en", "hi", "mr"] as Language[]).map((l) => (
             <button
               key={l}
               onClick={() => onLanguage(l)}
-              className={`rounded-[2px] border px-2.5 py-1 font-mono text-[11px] font-bold transition ${
+              className={`rounded-[2px] border px-2.5 py-1 font-mono text-readout font-bold transition ${
                 language === l
                   ? "border-ink-900 bg-ink-900 text-paper-50"
                   : "text-ink-400 hover:text-ink-800"
@@ -97,7 +97,7 @@ export default function ChatPanel({
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {messages.length === 0 && (
           <div
-            className="flex flex-col items-center gap-2.5 border border-dashed px-4 py-7 text-center text-[13px] text-ink-500"
+            className="flex flex-col items-center gap-2.5 border border-dashed px-4 py-7 text-center text-body text-ink-500"
             style={{ borderColor: "var(--rule-strong)" }}
           >
             <span className="flex items-end gap-3">
@@ -107,7 +107,7 @@ export default function ChatPanel({
             <div>
               {(T[language] ?? T.en).emptyMain}
               <br />
-              <span className="text-[11px] text-ink-400">{(T[language] ?? T.en).emptySub}</span>
+              <span className="text-readout text-ink-400">{(T[language] ?? T.en).emptySub}</span>
             </div>
           </div>
         )}
@@ -115,11 +115,11 @@ export default function ChatPanel({
         {messages.map((m) => (
           <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`max-w-[88%] animate-rise ${m.role === "user" ? "text-right" : ""}`}>
-              <div className="label mb-1 !text-[8.5px] !tracking-[0.2em]">
+              <div className="label mb-1 !text-micro !tracking-[0.2em]">
                 {m.role === "user" ? (T[language] ?? T.en).you : "ORCA"}
               </div>
               <div
-                className={`inline-block rounded-[3px] px-3.5 py-2.5 text-left text-[13.5px] leading-relaxed ${
+                className={`inline-block rounded-[3px] px-3.5 py-2.5 text-left text-body leading-relaxed ${
                   m.role === "user"
                     ? "rounded-br-none bg-ink-900 text-paper-50"
                     : "rounded-bl-none border bg-paper-bright text-ink-800"
@@ -149,7 +149,7 @@ export default function ChatPanel({
                   style={{ animationDelay: `${i * 120}ms` }}
                 />
               ))}
-              <span className="ml-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-400">
+              <span className="ml-1 font-mono text-label uppercase tracking-[0.14em] text-ink-400">
                 {(T[language] ?? T.en).busy}
               </span>
             </div>
@@ -165,7 +165,7 @@ export default function ChatPanel({
           style={{ borderColor: "var(--rule-faint)" }}
         >
           {suggestions.slice(0, 4).map((s) => (
-            <button key={s} className="chip !py-1 !text-[11.5px]" onClick={() => submit(s)} disabled={busy}>
+            <button key={s} className="chip !py-1 !text-readout" onClick={() => submit(s)} disabled={busy}>
               {s}
             </button>
           ))}

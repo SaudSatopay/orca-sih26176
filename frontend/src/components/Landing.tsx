@@ -144,7 +144,7 @@ export default function Landing({
       <Reveal>
         <div className="flex items-center gap-3">
           <CompassMark size={30} className="text-ink-900" />
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-chart-600">
+          <span className="font-mono text-label font-bold uppercase tracking-[0.2em] text-chart-600">
             SIH26176 · ISRO · Smart India Hackathon 2026
           </span>
           <span className="ml-auto flex gap-1">
@@ -152,7 +152,7 @@ export default function Landing({
               <button
                 key={l}
                 onClick={() => onLanguage(l)}
-                className={`rounded-[2px] border px-2 py-1 font-mono text-[11px] font-bold transition ${
+                className={`rounded-[2px] border px-2 py-1 font-mono text-readout font-bold transition ${
                   language === l
                     ? "border-ink-900 bg-ink-900 text-paper-50"
                     : "text-ink-400 hover:text-ink-800"
@@ -174,20 +174,20 @@ export default function Landing({
       <div className="mt-12 grid items-center gap-10 lg:mt-14 lg:grid-cols-[1.15fr_1fr]">
         <div>
           <Reveal delay={80}>
-            <h1 className="font-display text-[76px] font-black leading-none tracking-tight text-ink-900">
+            <h1 className="font-display text-hero font-black leading-none tracking-tight text-ink-900">
               ORCA
             </h1>
             <div className="wave-rule mt-4 max-w-[430px]" />
           </Reveal>
           <Reveal delay={200}>
-            <p className="mt-5 max-w-[520px] font-display text-[26px] font-semibold leading-snug text-ink-800">
+            <p className="mt-5 max-w-[520px] font-display text-numeral font-semibold leading-snug text-ink-800">
               {t.tag1}
               <br />
               {t.tag2a}
               <span className="text-chart-600">{t.tag2b}</span>
               {t.tag2c}
             </p>
-            <p className="mt-4 max-w-[500px] text-[14px] leading-relaxed text-ink-500">{t.sub}</p>
+            <p className="mt-4 max-w-[500px] text-prose leading-relaxed text-ink-500">{t.sub}</p>
           </Reveal>
 
           <Reveal delay={330}>
@@ -207,7 +207,7 @@ export default function Landing({
               </button>
               <button
                 onClick={() => onScenario("Is there a cyclone near Paradip? Can I go fishing?")}
-                className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-chart-600 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
+                className="font-mono text-readout font-semibold uppercase tracking-[0.1em] text-chart-600 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
               >
                 {t.ctaTry}
               </button>
@@ -333,9 +333,9 @@ export default function Landing({
               className={`group px-4 py-3.5 transition-colors hover:bg-chart-100/40 ${i > 0 ? "border-l" : ""}`}
               style={{ borderColor: "var(--rule-faint)" }}
             >
-              <div className="label truncate !text-[9px]">{x.k}</div>
+              <div className="label truncate !text-micro">{x.k}</div>
               <div
-                className={`mt-1 font-mono text-[21px] font-bold tabular-nums leading-none transition-colors ${
+                className={`mt-1 font-mono text-figure font-bold tabular-nums leading-none transition-colors ${
                   x.warn ? "text-risk-extreme" : "text-ink-900 group-hover:text-chart-600"
                 }`}
               >
@@ -358,12 +358,12 @@ export default function Landing({
                 </span>
               </div>
               <div className="flex-1 px-4 py-4">
-                <h3 className="font-display text-[19px] font-bold leading-snug text-ink-900">
+                <h3 className="font-display text-heading font-bold leading-snug text-ink-900">
                   {c.title}
                 </h3>
                 <ul className="mt-3 space-y-2">
                   {c.lines.map((l) => (
-                    <li key={l} className="flex gap-2.5 text-[12.5px] leading-relaxed text-ink-700">
+                    <li key={l} className="flex gap-2.5 text-small leading-relaxed text-ink-700">
                       <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rotate-45 bg-chart-500/70 transition-transform group-hover:rotate-[135deg] group-hover:bg-chart-500" style={{ transitionDuration: "500ms" }} />
                       {l}
                     </li>
@@ -388,7 +388,7 @@ export default function Landing({
             <span className="label">{t.pipelineTitle}</span>
             <button
               onClick={() => onEnter("system")}
-              className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-chart-600 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
+              className="font-mono text-label font-bold uppercase tracking-[0.1em] text-chart-600 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
             >
               {t.watchLive}
             </button>
@@ -401,12 +401,12 @@ export default function Landing({
                 style={{ borderColor: "var(--rule-faint)" }}
               >
                 <div className="flex items-baseline gap-2">
-                  <span className="font-display text-[15px] font-bold text-ink-900">{p.t}</span>
+                  <span className="font-display text-lead font-bold text-ink-900">{p.t}</span>
                   {i === 1 && (
-                    <span className="font-mono text-[9px] font-bold text-chart-700">∥ 5</span>
+                    <span className="font-mono text-micro font-bold text-chart-700">∥ 5</span>
                   )}
                 </div>
-                <p className="mt-1 text-[11.5px] italic leading-snug text-ink-500">{p.n}</p>
+                <p className="mt-1 text-readout italic leading-snug text-ink-500">{p.n}</p>
                 {i < 3 && (
                   <CourseArrow
                     size={13}
@@ -422,14 +422,14 @@ export default function Landing({
       {/* footer */}
       <Reveal delay={980}>
         <div className="mt-8 flex flex-wrap items-baseline justify-between gap-2 pb-4">
-          <span className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-ink-400">
+          <span className="font-mono text-label uppercase tracking-[0.14em] text-ink-400">
             {t.footer}
           </span>
           <a
             href="https://github.com/SaudSatopay/orca-sih26176"
             target="_blank"
             rel="noreferrer"
-            className="font-mono text-[9.5px] uppercase tracking-[0.14em] text-chart-600 transition-colors hover:text-ink-900"
+            className="font-mono text-label uppercase tracking-[0.14em] text-chart-600 transition-colors hover:text-ink-900"
           >
             github.com/SaudSatopay/orca-sih26176
           </a>

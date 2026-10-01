@@ -56,25 +56,25 @@ export default function GuidedTour({
         </div>
 
         <div className="flex items-start gap-4 px-5 py-4">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[2px] bg-ink-900 font-display text-[16px] font-black text-paper-50">
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[2px] bg-ink-900 font-display text-subtitle font-black text-paper-50">
             {step + 1}
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h3 className="font-display text-[16px] font-bold text-ink-900">
+              <h3 className="font-display text-subtitle font-bold text-ink-900">
                 {s.title[language] ?? s.title.en}
               </h3>
               {s.feature && (
-                <span className="border border-chart-500/50 bg-chart-100/50 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-chart-700">
+                <span className="border border-chart-500/50 bg-chart-100/50 px-2 py-0.5 font-mono text-micro font-bold uppercase tracking-wider text-chart-700">
                   {s.feature}
                 </span>
               )}
-              <span className="ml-auto font-mono text-[10px] tabular-nums text-ink-400">
+              <span className="ml-auto font-mono text-label tabular-nums text-ink-400">
                 {step + 1} / {TOUR.length}
               </span>
             </div>
-            <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-700">
+            <p className="mt-1.5 text-body leading-relaxed text-ink-700">
               {s.say[language] ?? s.say.en}
             </p>
           </div>

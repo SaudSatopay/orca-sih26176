@@ -1,10 +1,10 @@
 /// <reference types="vite/client" />
 import { describe, expect, it } from "vitest";
-import { alpha, chance, colors, flow, ink, paper, rule, sst } from "./tokens";
+import { alpha, chance, colors, flow, fontSize, ink, paper, rule, sst, typePx } from "./tokens";
 
 describe("tokens", () => {
   it("writes a hex colour at an opacity", () => {
-    expect(alpha("#12212D", 0.28)).toBe("rgba(18,33,45,0.28)");
+    expect(alpha(ink[900], 0.28)).toBe("rgba(18,33,45,0.28)");
     expect(alpha(paper[50], 1)).toBe("rgba(251,247,237,1)");
   });
 
@@ -17,17 +17,22 @@ describe("tokens", () => {
   });
 
   it("names the values that used to sit outside the palette", () => {
-    expect({ ...chance, ...sst, ...flow }).toEqual({
-      good: "#63862B",
-      some: "#B08000",
-      poor: "#9C5F44",
-      cold: "#3E7A99",
-      cool: "#2F8A7D",
-      mild: "#7E9A4A",
-      warm: "#B08532",
-      hot: "#BF6A1F",
-      calm: "#8FB0C0",
-    });
+    const named = { ...chance, ...sst, ...flow };
+    expect(Object.keys(named)).toEqual([
+      "good", "some", "poor", // chance of fish
+      "cold", "cool", "mild", "warm", "hot", // sea-surface temperature
+      "calm", // the particle field
+    ]);
+    // nine roles, nine values: none was merged into another
+    expect(new Set(Object.values(named)).size).toBe(9);
+  });
+
+  it("writes every colour as six-digit hex, which alpha() and Tailwind both read", () => {
+    const values = Object.entries(colors)
+      .filter(([name]) => name !== "rule")
+      .flatMap(([, scale]) => (typeof scale === "string" ? [scale] : Object.values(scale)));
+    expect(values.length).toBeGreaterThan(30);
+    for (const v of values) expect(v).toMatch(/^#[0-9A-F]{6}$/);
   });
 
   it("gives every token a distinct value within its scale", () => {
@@ -45,6 +50,12 @@ describe("one token source", () => {
     { eager: true, query: "?raw", import: "default" },
   );
 
+  const styles = import.meta.glob<string>("./**/*.css", {
+    eager: true,
+    query: "?raw",
+    import: "default",
+  });
+
   it("no source file spells a colour as a literal hex", () => {
     expect(Object.keys(sources).length).toBeGreaterThan(30);
     const offenders: string[] = [];
@@ -58,5 +69,26 @@ describe("one token source", () => {
       });
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("no source file sets an arbitrary pixel type size", () => {
+    const offenders = Object.entries({ ...sources, ...styles })
+      .filter(([, text]) => /text-\[[\d.]+px\]/.test(text))
+      .map(([file]) => file);
+    expect(offenders).toEqual([]);
+  });
+});
+
+describe("type scale", () => {
+  it("rises strictly, one step per role", () => {
+    const sizes = Object.values(typePx);
+    expect(sizes).toEqual([...sizes].sort((a, b) => a - b));
+    expect(new Set(sizes).size).toBe(sizes.length);
+  });
+
+  it("is handed to Tailwind in pixels", () => {
+    expect(fontSize.label).toBe("10px");
+    expect(fontSize.hero).toBe("76px");
+    expect(Object.keys(fontSize)).toEqual(Object.keys(typePx));
   });
 });

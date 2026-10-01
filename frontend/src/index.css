@@ -408,12 +408,12 @@ body::after {
   }
 
   .label {
-    @apply font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-400;
+    @apply font-mono text-label font-semibold uppercase tracking-[0.16em] text-ink-400;
   }
 
   /* ------------------------------------------------ controls */
   .btn-ink {
-    @apply inline-flex items-center gap-2 rounded-[2px] bg-ink-900 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.12em] text-paper-50;
+    @apply inline-flex items-center gap-2 rounded-[2px] bg-ink-900 px-4 py-2 font-mono text-readout font-bold uppercase tracking-[0.12em] text-paper-50;
     transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   }
   .btn-ink:hover:not(:disabled) {
@@ -426,7 +426,7 @@ body::after {
     box-shadow: none;
   }
   .btn-line {
-    @apply inline-flex items-center gap-2 rounded-[2px] border px-3.5 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-ink-700;
+    @apply inline-flex items-center gap-2 rounded-[2px] border px-3.5 py-2 font-mono text-readout font-bold uppercase tracking-[0.1em] text-ink-700;
     border-color: var(--rule-strong);
     background: transparent;
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease,
@@ -452,7 +452,7 @@ body::after {
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-[2px] border bg-paper-50 px-2.5 py-1.5 text-[12px] font-medium text-ink-700;
+    @apply inline-flex items-center gap-1.5 rounded-[2px] border bg-paper-50 px-2.5 py-1.5 text-small font-medium text-ink-700;
     border-color: var(--rule);
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease,
       transform 0.2s ease;
@@ -466,7 +466,7 @@ body::after {
   /* Folio tabs: the underline draws itself from the left; hovering an
      inactive tab previews it in chart teal. */
   .tab {
-    @apply relative px-1 pb-2.5 pt-1 font-mono text-[11.5px] font-bold uppercase tracking-[0.14em] text-ink-400;
+    @apply relative px-1 pb-2.5 pt-1 font-mono text-readout font-bold uppercase tracking-[0.14em] text-ink-400;
     transition: color 0.2s ease;
   }
   .tab::after {
@@ -494,7 +494,7 @@ body::after {
   }
 
   .field {
-    @apply w-full rounded-[2px] border px-3.5 py-2.5 text-[13.5px] text-ink-800 outline-none transition placeholder:text-ink-400;
+    @apply w-full rounded-[2px] border px-3.5 py-2.5 text-body text-ink-800 outline-none transition placeholder:text-ink-400;
     border-color: var(--rule);
     background: var(--paper-bright);
   }
@@ -507,7 +507,7 @@ body::after {
   /* ------------------------------------------------ chart language */
   /* Rubber-stamped verdicts — how officials mark a document. */
   .stamp {
-    @apply inline-block rounded-[2px] border-2 px-2.5 py-1 font-display text-[12px] font-black uppercase;
+    @apply inline-block rounded-[2px] border-2 px-2.5 py-1 font-display text-small font-black uppercase;
     letter-spacing: 0.18em;
     border-color: currentColor;
     box-shadow: inset 0 0 0 1px currentColor;
@@ -598,7 +598,7 @@ body::after {
 .leaflet-control-attribution {
   background: theme(colors.paper.100 / 85%) !important;
   color: theme(colors.ink.400) !important;
-  font-size: 9px !important;
+  font-size: theme(fontSize.micro) !important;
   font-family: "Spline Sans Mono Variable", Consolas, monospace;
 }
 .leaflet-control-attribution a {
@@ -615,11 +615,11 @@ body::after {
 .leaflet-popup-content {
   margin: 11px 13px;
   line-height: 1.5;
-  font-size: 12px;
+  font-size: theme(fontSize.small);
 }
 .leaflet-popup-content b {
   font-family: "Fraunces Variable", Georgia, serif;
-  font-size: 13px;
+  font-size: theme(fontSize.body);
 }
 .leaflet-bar {
   border: 1px solid var(--rule-strong) !important;
@@ -674,7 +674,7 @@ path.radius-drift {
   border: 1.5px solid theme(colors.risk.extreme);
   border-radius: 2px;
   font-family: "Spline Sans Mono Variable", Consolas, monospace;
-  font-size: 9px;
+  font-size: theme(fontSize.micro);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;

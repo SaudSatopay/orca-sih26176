@@ -3,7 +3,7 @@ import * as api from "../api";
 import type { Language, Location, TimelinePoint } from "../types";
 import { RISK_BANDS, RISK_COLOR } from "../risk";
 import { L } from "../i18n/riskTimeline";
-import { chart, ink, paper, risk } from "../tokens";
+import { chart, ink, paper, risk, typePx } from "../tokens";
 
 /** Longest run of hours at or below `limit`, returned as [startHour, endHour]. */
 function bestWindow(points: TimelinePoint[], limit = 50): [number, number] | null {
@@ -54,7 +54,7 @@ export default function RiskTimeline({
   const window = useMemo(() => (points ? bestWindow(points) : null), [points]);
 
   if (!location) return null;
-  if (!points) return <div className="panel p-5 text-sm italic text-ink-400">{t.loading}</div>;
+  if (!points) return <div className="panel p-5 text-prose leading-5 italic text-ink-400">{t.loading}</div>;
   if (!points.length) return null;
 
   const W = 720;
@@ -77,16 +77,16 @@ export default function RiskTimeline({
     <div className="panel overflow-hidden">
       <div className="hd">
         <div>
-          <h3 className="font-display text-[15px] font-bold text-ink-900">{t.title}</h3>
-          <p className="mt-0.5 text-[11px] text-ink-400">{t.sub}</p>
+          <h3 className="font-display text-lead font-bold text-ink-900">{t.title}</h3>
+          <p className="mt-0.5 text-readout text-ink-400">{t.sub}</p>
         </div>
         {window ? (
-          <span className="shrink-0 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-2.5 py-1 font-mono text-[10.5px] font-bold tabular-nums text-risk-low">
+          <span className="shrink-0 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-2.5 py-1 font-mono text-label font-bold tabular-nums text-risk-low">
             {t.best}: {String(points[window[0]].hour).padStart(2, "0")}:00–
             {String((points[window[1]].hour + 1) % 24).padStart(2, "0")}:00
           </span>
         ) : (
-          <span className="stamp shrink-0 !px-2 !py-0.5 !text-[9px] text-risk-extreme">
+          <span className="stamp shrink-0 !px-2 !py-0.5 !text-micro text-risk-extreme">
             {t.none}
           </span>
         )}
@@ -196,7 +196,7 @@ export default function RiskTimeline({
             x={x(nowIdx) + 5}
             y={padTop + 6}
             fill={chart[500]}
-            fontSize="10"
+            fontSize={typePx.label}
             fontWeight="700"
             fontFamily="'Spline Sans Mono Variable', monospace"
           >
@@ -208,7 +208,7 @@ export default function RiskTimeline({
             x={Math.min(W - 60, Math.max(30, x(points.indexOf(peak))))}
             y={Math.max(14, y(peak.score) - 7)}
             fill={RISK_COLOR[peak.category]}
-            fontSize="12"
+            fontSize={typePx.small}
             fontWeight="700"
             fontStyle="italic"
             textAnchor="middle"
@@ -225,7 +225,7 @@ export default function RiskTimeline({
                 x={x(i)}
                 y={H - 8}
                 fill={ink[400]}
-                fontSize="9.5"
+                fontSize={typePx.label}
                 textAnchor="middle"
                 fontFamily="'Spline Sans Mono Variable', monospace"
               >

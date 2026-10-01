@@ -9,6 +9,9 @@
  *
  * Nothing else in `src/` may spell a colour as a literal. DESIGN.md describes
  * what each token is for.
+ *
+ * After editing this file, restart `npm run dev`: the running dev server keeps
+ * the Tailwind config it started with. Builds and tests always read it fresh.
  */
 
 /** Chart paper: the sheet and everything printed on it. */
@@ -94,6 +97,37 @@ export const rule = {
   DEFAULT: alpha(ink[900], 0.28), // panel borders
   strong: alpha(ink[900], 0.55), // neatlines, the double rule
 } as const;
+
+/**
+ * The type scale, in CSS pixels. One step per role; a size is never written
+ * as a literal. Sizes only: line-height stays with the element.
+ */
+export const typePx = {
+  micro: 9, // table heads, stamps, chart margin notes, the smallest labels
+  label: 10, // the mono label, captions, hints, timestamps, footnotes
+  readout: 11, // buttons, folio tabs, mono readouts, secondary lines
+  small: 12, // chips, dense lists, alert detail
+  body: 13, // running text: conversation, advice, fields, tables
+  prose: 14, // the landing lead-in, row figures, loading lines
+  lead: 15, // lead lines, small panel headings
+  subtitle: 16, // panel titles, phone body copy
+  title: 17, // row titles, the phone's LISTEN button
+  heading: 19, // card headings, the advice headline
+  figure: 21, // instrument figures and the verdict line
+  headline: 24, // section headlines, a ground's chance of fish
+  numeral: 26, // large soundings, the landing tagline, return-by
+  display: 30, // the ORCA wordmark, the phone's score
+  tile: 34, // the authority board's totals
+  dial: 38, // the risk dial numeral
+  hero: 76, // the landing wordmark
+} as const;
+
+export type TypeStep = keyof typeof typePx;
+
+/** The same scale as Tailwind `fontSize` entries: `text-label`, `text-body`… */
+export const fontSize = Object.fromEntries(
+  Object.entries(typePx).map(([step, px]) => [step, `${px}px`]),
+) as Record<TypeStep, string>;
 
 /** Everything Tailwind turns into colour utilities. */
 export const colors = { paper, ink, chart, signal, risk, chance, sst, flow, sea, rule } as const;

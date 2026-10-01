@@ -16,7 +16,7 @@ import type {
 import { RATING_COLOR } from "../risk";
 import { CompassMark } from "./glyphs";
 import { HINT, LEGEND } from "../i18n/marineMap";
-import { alpha, chance, chart, ink, paper, risk, sst } from "../tokens";
+import { alpha, chance, chart, ink, paper, risk, sst, typePx } from "../tokens";
 
 /** Zone stroke colours; the fills are true chart hatching via CSS patterns. */
 const ZONE_COLOR: Record<string, string> = {
@@ -182,7 +182,7 @@ export default function MarineMap({
         className: `zone-hatch-${severity}`,
       })
         .bindPopup(
-          `<b>${z.properties.name}</b><br/><span style="opacity:.75">${z.properties.zone_type.replace(/_/g, " ")}</span><br/><span style="font-size:10px;opacity:.6">${z.properties.note}</span>`,
+          `<b>${z.properties.name}</b><br/><span style="opacity:.75">${z.properties.zone_type.replace(/_/g, " ")}</span><br/><span style="font-size:${typePx.label}px;opacity:.6">${z.properties.note}</span>`,
         )
         .addTo(group);
     });
@@ -258,7 +258,7 @@ export default function MarineMap({
           })
           .bindPopup(
             `<b>${al.headline}</b><br/>${al.detail}<br/>
-             <span style="font-size:10px;opacity:.65">${al.source} · illustrative storm geometry — Demo / simulated</span>`,
+             <span style="font-size:${typePx.label}px;opacity:.65">${al.source} · illustrative storm geometry — Demo / simulated</span>`,
           )
           .addTo(group);
       }
@@ -278,7 +278,7 @@ export default function MarineMap({
         className: rec ? "route-live" : "",
       })
         .bindPopup(
-          `<b>${r.name}</b><br/>${r.distance_km} km · ${Math.round(r.eta_minutes)} min<br/><span style="font-size:11px;opacity:.8">${r.notes}</span>`,
+          `<b>${r.name}</b><br/>${r.distance_km} km · ${Math.round(r.eta_minutes)} min<br/><span style="font-size:${typePx.readout}px;opacity:.8">${r.notes}</span>`,
         )
         .addTo(group);
     });
@@ -305,8 +305,8 @@ export default function MarineMap({
                        border:${best ? 4 : 3.5}px solid ${color};display:flex;flex-direction:column;
                        align-items:center;justify-content:center;line-height:1;gap:1px;
                        box-shadow:0 3px 10px ${alpha(ink[900], 0.4)};color:${ink[900]}">
-                       <span style="font:${best ? "800 16px" : "700 14px"} ${SERIF}">${a.rank}</span>
-                       <span style="font:600 ${best ? 8.5 : 8}px ${MONO};color:${ink[500]}">${a.probability}%</span>
+                       <span style="font:${best ? `800 ${typePx.subtitle}px` : `700 ${typePx.prose}px`} ${SERIF}">${a.rank}</span>
+                       <span style="font:600 ${typePx.micro}px ${MONO};color:${ink[500]}">${a.probability}%</span>
                      </div>
                    </div>`,
           }),
@@ -316,7 +316,7 @@ export default function MarineMap({
              ${Math.round(a.distance_km)} km ${a.bearing}<br/>
              SST ${a.sst_c ?? "—"} °C · chlorophyll ${a.chlorophyll_mg_m3 ?? "—"} mg/m³<br/>
              ${a.likely_species?.length ? `Likely: ${a.likely_species.join(", ")}<br/>` : ""}
-             <span style="font-size:10px;opacity:.65">A likelihood from the data — never a guarantee of fish.</span>`,
+             <span style="font-size:${typePx.label}px;opacity:.65">A likelihood from the data — never a guarantee of fish.</span>`,
           )
           .addTo(group);
         bounds.push([a.latitude, a.longitude]);
@@ -334,7 +334,7 @@ export default function MarineMap({
             html: `<div class="bob" style="width:${size}px;height:${size}px;animation-delay:${((z.rank * 7) % 10) / 3}s">
                      <div class="buoy" style="width:100%;height:100%;border-radius:50%;background:${paper[50]};
                        border:${best ? 4 : 3}px solid ${color};display:grid;place-items:center;
-                       color:${ink[900]};font:${best ? "800 16px" : "700 13px"} ${SERIF};
+                       color:${ink[900]};font:${best ? `800 ${typePx.subtitle}px` : `700 ${typePx.body}px`} ${SERIF};
                        box-shadow:0 3px 10px ${alpha(ink[900], 0.4)}">${z.rank}</div>
                    </div>`,
           }),
@@ -343,7 +343,7 @@ export default function MarineMap({
             `<b>Fishing zone #${z.rank}</b><br/>${z.distance_km} km ${z.bearing}<br/>
              SST ${z.sst_c ?? "—"} °C · chlorophyll ${z.chlorophyll_mg_m3 ?? "—"} mg/m³<br/>
              confidence ${Math.round(z.confidence * 100)}%<br/>
-             <span style="font-size:10px;opacity:.65">Potential zone — not a guarantee of fish.</span>`,
+             <span style="font-size:${typePx.label}px;opacity:.65">Potential zone — not a guarantee of fish.</span>`,
           )
           .addTo(group);
         bounds.push([z.latitude, z.longitude]);
@@ -438,7 +438,7 @@ export default function MarineMap({
 
         {/* the sea in motion — flow layer control */}
         <div className="absolute left-3 top-[92px] z-[500] rounded-[2px] border border-ink-700/50 bg-paper-50/95 px-2 pb-2 pt-1.5 shadow-md">
-          <div className="mb-1 font-mono text-[8.5px] font-bold uppercase tracking-[0.16em] text-ink-400">
+          <div className="mb-1 font-mono text-micro font-bold uppercase tracking-[0.16em] text-ink-400">
             {(LEGEND[language] ?? LEGEND.en).flow}
           </div>
           <div className="flex gap-1">
@@ -446,7 +446,7 @@ export default function MarineMap({
               <button
                 key={m}
                 onClick={() => setFlowMode(m)}
-                className={`rounded-[2px] border px-1.5 py-0.5 font-mono text-[9.5px] font-bold transition ${
+                className={`rounded-[2px] border px-1.5 py-0.5 font-mono text-label font-bold transition ${
                   flowMode === m
                     ? "border-ink-900 bg-ink-900 text-paper-50"
                     : "border-ink-700/30 text-ink-500 hover:text-ink-900"
@@ -460,14 +460,14 @@ export default function MarineMap({
 
         {/* symbols legend, as a chart's key */}
         <div className="pointer-events-none absolute bottom-3 left-3 z-[500] rounded-[2px] border border-ink-700/50 bg-paper-50/95 px-3 pb-2 pt-1.5 shadow-md">
-          <div className="mb-1 font-mono text-[8.5px] font-bold uppercase tracking-[0.16em] text-ink-400">
+          <div className="mb-1 font-mono text-micro font-bold uppercase tracking-[0.16em] text-ink-400">
             {(LEGEND[language] ?? LEGEND.en).symbols}
           </div>
           {[
             [risk.low, (LEGEND[language] ?? LEGEND.en).veryGood],
             [chance.some, (LEGEND[language] ?? LEGEND.en).some],
           ].map(([c, label]) => (
-            <div key={label} className="flex items-center gap-2 py-[1.5px] text-[10.5px] font-medium text-ink-700">
+            <div key={label} className="flex items-center gap-2 py-[1.5px] text-label font-medium text-ink-700">
               <span
                 className="h-2.5 w-2.5 rounded-full border-2 bg-paper-50"
                 style={{ borderColor: c }}
@@ -475,20 +475,20 @@ export default function MarineMap({
               {label}
             </div>
           ))}
-          <div className="flex items-center gap-2 py-[1.5px] text-[10.5px] font-medium text-ink-700">
+          <div className="flex items-center gap-2 py-[1.5px] text-label font-medium text-ink-700">
             <svg width="10" height="10" aria-hidden>
               <rect x="0.5" y="0.5" width="9" height="9" fill="url(#hatch-critical)" stroke={risk.extreme} strokeWidth="1" />
             </svg>
             {(LEGEND[language] ?? LEGEND.en).noEntry}
           </div>
-          <div className="flex items-center gap-2 py-[1.5px] text-[10.5px] font-medium text-ink-700">
+          <div className="flex items-center gap-2 py-[1.5px] text-label font-medium text-ink-700">
             <svg width="12" height="6" aria-hidden>
               <line x1="0" y1="3" x2="12" y2="3" stroke={risk.low} strokeWidth="2" strokeDasharray="4 2.5" />
             </svg>
             {(LEGEND[language] ?? LEGEND.en).course}
           </div>
           {alerts.some((a) => a.storm) && (
-            <div className="flex items-center gap-2 py-[1.5px] text-[10.5px] font-medium text-ink-700">
+            <div className="flex items-center gap-2 py-[1.5px] text-label font-medium text-ink-700">
               <svg width="11" height="11" viewBox="0 0 56 56" fill="none" aria-hidden>
                 <path d="M28 5 A 23 23 0 0 1 51 28" stroke={risk.extreme} strokeWidth="9" strokeLinecap="round" />
                 <path d="M28 51 A 23 23 0 0 1 5 28" stroke={risk.extreme} strokeWidth="9" strokeLinecap="round" />
@@ -499,7 +499,7 @@ export default function MarineMap({
           )}
           {flowMode !== "off" && (
             <div
-              className="mt-1 flex items-center gap-1.5 border-t pt-1 text-[9px] font-medium text-ink-500"
+              className="mt-1 flex items-center gap-1.5 border-t pt-1 text-micro font-medium text-ink-500"
               style={{ borderColor: "var(--rule-faint)" }}
               title={(LEGEND[language] ?? LEGEND.en).sstLabel}
             >
@@ -517,7 +517,7 @@ export default function MarineMap({
 
         {/* drag hint */}
         {origin && !probe && !dragging && (
-          <div className="pointer-events-none absolute bottom-3 right-3 z-[500] rounded-[2px] border border-ink-700/40 bg-paper-50/95 px-2.5 py-1.5 text-[10.5px] font-medium text-ink-700 shadow-md">
+          <div className="pointer-events-none absolute bottom-3 right-3 z-[500] rounded-[2px] border border-ink-700/40 bg-paper-50/95 px-2.5 py-1.5 text-label font-medium text-ink-700 shadow-md">
             {HINT[language] ?? HINT.en}
           </div>
         )}
@@ -525,11 +525,11 @@ export default function MarineMap({
         {/* live geofence banner */}
         {banner && (
           <div
-            className={`absolute left-1/2 top-3 z-[500] max-w-[78%] -translate-x-1/2 animate-rise rounded-[2px] px-3.5 py-2 text-[12px] font-semibold text-paper-50 shadow-lg ${banner.style}`}
+            className={`absolute left-1/2 top-3 z-[500] max-w-[78%] -translate-x-1/2 animate-rise rounded-[2px] px-3.5 py-2 text-small font-semibold text-paper-50 shadow-lg ${banner.style}`}
           >
             <div>{banner.text}</div>
             {banner.sub && (
-              <div className="mt-0.5 font-mono text-[10px] font-normal opacity-85">{banner.sub}</div>
+              <div className="mt-0.5 font-mono text-label font-normal opacity-85">{banner.sub}</div>
             )}
           </div>
         )}
@@ -537,10 +537,10 @@ export default function MarineMap({
 
       {/* sheet margin note */}
       <div className="mt-[7px] flex items-baseline justify-between">
-        <span className="font-mono text-[8.5px] font-semibold uppercase tracking-[0.18em] text-ink-400">
+        <span className="font-mono text-micro font-semibold uppercase tracking-[0.18em] text-ink-400">
           {(LEGEND[language] ?? LEGEND.en).marginL}
         </span>
-        <span className="font-mono text-[8.5px] uppercase tracking-[0.18em] text-ink-400">
+        <span className="font-mono text-micro uppercase tracking-[0.18em] text-ink-400">
           {(LEGEND[language] ?? LEGEND.en).marginR}
         </span>
       </div>

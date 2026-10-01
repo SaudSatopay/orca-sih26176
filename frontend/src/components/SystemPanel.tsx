@@ -105,15 +105,15 @@ export default function SystemPanel({
       <div className="panel rule-double overflow-hidden">
         <div className="hd">
           <span className="label">{t.engineRoom}</span>
-          <span className="hidden font-mono text-[10px] text-chart-600 sm:block">
+          <span className="hidden font-mono text-label text-chart-600 sm:block">
             {t.configNote}
           </span>
         </div>
         <div className="px-5 py-4">
-          <h2 className="font-display text-[24px] font-bold leading-snug text-ink-900">
+          <h2 className="font-display text-headline font-bold leading-snug text-ink-900">
             {t.title}
           </h2>
-          <p className="mt-1.5 max-w-[860px] text-[13.5px] leading-relaxed text-ink-500">
+          <p className="mt-1.5 max-w-[860px] text-body leading-relaxed text-ink-500">
             {t.intro}
           </p>
         </div>
@@ -136,23 +136,23 @@ export default function SystemPanel({
                   className={`pulse-dot ${p.live ? "" : "pulse-dot--still"}`}
                   style={{ background: p.color, color: p.color }}
                 />
-                <span className="font-display text-[14px] font-bold text-ink-900">{p.name}</span>
+                <span className="font-display text-prose font-bold text-ink-900">{p.name}</span>
               </div>
               <div
-                className="mt-1.5 inline-block border px-1.5 py-px font-mono text-[8.5px] font-bold tracking-[0.14em]"
+                className="mt-1.5 inline-block border px-1.5 py-px font-mono text-micro font-bold tracking-[0.14em]"
                 style={{ color: p.color, borderColor: p.color }}
               >
                 {p.status}
               </div>
-              <p className="mt-2 text-[11.5px] leading-relaxed text-ink-700">{p.gives}</p>
-              <p className="mt-1 text-[10.5px] italic leading-snug text-ink-400">{p.note}</p>
+              <p className="mt-2 text-readout leading-relaxed text-ink-700">{p.gives}</p>
+              <p className="mt-1 text-label italic leading-snug text-ink-400">{p.note}</p>
             </div>
           ))}
         </div>
 
         {/* the flow into the cache */}
         <div className="grid items-center gap-2 px-4 pb-4 lg:grid-cols-[1fr_auto_1.2fr_auto_1fr]">
-          <div className="text-center font-mono text-[10px] uppercase tracking-[0.12em] text-ink-500">
+          <div className="text-center font-mono text-label uppercase tracking-[0.12em] text-ink-500">
             {t.oneFetch}
             <br />
             <span className="text-ink-400">{t.perProvider}</span>
@@ -165,11 +165,11 @@ export default function SystemPanel({
           <div
             className="rounded-[2px] border-2 border-chart-600 bg-chart-100/40 px-4 py-3 text-center"
           >
-            <div className="font-display text-[15px] font-bold text-ink-900">
+            <div className="font-display text-lead font-bold text-ink-900">
               {t.cacheTitle}
             </div>
-            <p className="mt-1 text-[11.5px] leading-relaxed text-ink-700">{t.cacheBody}</p>
-            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.1em] text-chart-700">
+            <p className="mt-1 text-readout leading-relaxed text-ink-700">{t.cacheBody}</p>
+            <p className="mt-1 font-mono text-micro uppercase tracking-[0.1em] text-chart-700">
               {t.cacheMeta}
             </p>
           </div>
@@ -178,7 +178,7 @@ export default function SystemPanel({
             <i />
             <i />
           </div>
-          <div className="text-center font-mono text-[10px] uppercase tracking-[0.12em] text-ink-500">
+          <div className="text-center font-mono text-label uppercase tracking-[0.12em] text-ink-500">
             {t.everyAgent}
             <br />
             <span className="text-ink-400">{t.fromMemory}</span>
@@ -186,7 +186,7 @@ export default function SystemPanel({
         </div>
 
         <p
-          className="border-t px-4 py-2.5 text-[11px] italic leading-relaxed text-ink-500"
+          className="border-t px-4 py-2.5 text-readout italic leading-relaxed text-ink-500"
           style={{ borderColor: "var(--rule-faint)" }}
         >
           {t.degrade}
@@ -197,7 +197,7 @@ export default function SystemPanel({
       <div className="panel overflow-hidden">
         <div className="hd">
           <span className="label">{t.s2}</span>
-          <span className="font-mono text-[10px] text-ink-400">{t.s2note}</span>
+          <span className="font-mono text-label text-ink-400">{t.s2note}</span>
         </div>
         <div className="grid gap-0 px-4 py-4 lg:grid-cols-[1fr_auto_1.6fr_auto_1.2fr_auto_1fr]">
           {crew.map((c, i) => (
@@ -211,9 +211,9 @@ export default function SystemPanel({
               )}
               <div className="py-2">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-display text-[16px] font-bold text-ink-900">{c.phase}</span>
+                  <span className="font-display text-subtitle font-bold text-ink-900">{c.phase}</span>
                   {c.agents.length > 1 && i === 1 && (
-                    <span className="font-mono text-[9px] font-bold text-chart-700">
+                    <span className="font-mono text-micro font-bold text-chart-700">
                       ∥ {c.agents.length} CONCURRENT
                     </span>
                   )}
@@ -222,7 +222,7 @@ export default function SystemPanel({
                   {c.agents.map((a, j) => (
                     <span
                       key={a}
-                      className="flex items-center gap-1.5 rounded-[2px] border bg-paper-100 px-2 py-1 font-mono text-[10px] font-semibold text-ink-800"
+                      className="flex items-center gap-1.5 rounded-[2px] border bg-paper-100 px-2 py-1 font-mono text-label font-semibold text-ink-800"
                       style={{ borderColor: "var(--rule)" }}
                     >
                       <span
@@ -237,7 +237,7 @@ export default function SystemPanel({
                     </span>
                   ))}
                 </div>
-                <p className="mt-2 text-[11px] italic leading-snug text-ink-500">{c.note}</p>
+                <p className="mt-2 text-readout italic leading-snug text-ink-500">{c.note}</p>
               </div>
             </Fragment>
           ))}
@@ -252,13 +252,13 @@ export default function SystemPanel({
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4">
-          <span className="stamp text-[12px] text-risk-extreme">{t.stamp}</span>
-          <div className="space-y-1 font-mono text-[11px] text-ink-800">
+          <span className="stamp text-small text-risk-extreme">{t.stamp}</span>
+          <div className="space-y-1 font-mono text-readout text-ink-800">
             <div>{t.law1}</div>
             <div>{t.law2}</div>
             <div>{t.law3}</div>
           </div>
-          <p className="max-w-[380px] text-[11.5px] italic leading-relaxed text-ink-700">
+          <p className="max-w-[380px] text-readout italic leading-relaxed text-ink-700">
             <LockGlyph size={12} className="mr-1 inline text-risk-extreme" />
             {t.lawNote}
           </p>
@@ -275,7 +275,7 @@ export default function SystemPanel({
             />
             {t.reading}
           </span>
-          <span className="font-mono text-[10px] tabular-nums text-ink-400">
+          <span className="font-mono text-label tabular-nums text-ink-400">
             {t.onePort} {POLL_MS / 1000} s · {mode} {t.flipNote}
           </span>
         </div>
@@ -283,11 +283,11 @@ export default function SystemPanel({
         {latest ? (
           <div key={tick} className="popin grid grid-cols-2 gap-0 border-b sm:grid-cols-6" style={{ borderColor: "var(--rule-faint)" }}>
             <div className="col-span-2 px-4 py-3">
-              <div className="label !text-[9px]">{t.nowReading}</div>
-              <div className="font-display text-[19px] font-bold leading-tight text-ink-900">
+              <div className="label !text-micro">{t.nowReading}</div>
+              <div className="font-display text-heading font-bold leading-tight text-ink-900">
                 {latest.port}
               </div>
-              <div className="font-mono text-[10px] text-ink-400">
+              <div className="font-mono text-label text-ink-400">
                 {latest.state} · {latest.at} IST
               </div>
             </div>
@@ -298,29 +298,29 @@ export default function SystemPanel({
               { k: t.vis, v: latest.vis },
             ].map((x) => (
               <div key={x.k} className="border-l px-3 py-3" style={{ borderColor: "var(--rule-faint)" }}>
-                <div className="label truncate !text-[9px]">{x.k}</div>
-                <div className="mt-1 font-mono text-[16px] font-bold tabular-nums text-ink-900">
+                <div className="label truncate !text-micro">{x.k}</div>
+                <div className="mt-1 font-mono text-subtitle font-bold tabular-nums text-ink-900">
                   {x.v}
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          <div className="border-b px-4 py-4 text-[13px] italic text-ink-400" style={{ borderColor: "var(--rule-faint)" }}>
+          <div className="border-b px-4 py-4 text-body italic text-ink-400" style={{ borderColor: "var(--rule-faint)" }}>
             {scanning ? t.hailing : t.unreachable}
           </div>
         )}
 
         {/* the log */}
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] text-left font-mono text-[11px]">
+          <table className="w-full min-w-[680px] text-left font-mono text-readout">
             <thead>
               <tr className="border-b" style={{ borderColor: "var(--rule)" }}>
                 {[t.hPort, t.wave, t.wind, "SST", t.vis, t.hSource, t.hMode, t.hLatency, t.hAt].map(
                   (h, i) => (
                     <th
                       key={h}
-                      className={`py-2 text-[8.5px] font-bold uppercase tracking-[0.14em] text-ink-400 ${
+                      className={`py-2 text-micro font-bold uppercase tracking-[0.14em] text-ink-400 ${
                         i === 0 ? "pl-4 pr-3" : "px-3"
                       }`}
                     >
@@ -345,7 +345,7 @@ export default function SystemPanel({
                   <td className="px-3 py-2 text-ink-500">{r.source}</td>
                   <td className="px-3 py-2">
                     <span
-                      className="border px-1.5 py-px text-[8.5px] font-bold tracking-wider"
+                      className="border px-1.5 py-px text-micro font-bold tracking-wider"
                       style={{
                         color: r.mode === "LIVE" ? risk.low : risk.moderate,
                         borderColor: r.mode === "LIVE" ? risk.low : risk.moderate,
@@ -363,7 +363,7 @@ export default function SystemPanel({
         </div>
 
         <p
-          className="flex items-center gap-2 border-t px-4 py-2.5 text-[11px] italic leading-relaxed text-ink-500"
+          className="flex items-center gap-2 border-t px-4 py-2.5 text-readout italic leading-relaxed text-ink-500"
           style={{ borderColor: "var(--rule-faint)" }}
         >
           <FishGlyph size={16} className="swim shrink-0 text-chart-500" />
@@ -388,13 +388,13 @@ export default function SystemPanel({
               style={{ borderColor: "var(--rule-faint)" }}
             >
               <div className="flex items-center gap-2">
-                <span className="font-display text-[16px] font-bold text-ink-900">{x.h}</span>
+                <span className="font-display text-subtitle font-bold text-ink-900">{x.h}</span>
                 <CourseArrow
                   size={12}
                   className="text-ink-300 transition-all group-hover:translate-x-0.5 group-hover:text-chart-600"
                 />
               </div>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-ink-700">{x.d}</p>
+              <p className="mt-1.5 text-small leading-relaxed text-ink-700">{x.d}</p>
             </div>
           ))}
         </div>

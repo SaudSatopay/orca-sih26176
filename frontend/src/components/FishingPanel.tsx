@@ -47,14 +47,14 @@ export default function FishingPanel({
             i === 0 ? (
               <p
                 key={i}
-                className="font-display text-[19px] font-semibold leading-snug text-ink-900"
+                className="font-display text-heading font-semibold leading-snug text-ink-900"
               >
                 {line}
               </p>
             ) : (
               <p
                 key={i}
-                className="mt-2.5 flex gap-2.5 text-[13.5px] leading-relaxed text-ink-700"
+                className="mt-2.5 flex gap-2.5 text-body leading-relaxed text-ink-700"
               >
                 <span className="mt-[8px] h-1.5 w-1.5 shrink-0 rotate-45 bg-chart-500/70" />
                 <span>{line}</span>
@@ -72,7 +72,7 @@ export default function FishingPanel({
               {t.areas}
               <SchoolGlyph size={26} className="swim text-chart-500" />
             </span>
-            <span className="font-mono text-[10px] tabular-nums text-ink-400">
+            <span className="font-mono text-label tabular-nums text-ink-400">
               {language === "en"
                 ? `${t.within} ${data.radius_km} km`
                 : `${data.radius_km} km ${t.within}`}
@@ -93,7 +93,7 @@ export default function FishingPanel({
                   <div className="relative shrink-0" style={{ color: RATING_COLOR[a.rating] }}>
                     <span className="badge-ping" />
                     <div
-                      className="grid h-11 w-11 place-items-center rounded-full border-[3.5px] bg-paper-50 font-display text-[17px] font-extrabold text-ink-900 shadow-sm"
+                      className="grid h-11 w-11 place-items-center rounded-full border-[3.5px] bg-paper-50 font-display text-title font-extrabold text-ink-900 shadow-sm"
                       style={{ borderColor: RATING_COLOR[a.rating] }}
                     >
                       {a.rank}
@@ -102,16 +102,16 @@ export default function FishingPanel({
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-[14px] font-bold text-ink-900">
+                      <span className="text-prose font-bold text-ink-900">
                         {Math.round(a.distance_km)} km {t.away}
                       </span>
                       {a.recommended && (
-                        <span className="stamp !px-1.5 !py-0.5 !text-[8.5px] text-risk-low">
+                        <span className="stamp !px-1.5 !py-0.5 !text-micro text-risk-low">
                           {t.bestTrip}
                         </span>
                       )}
                     </div>
-                    <div className="mt-0.5 text-[11.5px] text-ink-500">
+                    <div className="mt-0.5 text-readout text-ink-500">
                       {words[a.rating]} {t.chance}
                     </div>
                     {/* the five model factors behind this number — nothing is a black box */}
@@ -139,7 +139,7 @@ export default function FishingPanel({
                     </div>
                     {(a.likely_species?.length ?? 0) > 0 && (
                       <div
-                        className="mt-1 flex items-center gap-1.5 truncate font-mono text-[10px] text-chart-700"
+                        className="mt-1 flex items-center gap-1.5 truncate font-mono text-label text-chart-700"
                         title={`${t.likely}: ${a.likely_species!.join(" · ")} — ${t.likelyNote}`}
                       >
                         <FishGlyph size={13} className="swim shrink-0" />
@@ -152,11 +152,11 @@ export default function FishingPanel({
 
                   <div className="shrink-0 text-right">
                     <div
-                      className="sounding text-[24px] leading-none tabular-nums transition-transform duration-300 group-hover:scale-110"
+                      className="sounding text-headline leading-none tabular-nums transition-transform duration-300 group-hover:scale-110"
                       style={{ color: RATING_COLOR[a.rating] }}
                     >
                       {a.probability}
-                      <span className="text-[13px]">%</span>
+                      <span className="text-body">%</span>
                     </div>
                     <div className="ml-auto mt-1.5 h-[3px] w-16 overflow-hidden bg-ink-900/10">
                       <div
@@ -172,14 +172,14 @@ export default function FishingPanel({
               ))}
             </div>
 
-            <p className="mt-2 font-mono text-[8.5px] uppercase tracking-[0.14em] text-ink-400">
+            <p className="mt-2 font-mono text-micro uppercase tracking-[0.14em] text-ink-400">
               {t.barsCaption}
             </p>
 
             {data.best_window && (
               <div className="mt-3 border border-dashed border-risk-low/70 bg-risk-low/[0.07] px-3.5 py-2.5">
                 <div className="label !text-risk-low">{t.bestTime}</div>
-                <div className="mt-0.5 font-display text-[17px] font-bold text-risk-low">
+                <div className="mt-0.5 font-display text-title font-bold text-risk-low">
                   {clock12(data.best_window.from_hour)} – {clock12(data.best_window.to_hour)}
                 </div>
               </div>
@@ -214,12 +214,12 @@ export default function FishingPanel({
                   >
                     <div className="label truncate">{x.k}</div>
                     <div
-                      className={`mt-1 font-mono text-[20px] font-bold tabular-nums leading-none ${
+                      className={`mt-1 font-mono text-figure font-bold tabular-nums leading-none ${
                         x.hero ? "text-risk-low" : "text-ink-900"
                       }`}
                     >
                       {x.v}
-                      <span className={`ml-1 text-[10.5px] font-semibold ${x.hero ? "" : "opacity-70"}`}>
+                      <span className={`ml-1 text-label font-semibold ${x.hero ? "" : "opacity-70"}`}>
                         {x.u}
                       </span>
                     </div>
@@ -232,11 +232,11 @@ export default function FishingPanel({
                   style={{ borderColor: "var(--rule-faint)" }}
                 >
                   <span className="label !text-risk-extreme">{t.returnBy}</span>
-                  <span className="font-display text-[19px] font-black leading-none text-risk-extreme">
+                  <span className="font-display text-heading font-black leading-none text-risk-extreme">
                     {data.duration.return_by}
                   </span>
                   {data.duration.return_reason_wave_m != null && (
-                    <span className="font-mono text-[10.5px] text-ink-500">
+                    <span className="font-mono text-label text-ink-500">
                       — {t.returnWhy} {data.duration.return_reason_wave_m} m
                     </span>
                   )}
@@ -244,7 +244,7 @@ export default function FishingPanel({
               )}
               {data.duration.limited_by_weather && (
                 <p
-                  className="flex items-center gap-2 border-t px-4 py-2.5 text-[12px] font-medium text-risk-high"
+                  className="flex items-center gap-2 border-t px-4 py-2.5 text-small font-medium text-risk-high"
                   style={{ borderColor: "var(--rule-faint)" }}
                 >
                   <WarnGlyph size={13} className="shrink-0" />
@@ -253,7 +253,7 @@ export default function FishingPanel({
               )}
             </>
           ) : (
-            <p className="px-4 py-3.5 text-[13px] font-medium text-risk-high">{t.notWorth}</p>
+            <p className="px-4 py-3.5 text-body font-medium text-risk-high">{t.notWorth}</p>
           )}
         </div>
       )}
@@ -263,7 +263,7 @@ export default function FishingPanel({
         <div className="panel overflow-hidden">
           <div className="hd">
             <span className="label">{t.econ}</span>
-            <span className="font-mono text-[9px] uppercase tracking-[0.1em] text-ink-400">
+            <span className="font-mono text-micro uppercase tracking-[0.1em] text-ink-400">
               {t.econNote}
             </span>
           </div>
@@ -296,20 +296,20 @@ export default function FishingPanel({
                 className={`px-4 py-3 ${i > 0 ? "border-l" : ""} ${x.hero ? "bg-risk-low/[0.07]" : ""}`}
                 style={{ borderColor: "var(--rule-faint)" }}
               >
-                <div className="label truncate !text-[9px]">{x.k}</div>
+                <div className="label truncate !text-micro">{x.k}</div>
                 <div
-                  className={`mt-1 font-mono text-[18px] font-bold tabular-nums leading-none ${
+                  className={`mt-1 font-mono text-title font-bold tabular-nums leading-none ${
                     x.hero ? "text-risk-low" : "text-ink-900"
                   }`}
                 >
                   {x.v}
-                  {x.s && <span className="ml-1 text-[10px] font-semibold opacity-70">{x.s}</span>}
+                  {x.s && <span className="ml-1 text-label font-semibold opacity-70">{x.s}</span>}
                 </div>
               </div>
             ))}
           </div>
           <p
-            className="border-t px-4 py-2 font-mono text-[9px] uppercase tracking-[0.08em] text-ink-400"
+            className="border-t px-4 py-2 font-mono text-micro uppercase tracking-[0.08em] text-ink-400"
             style={{ borderColor: "var(--rule-faint)" }}
           >
             {data.economics.assumptions}
@@ -332,8 +332,8 @@ export default function FishingPanel({
                   <rect x="0.5" y="0.5" width="13" height="13" fill="url(#hatch-critical)" stroke={risk.extreme} strokeWidth="1" />
                 </svg>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-bold text-ink-900">{z.name}</div>
-                  <div className="mt-0.5 font-mono text-[11px] text-ink-500">
+                  <div className="text-body font-bold text-ink-900">{z.name}</div>
+                  <div className="mt-0.5 font-mono text-readout text-ink-500">
                     {Math.round(z.distance_km)} km {t.away} ·{" "}
                     {z.window ? (
                       <span className={z.active_now ? "font-bold text-risk-extreme" : ""}>
@@ -368,27 +368,27 @@ export default function FishingPanel({
               >
                 <div className="label truncate !tracking-[0.1em]">{dayName(f.day_offset, t)}</div>
                 <div
-                  className="sounding mt-1.5 text-[27px] leading-none tabular-nums"
+                  className="sounding mt-1.5 text-numeral leading-none tabular-nums"
                   style={{ color: RATING_COLOR[f.rating] }}
                 >
                   {f.probability}
-                  <span className="text-[14px]">%</span>
+                  <span className="text-prose">%</span>
                 </div>
-                <div className="mt-1.5 text-[10.5px] leading-tight text-ink-500">
+                <div className="mt-1.5 text-label leading-tight text-ink-500">
                   {t.bestAt} {clock12(f.best_hour)}
                 </div>
-                <div className="mt-0.5 font-mono text-[10px] text-ink-400">{f.wave_height_m} m</div>
+                <div className="mt-0.5 font-mono text-label text-ink-400">{f.wave_height_m} m</div>
                 {f.official_warning && (
                   <div className="mt-1.5 inline-flex items-center gap-1 border border-risk-extreme/60 px-1.5 py-0.5 text-risk-extreme">
                     <WarnGlyph size={10} />
-                    <span className="font-mono text-[8.5px] font-bold uppercase tracking-wide">Warning</span>
+                    <span className="font-mono text-micro font-bold uppercase tracking-wide">Warning</span>
                   </div>
                 )}
               </div>
             ))}
           </div>
           <p
-            className="border-t px-4 py-2.5 font-mono text-[10px] leading-relaxed text-ink-400"
+            className="border-t px-4 py-2.5 font-mono text-label leading-relaxed text-ink-400"
             style={{ borderColor: "var(--rule-faint)" }}
           >
             {data.method}

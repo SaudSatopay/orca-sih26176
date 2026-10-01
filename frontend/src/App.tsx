@@ -331,10 +331,10 @@ export default function App() {
           >
             <CompassMark size={46} className="shrink-0 text-ink-900" />
             <div>
-              <h1 className="font-display text-[30px] font-black leading-none tracking-tight text-ink-900">
+              <h1 className="font-display text-display font-black leading-none tracking-tight text-ink-900">
                 ORCA
               </h1>
-              <p className="mt-1 font-mono text-[9px] font-semibold uppercase tracking-[0.18em] text-chart-600">
+              <p className="mt-1 font-mono text-micro font-semibold uppercase tracking-[0.18em] text-chart-600">
                 Marine EcOsystem Reasoning · Collaborative Agents
               </p>
             </div>
@@ -344,7 +344,7 @@ export default function App() {
           <div className="ml-auto flex flex-wrap items-stretch">
             <div className="hidden flex-col justify-center border-l px-5 py-3 sm:flex" style={{ borderColor: "var(--rule-faint)" }}>
               <span className="label">{ui.chartNo}</span>
-              <span className="mt-1 font-mono text-[13px] font-bold text-ink-800">SIH26176</span>
+              <span className="mt-1 font-mono text-body font-bold text-ink-800">SIH26176</span>
             </div>
 
             <button
@@ -356,7 +356,7 @@ export default function App() {
             >
               <span className="label">{ui.dataEdition}</span>
               <span
-                className={`mt-1 font-mono text-[13px] font-bold ${
+                className={`mt-1 font-mono text-body font-bold ${
                   mode === "LIVE" ? "text-risk-low" : "text-risk-high"
                 }`}
               >
@@ -372,7 +372,7 @@ export default function App() {
               style={{ borderColor: "var(--rule-faint)" }}
             >
               <span className="label">{ui.voice}</span>
-              <span className="mt-1 flex items-center gap-1.5 font-mono text-[13px] font-bold text-ink-800">
+              <span className="mt-1 flex items-center gap-1.5 font-mono text-body font-bold text-ink-800">
                 {speak ? <SpeakerGlyph /> : <SpeakerOffGlyph className="text-ink-300" />}
                 {speak ? "ON" : "OFF"}
               </span>
@@ -388,7 +388,7 @@ export default function App() {
                   <button
                     key={l}
                     onClick={() => setLangChoice(l)}
-                    className={`rounded-[2px] border px-1.5 py-0.5 font-mono text-[10.5px] font-bold transition ${
+                    className={`rounded-[2px] border px-1.5 py-0.5 font-mono text-label font-bold transition ${
                       language === l
                         ? "border-ink-900 bg-ink-900 text-paper-50"
                         : "text-ink-400 hover:text-ink-800"
@@ -443,7 +443,7 @@ export default function App() {
       )}
 
       {error && (
-        <div className="panel hatch-danger flex items-center gap-3 border-signal/60 px-4 py-2.5 text-[12.5px] text-risk-extreme">
+        <div className="panel hatch-danger flex items-center gap-3 border-signal/60 px-4 py-2.5 text-small text-risk-extreme">
           <WarnGlyph size={15} className="shrink-0" />
           <span>
             {error} — start the backend with{" "}
@@ -503,13 +503,13 @@ export default function App() {
                   >
                     <div className="label truncate">{x.k}</div>
                     <div
-                      className={`mt-1 font-mono text-[20px] font-bold tabular-nums leading-none text-ink-900 ${
+                      className={`mt-1 font-mono text-figure font-bold tabular-nums leading-none text-ink-900 ${
                         x.color ? "" : "transition-colors group-hover:text-chart-600"
                       }`}
                       style={x.color ? { color: x.color } : undefined}
                     >
                       {x.v}
-                      <span className={`ml-1.5 text-[10px] font-semibold ${x.color ? "" : "opacity-70"}`}>
+                      <span className={`ml-1.5 text-label font-semibold ${x.color ? "" : "opacity-70"}`}>
                         {x.s}
                       </span>
                     </div>
@@ -521,7 +521,7 @@ export default function App() {
 
           <div className="space-y-4 lg:h-[calc(100vh-235px)] lg:overflow-y-auto lg:pr-1">
             {loadingOutlook && !outlook && (
-              <div className="panel p-6 text-center text-sm italic text-ink-400">
+              <div className="panel p-6 text-center text-prose leading-5 italic text-ink-400">
                 {ui.readingSea}
               </div>
             )}
@@ -549,11 +549,11 @@ export default function App() {
                 title={s.ask}
                 className="chip disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <span className="grid w-[18px] shrink-0 place-items-center rounded-full bg-ink-900 font-display text-[10px] font-bold leading-none text-paper-50" style={{ height: 18 }}>
+                <span className="grid w-[18px] shrink-0 place-items-center rounded-full bg-ink-900 font-display text-label font-bold leading-none text-paper-50" style={{ height: 18 }}>
                   {s.n}
                 </span>
                 <span className="font-semibold">{s.label[language] ?? s.label.en}</span>
-                <span className="font-mono text-[10px] uppercase tracking-wide opacity-75">{s.hint}</span>
+                <span className="font-mono text-label uppercase tracking-wide opacity-75">{s.hint}</span>
               </button>
             ))}
           </div>
@@ -605,13 +605,13 @@ export default function App() {
                   <div className="px-4 py-3.5">
                     {latest.alerts.map((a, i) => (
                       <div key={i} className="mb-3 last:mb-0">
-                        <div className="font-display text-[15px] font-bold leading-snug text-risk-extreme">
+                        <div className="font-display text-lead font-bold leading-snug text-risk-extreme">
                           {a.headline}
                         </div>
-                        <div className="mt-1 text-[12px] leading-relaxed text-ink-700">
+                        <div className="mt-1 text-small leading-relaxed text-ink-700">
                           {a.detail}
                         </div>
-                        <div className="mt-1 font-mono text-[10px] uppercase tracking-wide text-ink-400">
+                        <div className="mt-1 font-mono text-label uppercase tracking-wide text-ink-400">
                           {a.source} · {a.severity}
                           {a.valid_till ? ` · ${ui.validTill} ${a.valid_till}` : ""}
                         </div>
@@ -638,7 +638,7 @@ export default function App() {
                         style={r.recommended ? undefined : { borderColor: "var(--rule)" }}
                       >
                         <div className="flex items-baseline justify-between gap-3">
-                          <span className="flex items-center gap-2.5 font-display text-[14.5px] font-bold text-ink-900">
+                          <span className="flex items-center gap-2.5 font-display text-prose font-bold text-ink-900">
                             {/* course symbology, drawn as plotted */}
                             <svg width="26" height="8" aria-hidden>
                               <line
@@ -653,16 +653,16 @@ export default function App() {
                             </svg>
                             {r.name}
                             {r.recommended && (
-                              <span className="stamp !px-1.5 !py-0.5 !text-[9px] text-risk-low">
+                              <span className="stamp !px-1.5 !py-0.5 !text-micro text-risk-low">
                                 {ui.recommended}
                               </span>
                             )}
                           </span>
-                          <span className="shrink-0 font-mono text-[11.5px] tabular-nums text-ink-500">
+                          <span className="shrink-0 font-mono text-readout tabular-nums text-ink-500">
                             {r.distance_km} km · {Math.round(r.eta_minutes)} min
                           </span>
                         </div>
-                        <div className="mt-1 pl-[36px] text-[11.5px] leading-relaxed text-ink-500">
+                        <div className="mt-1 pl-[36px] text-readout leading-relaxed text-ink-500">
                           {r.notes}
                         </div>
                       </div>
@@ -676,7 +676,7 @@ export default function App() {
               )}
 
               {latest && (
-                <p className="px-1 pb-2 font-mono text-[10.5px] leading-relaxed text-ink-400">
+                <p className="px-1 pb-2 font-mono text-label leading-relaxed text-ink-400">
                   {latest.disclaimer}
                 </p>
               )}

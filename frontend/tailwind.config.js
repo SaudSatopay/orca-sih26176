@@ -1,4 +1,4 @@
-import { colors } from "./src/tokens.ts";
+import { colors, fontSize } from "./src/tokens.ts";
 
 /** @type {import('tailwindcss').Config} */
 export default {
@@ -9,6 +9,8 @@ export default {
       // teal, and buoy/signal colours. The values live in src/tokens.ts, the
       // one source shared with canvas, Leaflet and SVG code.
       colors,
+      // The named type scale (micro … hero), also from src/tokens.ts.
+      fontSize,
       fontFamily: {
         display: [
           '"Fraunces Variable"',

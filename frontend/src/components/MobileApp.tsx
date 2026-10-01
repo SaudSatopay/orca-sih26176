@@ -224,9 +224,9 @@ export default function MobileApp() {
       >
         <CompassMark size={30} className="shrink-0 text-ink-900" />
         <div className="min-w-0">
-          <div className="font-display text-[17px] font-black leading-none text-ink-900">ORCA</div>
+          <div className="font-display text-title font-black leading-none text-ink-900">ORCA</div>
           {place && outlook && (
-            <div className="truncate font-mono text-[9px] text-chart-600">
+            <div className="truncate font-mono text-micro text-chart-600">
               {outlook.location.nearest_landing_centre}
             </div>
           )}
@@ -236,7 +236,7 @@ export default function MobileApp() {
             <button
               key={l}
               onClick={() => setLanguage(l)}
-              className={`min-w-[42px] rounded-[2px] border px-2 py-2 font-mono text-[13px] font-bold transition ${
+              className={`min-w-[42px] rounded-[2px] border px-2 py-2 font-mono text-body font-bold transition ${
                 language === l
                   ? "border-ink-900 bg-ink-900 text-paper-50"
                   : "text-ink-400"
@@ -255,7 +255,7 @@ export default function MobileApp() {
           {!outlook && (
             <div className="panel flex flex-col items-center gap-3 p-10 text-center">
               <CompassMark size={56} className="text-ink-300" />
-              <span className="text-[15px] italic text-ink-400">{t.reading}</span>
+              <span className="text-lead italic text-ink-400">{t.reading}</span>
             </div>
           )}
 
@@ -277,20 +277,20 @@ export default function MobileApp() {
                   )}
                 </div>
                 <div
-                  className="mt-3 font-display text-[30px] font-black leading-none"
+                  className="mt-3 font-display text-display font-black leading-none"
                   style={{ color }}
                 >
                   {outlook.safety.score}
-                  <span className="text-[15px] font-bold opacity-70"> / 100</span>
+                  <span className="text-lead font-bold opacity-70"> / 100</span>
                 </div>
-                <p className="mt-2.5 font-display text-[19px] font-semibold leading-snug text-ink-900">
+                <p className="mt-2.5 font-display text-heading font-semibold leading-snug text-ink-900">
                   {outlook.advice[0]}
                 </p>
 
                 {/* THE button — one tap, hear everything */}
                 <button
                   onClick={speakPlan}
-                  className="mt-4 flex w-full items-center justify-center gap-3 rounded-[3px] bg-ink-900 py-4 font-mono text-[17px] font-bold uppercase tracking-[0.14em] text-paper-50 active:translate-y-px"
+                  className="mt-4 flex w-full items-center justify-center gap-3 rounded-[3px] bg-ink-900 py-4 font-mono text-title font-bold uppercase tracking-[0.14em] text-paper-50 active:translate-y-px"
                 >
                   {speaking ? <StopGlyph size={20} /> : <SpeakerGlyph size={24} />}
                   {speaking ? t.stop : t.listen}
@@ -304,7 +304,7 @@ export default function MobileApp() {
                   className="panel hatch-danger flex w-full items-center gap-3 border-risk-extreme/70 px-4 py-3 text-left"
                 >
                   <WarnGlyph size={30} className="shrink-0 text-risk-extreme" />
-                  <span className="font-display text-[16px] font-bold leading-tight text-risk-extreme">
+                  <span className="font-display text-subtitle font-bold leading-tight text-risk-extreme">
                     {t.warnSpeak}
                   </span>
                   <SpeakerGlyph size={18} className="ml-auto shrink-0 text-risk-extreme" />
@@ -315,8 +315,8 @@ export default function MobileApp() {
               <div className="grid grid-cols-2 gap-3">
                 {outlook.best_window && (
                   <div className="panel px-3 py-3 text-center">
-                    <div className="label !text-[9px]">{t.bestTime}</div>
-                    <div className="mt-1 font-display text-[21px] font-bold leading-none text-risk-low">
+                    <div className="label !text-micro">{t.bestTime}</div>
+                    <div className="mt-1 font-display text-figure font-bold leading-none text-risk-low">
                       {clock12(outlook.best_window.from_hour)}–
                       {clock12(outlook.best_window.to_hour)}
                     </div>
@@ -324,8 +324,8 @@ export default function MobileApp() {
                 )}
                 {outlook.duration?.return_by && (
                   <div className="panel border-risk-extreme/50 bg-risk-extreme/[0.06] px-3 py-3 text-center">
-                    <div className="label !text-[9px] !text-risk-extreme">{t.returnBy}</div>
-                    <div className="mt-1 font-display text-[26px] font-black leading-none text-risk-extreme">
+                    <div className="label !text-micro !text-risk-extreme">{t.returnBy}</div>
+                    <div className="mt-1 font-display text-numeral font-black leading-none text-risk-extreme">
                       {outlook.duration.return_by}
                     </div>
                   </div>
@@ -335,7 +335,7 @@ export default function MobileApp() {
               {/* the grounds — tap to hear + see on the chart */}
               <div className="panel overflow-hidden">
                 <div className="hd !py-2">
-                  <span className="label flex items-center gap-2 !text-[10px]">
+                  <span className="label flex items-center gap-2 !text-label">
                     {t.areas} <FishGlyph size={14} className="swim text-chart-500" />
                   </span>
                 </div>
@@ -347,25 +347,25 @@ export default function MobileApp() {
                       className="flex w-full items-center gap-3 px-3 py-3 text-left active:bg-paper-150"
                     >
                       <span
-                        className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-4 bg-paper-50 font-display text-[19px] font-extrabold text-ink-900"
+                        className="grid h-12 w-12 shrink-0 place-items-center rounded-full border-4 bg-paper-50 font-display text-heading font-extrabold text-ink-900"
                         style={{ borderColor: RATING_COLOR[a.rating] }}
                       >
                         {a.rank}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-[17px] font-bold text-ink-900">
+                        <span className="block text-title font-bold text-ink-900">
                           {Math.round(a.distance_km)} {t.km}
                         </span>
-                        <span className="block truncate font-mono text-[11px] text-chart-700">
+                        <span className="block truncate font-mono text-readout text-chart-700">
                           {(a.likely_species ?? []).map((s) => s.split(" (")[0]).join(" · ")}
                         </span>
                       </span>
                       <span
-                        className="sounding shrink-0 text-[26px]"
+                        className="sounding shrink-0 text-numeral"
                         style={{ color: RATING_COLOR[a.rating] }}
                       >
                         {a.probability}
-                        <span className="text-[14px]">%</span>
+                        <span className="text-prose">%</span>
                       </span>
                     </button>
                   ))}
@@ -376,8 +376,8 @@ export default function MobileApp() {
               {outlook.economics && (
                 <div className="panel grid grid-cols-2">
                   <div className="px-3 py-3 text-center">
-                    <div className="label !text-[9px]">{t.fuel}</div>
-                    <div className="mt-1 font-mono text-[21px] font-bold text-ink-900">
+                    <div className="label !text-micro">{t.fuel}</div>
+                    <div className="mt-1 font-mono text-figure font-bold text-ink-900">
                       ₹{outlook.economics.fuel_cost_inr.toLocaleString("en-IN")}
                     </div>
                   </div>
@@ -385,8 +385,8 @@ export default function MobileApp() {
                     className="border-l bg-risk-low/[0.07] px-3 py-3 text-center"
                     style={{ borderColor: "var(--rule-faint)" }}
                   >
-                    <div className="label !text-[9px] !text-risk-low">{t.profit}</div>
-                    <div className="mt-1 font-mono text-[21px] font-bold text-risk-low">
+                    <div className="label !text-micro !text-risk-low">{t.profit}</div>
+                    <div className="mt-1 font-mono text-figure font-bold text-risk-low">
                       ₹{outlook.economics.profit_inr.toLocaleString("en-IN")}
                     </div>
                   </div>
@@ -435,12 +435,12 @@ export default function MobileApp() {
           >
             {listening ? <StopGlyph size={44} /> : <MicGlyph size={64} />}
           </button>
-          <div className="font-mono text-[13px] font-bold uppercase tracking-[0.14em] text-ink-500">
+          <div className="font-mono text-body font-bold uppercase tracking-[0.14em] text-ink-500">
             {listening ? t.listening : busy ? t.thinking : t.tapMic}
           </div>
 
           {question && (
-            <div className="w-full rounded-[3px] bg-ink-900 px-4 py-3 text-[15px] text-paper-50">
+            <div className="w-full rounded-[3px] bg-ink-900 px-4 py-3 text-lead text-paper-50">
               {question}
             </div>
           )}
@@ -460,8 +460,8 @@ export default function MobileApp() {
               onClick={() => speak(answer, language)}
               className="panel w-full px-4 py-3.5 text-left"
             >
-              <p className="text-[16px] leading-relaxed text-ink-800">{answer}</p>
-              <span className="mt-2 flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-wide text-chart-600">
+              <p className="text-subtitle leading-relaxed text-ink-800">{answer}</p>
+              <span className="mt-2 flex items-center gap-1.5 font-mono text-label uppercase tracking-wide text-chart-600">
                 <SpeakerGlyph size={14} /> {t.listen}
               </span>
             </button>
@@ -472,7 +472,7 @@ export default function MobileApp() {
                 <button
                   key={s}
                   onClick={() => sendAsk(s)}
-                  className="chip w-full justify-center !py-3 !text-[14px]"
+                  className="chip w-full justify-center !py-3 !text-prose"
                 >
                   {s}
                 </button>
@@ -480,7 +480,7 @@ export default function MobileApp() {
             </div>
           )}
           {!question && !answer && (
-            <p className="max-w-[260px] text-center text-[13px] italic text-ink-400">
+            <p className="max-w-[260px] text-center text-body italic text-ink-400">
               “{t.askExamples}”
             </p>
           )}
@@ -507,7 +507,7 @@ export default function MobileApp() {
             }`}
           >
             {icon}
-            <span className="font-mono text-[11px] font-bold uppercase tracking-wide">{t[m]}</span>
+            <span className="font-mono text-readout font-bold uppercase tracking-wide">{t[m]}</span>
           </button>
         ))}
       </nav>

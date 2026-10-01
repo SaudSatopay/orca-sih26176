@@ -69,16 +69,16 @@ export default function LocationPicker({
         <div className="min-w-0 flex-1">
           <div className="label">{t.yourLocation}</div>
           <div className="mt-0.5 flex items-baseline gap-2.5">
-            <span className="truncate font-display text-[18px] font-bold leading-tight text-ink-900">
+            <span className="truncate font-display text-title font-bold leading-tight text-ink-900">
               {current?.label ?? "—"}
             </span>
             {current?.source === "gps" && (
-              <span className="shrink-0 border border-risk-low/70 px-1.5 py-px font-mono text-[8.5px] font-bold uppercase tracking-wider text-risk-low">
+              <span className="shrink-0 border border-risk-low/70 px-1.5 py-px font-mono text-micro font-bold uppercase tracking-wider text-risk-low">
                 {t.gps}
               </span>
             )}
             {current && (
-              <span className="shrink-0 font-mono text-[10.5px] tabular-nums text-ink-400">
+              <span className="shrink-0 font-mono text-label tabular-nums text-ink-400">
                 {current.latitude.toFixed(3)}°N, {current.longitude.toFixed(3)}°E
               </span>
             )}
@@ -96,11 +96,11 @@ export default function LocationPicker({
       </div>
 
       {(status === "denied" || status === "error") && (
-        <p className="mt-2 text-[11.5px] font-medium text-risk-high">
+        <p className="mt-2 text-readout font-medium text-risk-high">
           {status === "denied" ? t.denied : t.unavailable}
         </p>
       )}
-      <p className="mt-1.5 text-[10.5px] italic text-ink-400">{t.tapMap}</p>
+      <p className="mt-1.5 text-label italic text-ink-400">{t.tapMap}</p>
 
       {open && (
         <div
@@ -112,7 +112,7 @@ export default function LocationPicker({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t.search}
-            className="w-full border-b bg-transparent px-4 py-3 text-[13px] text-ink-800 outline-none placeholder:text-ink-400"
+            className="w-full border-b bg-transparent px-4 py-3 text-body text-ink-800 outline-none placeholder:text-ink-400"
             style={{ borderColor: "var(--rule)" }}
           />
           <div className="max-h-64 overflow-y-auto py-1">
@@ -132,14 +132,14 @@ export default function LocationPicker({
                 className="flex w-full items-baseline gap-2 border-b px-4 py-2.5 text-left transition last:border-0 hover:bg-paper-150"
                 style={{ borderColor: "var(--rule-faint)" }}
               >
-                <span className="text-[13px] font-semibold text-ink-900">{p.name}</span>
-                <span className="text-[11px] text-ink-400">{p.state}</span>
-                <span className="ml-auto font-mono text-[9.5px] tabular-nums text-ink-400">
+                <span className="text-body font-semibold text-ink-900">{p.name}</span>
+                <span className="text-readout text-ink-400">{p.state}</span>
+                <span className="ml-auto font-mono text-label tabular-nums text-ink-400">
                   {p.lat.toFixed(2)}°N {p.lon.toFixed(2)}°E
                 </span>
               </button>
             ))}
-            {!matches.length && <div className="px-4 py-3 text-[12px] text-ink-400">—</div>}
+            {!matches.length && <div className="px-4 py-3 text-small text-ink-400">—</div>}
           </div>
         </div>
       )}
