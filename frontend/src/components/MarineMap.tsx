@@ -76,15 +76,23 @@ function runDashes(layer: L.Path, dashArray: string) {
  * (see chartDescription.ts), kept beside the map for screen readers and built
  * from the same props, so the two cannot drift apart.
  */
+/**
+ * The one empty list every optional prop defaults to. A fresh `[]` per render
+ * made the redraw effect fire on every unrelated render — clearing the
+ * layers, resetting the probe and refitting the view, which cancelled drags
+ * and snapped the fisher's zoom back (measured; guidelines audit R1).
+ */
+const NONE: never[] = [];
+
 export default function MarineMap({
   origin,
   zones,
   pfz,
-  areas = [],
+  areas = NONE,
   radiusKm,
   routes,
   geofence,
-  alerts = [],
+  alerts = NONE,
   language = "en",
   onPickLocation,
   focusRank,

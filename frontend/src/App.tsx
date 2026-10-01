@@ -405,14 +405,25 @@ export default function App() {
     [place, ui.yourLocation, ui.selectedPoint],
   );
 
-  const homeOrigin: Location | null = place
-    ? {
-        name: outlook?.location.name ?? shownPlace?.label ?? "",
-        latitude: place.latitude,
-        longitude: place.longitude,
-        state: outlook?.location.state ?? null,
-      }
-    : null;
+  // Stable identity: the chart's redraw effect depends on `origin`, so this
+  // object may only change when a reading it shows changes — never because
+  // an unrelated piece of state (voice, the tour) re-rendered the app.
+  const homeOrigin = useMemo<Location | null>(
+    () =>
+      place
+        ? {
+            name: outlook?.location.name ?? shownPlace?.label ?? "",
+            latitude: place.latitude,
+            longitude: place.longitude,
+            state: outlook?.location.state ?? null,
+          }
+        : null,
+    [place, outlook?.location.name, outlook?.location.state, shownPlace?.label],
+  );
+
+  // The same frozen empty list for every chart prop that has no reading yet
+  // (MarineMap defaults its own; these are the call sites that passed [] inline).
+  const NONE = useMemo(() => [] as never[], []);
 
   if (tab === "landing") {
     return (
@@ -693,11 +704,11 @@ export default function App() {
                       <MarineMap
                         origin={homeOrigin}
                         zones={zones}
-                        pfz={[]}
-                        areas={outlook?.areas ?? []}
+                        pfz={NONE}
+                        areas={outlook?.areas ?? NONE}
                         radiusKm={outlook?.radius_km ?? RADIUS_KM}
-                        routes={outlook?.routes ?? []}
-                        geofence={[]}
+                        routes={outlook?.routes ?? NONE}
+                        geofence={NONE}
                         alerts={homeAlerts}
                         language={language}
                         onPickLocation={pickLocation}
@@ -807,10 +818,10 @@ export default function App() {
                   <MarineMap
                     origin={latest?.intent.location ?? null}
                     zones={zones}
-                    pfz={latest?.pfz ?? []}
-                    routes={latest?.routes ?? []}
-                    geofence={latest?.geofence ?? []}
-                    alerts={latest?.alerts ?? []}
+                    pfz={latest?.pfz ?? NONE}
+                    routes={latest?.routes ?? NONE}
+                    geofence={latest?.geofence ?? NONE}
+                    alerts={latest?.alerts ?? NONE}
                     language={language}
                   />
                 </ErrorBoundary>

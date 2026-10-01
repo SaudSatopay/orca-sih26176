@@ -5,6 +5,7 @@ import {
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -63,6 +64,9 @@ import { locationAlreadyAllowed } from "../locate";
 
 // `/?debug=1`: an on-screen list of over-wide elements (HANDOFF.md, section 2).
 const LayoutProbe = lazy(() => import("./LayoutProbe"));
+
+/** One frozen empty list for the chart props with no reading yet (R1). */
+const NONE: never[] = [];
 const DEBUG_LAYOUT = typeof window !== "undefined" && new URLSearchParams(window.location.search).has("debug");
 
 /**
@@ -892,6 +896,18 @@ export default function MobileApp() {
   const outlook = current ?? stale;
   const placeName = outlook?.location.nearest_landing_centre ?? (place && place.name !== "—" ? place.name : "…");
 
+  // Stable identities for the chart (guidelines audit R1): a fresh origin
+  // object or handler per render redrew and refit it on every unrelated
+  // render, which cancelled the boat drag and reset the fisher's zoom.
+  const mapOrigin = useMemo(
+    () => (place ? { name: placeName, latitude: place.lat, longitude: place.lon } : null),
+    [place, placeName],
+  );
+  const pickOnMap = useCallback((lat: number, lon: number) => {
+    setGeo("chosen");
+    setPlace({ lat, lon, name: "—" });
+  }, []);
+
   // Once Today has its reading, fetch the map chunk in an idle moment so the
   // Map tab opens without a wait.
   const hasReading = current !== null;
@@ -1321,18 +1337,15 @@ export default function MobileApp() {
             <ErrorBoundary language={language}>
               <Suspense fallback={<MapDraft label={t.drawingChart} height={height} />}>
                 <MarineMap
-                  origin={place ? { name: placeName, latitude: place.lat, longitude: place.lon } : null}
+                  origin={mapOrigin}
                   zones={zones}
-                  pfz={[]}
-                  areas={outlook?.areas ?? []}
+                  pfz={NONE}
+                  areas={outlook?.areas ?? NONE}
                   radiusKm={outlook?.radius_km ?? 100}
-                  routes={outlook?.routes ?? []}
-                  geofence={[]}
+                  routes={outlook?.routes ?? NONE}
+                  geofence={NONE}
                   language={language}
-                  onPickLocation={(lat, lon) => {
-                    setGeo("chosen");
-                    setPlace({ lat, lon, name: "—" });
-                  }}
+                  onPickLocation={pickOnMap}
                   focusRank={focusRank}
                   heightPx={height}
                 />
