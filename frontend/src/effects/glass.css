@@ -1,0 +1,38 @@
+/* Effect 3 — the chart loupe. A lens laid on the paper under a real control.
+   The host is decoration: aria-hidden, no pointer events, invisible until the
+   lens has drawn its first frame. GlassLoupe.tsx sets its left/top/width/height
+   to the control's box; the padding and the negative margin grow it by the rim. */
+.orca-loupe {
+  --loupe-rim: 6px;
+  position: absolute;
+  box-sizing: content-box;
+  margin: calc(var(--loupe-rim) * -1);
+  padding: var(--loupe-rim);
+  border-radius: 3px;
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.orca-loupe[data-live="1"] {
+  visibility: visible;
+  /* An instrument lying on the sheet: one hairline and the lightest part of
+     the panel shadow, nothing heavier. */
+  box-shadow:
+    0 0 0 1px var(--rule-faint),
+    0 1px 3px theme(colors.ink.900 / 10%);
+}
+
+/* The control paints over its lens without a negative z-index. */
+.orca-loupe[data-live="1"] + * {
+  position: relative;
+}
+
+.orca-loupe > .glass-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.orca-loupe canvas {
+  display: block;
+}
