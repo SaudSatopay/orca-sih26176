@@ -1,5 +1,58 @@
 import { describe, expect, it, vi } from "vitest";
-import { isPhoneLayout, PHONE_QUERY, readBootParams } from "./boot";
+import {
+  initialLanguage,
+  isPhoneLayout,
+  PHONE_QUERY,
+  readBootParams,
+  ROOT_LOADERS,
+  rootKind,
+} from "./boot";
+
+describe("lazy boot selection", () => {
+  it("names the app a visit gets by the same rule as isPhoneLayout", () => {
+    expect(rootKind("", () => true)).toBe("phone");
+    expect(rootKind("", () => false)).toBe("console");
+    expect(rootKind("?m=1", () => false)).toBe("phone");
+    expect(rootKind("?m=0", () => true)).toBe("console");
+  });
+
+  it("has one loader per app, and they are different chunks", () => {
+    expect(Object.keys(ROOT_LOADERS).sort()).toEqual(["console", "phone"]);
+    expect(ROOT_LOADERS.phone).not.toBe(ROOT_LOADERS.console);
+  });
+
+  it("loads each app with a dynamic import, so neither is in the entry chunk", async () => {
+    const boot = (await import("./boot.ts?raw")).default as string;
+    expect(boot).toMatch(/phone: \(\) => import\("\.\/components\/MobileApp"\)/);
+    expect(boot).toMatch(/console: \(\) => import\("\.\/App"\)/);
+    expect(boot).not.toMatch(/^import (?!type).*(MobileApp|\.\/App)["']/m);
+  });
+
+  it("main.tsx imports neither app statically", async () => {
+    const main = (await import("./main.tsx?raw")).default as string;
+    expect(main).not.toMatch(/^import .*["']\.\/App["']/m);
+    expect(main).not.toMatch(/^import .*MobileApp/m);
+    expect(main).toMatch(/ROOT_LOADERS\[kind\]\(\)/);
+  });
+});
+
+describe("the language a visit opens in", () => {
+  it("?lang= wins over the phone's own languages", () => {
+    expect(initialLanguage("?lang=mr", ["hi-IN", "en"])).toBe("mr");
+  });
+
+  it("otherwise takes the first language ORCA speaks", () => {
+    expect(initialLanguage("", ["hi-IN", "en-IN"])).toBe("hi");
+    expect(initialLanguage("", ["ta-IN", "mr-IN", "en"])).toBe("mr");
+    expect(initialLanguage("", ["en-GB", "hi"])).toBe("en");
+  });
+
+  it("falls back to English", () => {
+    expect(initialLanguage("", ["ta-IN", "fr"])).toBe("en");
+    expect(initialLanguage("")).toBe("en");
+    expect(initialLanguage("?lang=fr", [])).toBe("en");
+  });
+});
 
 describe("phone versus desktop selection", () => {
   const narrow = () => true;
