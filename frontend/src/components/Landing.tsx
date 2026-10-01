@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import * as api from "../api";
 import type { Language } from "../types";
 import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph } from "./glyphs";
+import HeroChart from "./HeroChart";
 
 /** Every word on the front door, in the fisher's three languages. */
 const L10N: Record<
@@ -13,9 +14,7 @@ const L10N: Record<
     tag2c: string;
     sub: string;
     ctaTour: string;
-    ctaOpen: string;
     ctaPhone: string;
-    ctaTry: string;
     openOrca: string;
     openWord: string;
     watchLive: string;
@@ -33,9 +32,7 @@ const L10N: Record<
     tag2c: " decision.",
     sub: "Marine EcOsystem Reasoning with Collaborative Agents — India's marine data turned into plain words a fisher can act on, in his own language, with every number carrying its source.",
     ctaTour: "Watch the guided tour",
-    ctaOpen: "Open the app",
     ctaPhone: "Phone version",
-    ctaTry: "Try: cyclone near Paradip →",
     openOrca: "Open ORCA",
     openWord: "Open",
     watchLive: "watch it run live →",
@@ -86,9 +83,7 @@ const L10N: Record<
     tag2c: " फ़ैसला।",
     sub: "भारत का समुद्री डेटा, मछुआरे की अपनी भाषा में, सीधे काम आने वाले शब्दों में — और हर आँकड़े के साथ उसका स्रोत।",
     ctaTour: "गाइडेड टूर देखें",
-    ctaOpen: "ऐप खोलें",
     ctaPhone: "फ़ोन संस्करण",
-    ctaTry: "देखें: पारादीप के पास चक्रवात →",
     openOrca: "ORCA खोलें",
     openWord: "खोलें",
     watchLive: "इसे चलते हुए देखें →",
@@ -139,9 +134,7 @@ const L10N: Record<
     tag2c: " निर्णय.",
     sub: "भारताचा सागरी डेटा, मच्छीमाराच्या स्वतःच्या भाषेत, थेट कामी येणाऱ्या शब्दांत — आणि प्रत्येक आकड्यासोबत त्याचा स्रोत.",
     ctaTour: "गाइडेड टूर पाहा",
-    ctaOpen: "अ‍ॅप उघडा",
     ctaPhone: "फोन आवृत्ती",
-    ctaTry: "पाहा: पारादीपजवळ चक्रीवादळ →",
     openOrca: "ORCA उघडा",
     openWord: "उघडा",
     watchLive: "हे चालताना पाहा →",
@@ -348,170 +341,65 @@ export default function Landing({
               </button>
             ))}
           </span>
-          <button onClick={() => onEnter("home")} className="btn-ink group">
-            {t.openOrca}{" "}
-            <CourseArrow size={13} className="transition-transform group-hover:translate-x-1" />
-          </button>
         </div>
       </Reveal>
 
-      {/* hero */}
-      <div className="mt-12 grid items-center gap-10 lg:mt-14 lg:grid-cols-[1.15fr_1fr]">
+      {/* hero: the claim on the left, the product performing it on the right */}
+      <div className="mt-9 grid items-center gap-x-12 gap-y-9 lg:mt-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
         <div>
-          <Reveal delay={80}>
-            <h1 className="font-display text-[76px] font-black leading-none tracking-tight text-ink-900">
+          <Reveal delay={60}>
+            <p className="font-display text-[64px] font-black leading-none tracking-tight text-ink-900">
               ORCA
-            </h1>
-            <div className="wave-rule mt-4 max-w-[430px]" />
+            </p>
+            <div className="wave-rule mt-3 max-w-[360px]" />
           </Reveal>
-          <Reveal delay={200}>
-            <p className="mt-5 max-w-[520px] font-display text-[26px] font-semibold leading-snug text-ink-800">
+          <Reveal delay={140}>
+            <h1
+              className="mt-6 max-w-[520px] font-display text-[38px] font-semibold leading-[1.12] text-ink-900"
+              style={{ textWrap: "balance" }}
+            >
               {t.tag1}
               <br />
               {t.tag2a}
               <span className="text-chart-600">{t.tag2b}</span>
               {t.tag2c}
+            </h1>
+            <p
+              className="mt-5 max-w-[470px] text-[15px] leading-relaxed text-ink-500"
+              style={{ textWrap: "pretty" }}
+            >
+              {t.sub}
             </p>
-            <p className="mt-4 max-w-[500px] text-[14px] leading-relaxed text-ink-500">{t.sub}</p>
           </Reveal>
 
-          <Reveal delay={330}>
-            <div className="mt-7 flex flex-wrap items-center gap-3">
-              <button onClick={onTour} className="btn-ink !px-5 !py-2.5">
+          <Reveal delay={220}>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <button onClick={() => onEnter("home")} className="btn-ink group !px-6 !py-3">
+                {t.openOrca}
+                <CourseArrow size={13} className="transition-transform group-hover:translate-x-1" />
+              </button>
+              <button onClick={onTour} className="btn-line !px-5 !py-3">
                 <PlayGlyph size={11} /> {t.ctaTour}
               </button>
-              <button onClick={() => onEnter("home")} className="btn-line !px-5 !py-2.5">
-                {t.ctaOpen}
-              </button>
-              {/* full reload on purpose: phone vs console is decided at boot */}
-              <button
-                onClick={() => (window.location.href = `/?m=1&lang=${language}`)}
-                className="btn-line !px-5 !py-2.5"
-              >
-                <PhoneGlyph size={15} /> {t.ctaPhone}
-              </button>
-              <button
-                onClick={() => onScenario("Is there a cyclone near Paradip? Can I go fishing?")}
-                className="font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-chart-600 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
-              >
-                {t.ctaTry}
-              </button>
             </div>
+            {/* full reload on purpose: phone vs console is decided at boot */}
+            <a
+              href={`/?m=1&lang=${language}`}
+              className="mt-5 inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-chart-700 underline decoration-dashed underline-offset-4 transition-colors hover:text-ink-900"
+            >
+              <PhoneGlyph size={14} /> {t.ctaPhone}
+            </a>
           </Reveal>
         </div>
 
-        {/* hero art: the product's promise, drawn as a living plotted course */}
-        <Reveal delay={260} className="hidden justify-self-end lg:block">
-          <svg viewBox="0 0 440 300" className="w-full max-w-[440px]" aria-hidden>
-            {/* the water itself */}
-            <rect x="0" y="0" width="440" height="300" fill="#2A7391" opacity="0.06" />
-            <rect x="0" y="150" width="440" height="150" fill="#2A7391" opacity="0.05" />
-            {/* graticule */}
-            {[60, 130, 200, 270].map((y) => (
-              <line key={y} x1="0" y1={y} x2="440" y2={y} stroke="#2A7391" strokeWidth="0.5" opacity="0.2" />
-            ))}
-            {[80, 180, 280, 380].map((x) => (
-              <line key={x} x1={x} y1="0" x2={x} y2="300" stroke="#2A7391" strokeWidth="0.5" opacity="0.2" />
-            ))}
-            {/* a school working the water under the course */}
-            <g fill="#1E5F7A" opacity="0.5">
-              <g className="svg-swim">
-                <path d="M96 205 C99 201 104 200.5 108 203.8 L114 201 C113 202.3 112.5 203.6 112.5 205 C112.5 206.4 113 207.7 114 209 L108 206.2 C104 209.5 99 209 96 205 Z" />
-              </g>
-              <g className="svg-swim" style={{ animationDelay: "0.9s" }}>
-                <path d="M126 220 C129 216 134 215.5 138 218.8 L144 216 C143 217.3 142.5 218.6 142.5 220 C142.5 221.4 143 222.7 144 224 L138 221.2 C134 224.5 129 224 126 220 Z" />
-              </g>
-              <g className="svg-swim" style={{ animationDelay: "1.7s" }}>
-                <path d="M104 236 C107 232 112 231.5 116 234.8 L122 232 C121 233.3 120.5 234.6 120.5 236 C120.5 237.4 121 238.7 122 240 L116 237.2 C112 240.5 107 240 104 236 Z" />
-              </g>
-            </g>
-            {/* another pair near the destination — the reason the buoy is there */}
-            <g fill="#1D7A50" opacity="0.45">
-              <g className="svg-swim" style={{ animationDelay: "0.4s" }}>
-                <path d="M330 100 C333 96 338 95.5 342 98.8 L348 96 C347 97.3 346.5 98.6 346.5 100 C346.5 101.4 347 102.7 348 104 L342 101.2 C338 104.5 333 104 330 100 Z" />
-              </g>
-              <g className="svg-swim" style={{ animationDelay: "1.3s" }}>
-                <path d="M352 116 C355 112 360 111.5 364 114.8 L370 112 C369 113.3 368.5 114.6 368.5 116 C368.5 117.4 369 118.7 370 120 L364 117.2 C360 120.5 355 120 352 116 Z" />
-              </g>
-            </g>
-            {/* sea-surface symbols and soundings scattered on the water */}
-            {[
-              [40, 80], [120, 45], [330, 130], [70, 170], [250, 250], [380, 200],
-            ].map(([x, y], i) => (
-              <path
-                key={i}
-                d={`M${x} ${y} q4 -3.5 8 0 t8 0`}
-                fill="none"
-                stroke="#2A7391"
-                strokeWidth="1.1"
-                opacity="0.5"
-                strokeLinecap="round"
-              />
-            ))}
-            <text x="150" y="230" fontFamily="Georgia" fontStyle="italic" fontSize="11" fill="#2A7391" opacity="0.65">27</text>
-            <text x="300" y="90" fontFamily="Georgia" fontStyle="italic" fontSize="11" fill="#2A7391" opacity="0.65">44</text>
-            {/* hatched danger areas the course detours around */}
-            <g>
-              <rect x="150" y="95" width="105" height="62" fill="url(#hatch-critical)" stroke="#AF2318" strokeWidth="1.4" strokeDasharray="7 4" />
-              <text x="202" y="130" textAnchor="middle" fontFamily="'Spline Sans Mono Variable',monospace" fontSize="8.5" fill="#AF2318" letterSpacing="1.5">
-                NO ENTRY
-              </text>
-              <rect x="265" y="180" width="80" height="50" fill="url(#hatch-warning)" stroke="#BF4E12" strokeWidth="1.2" strokeDasharray="7 4" />
-            </g>
-            {/* direct track — the wrong answer */}
-            <line x1="60" y1="252" x2="366" y2="60" stroke="#5D7386" strokeWidth="1.6" strokeDasharray="2 6" opacity="0.6" />
-            {/* safest course — the answer, and it runs */}
-            <path
-              className="route-live"
-              d="M60 252 C 105 240 120 205 138 178 C 155 152 130 120 160 84 C 185 55 260 40 320 46 C 342 48 356 52 366 60"
-              fill="none"
-              stroke="#1D7A50"
-              strokeWidth="3"
-              strokeDasharray="11 8"
-              strokeLinecap="round"
-            />
-            {/* boat, riding the swell */}
-            <g transform="translate(60 252)">
-              <g className="svg-bob">
-                <circle r="22" fill="none" stroke="#2A7391" strokeWidth="1.4" opacity="0.5" />
-                <circle r="15" fill="#12212D" stroke="#FBF7ED" strokeWidth="2.5" />
-                <path d="M0 -8 v8 M0 -6 l5.5 6 h-5.5 z" stroke="#FBF7ED" strokeWidth="1.6" fill="#FBF7ED" />
-                <path d="M-6 4 q3 2.4 6 0 t6 0" stroke="#FBF7ED" strokeWidth="1.4" fill="none" />
-              </g>
-            </g>
-            {/* destination buoy, hailing */}
-            <g transform="translate(366 60)">
-              <circle className="svg-ping" r="17" fill="none" stroke="#1D7A50" strokeWidth="2" />
-              <g className="svg-bob" style={{ animationDelay: "1.2s" }}>
-                <circle r="17" fill="#FBF7ED" stroke="#1D7A50" strokeWidth="4" />
-                <text y="6" textAnchor="middle" fontFamily="'Fraunces Variable',Georgia,serif" fontWeight="800" fontSize="16" fill="#12212D">
-                  1
-                </text>
-              </g>
-            </g>
-            <text x="392" y="64" fontFamily="'Fraunces Variable',Georgia,serif" fontStyle="italic" fontWeight="600" fontSize="13" fill="#1D7A50">
-              82%
-            </text>
-            {/* compass */}
-            <g transform="translate(400 250)" opacity="0.75">
-              <circle r="24" fill="none" stroke="#12212D" strokeWidth="1.3" />
-              <g className="compass-needle">
-                <path d="M0 -20 L5 6 L0 11 L-5 6 Z" fill="#12212D" />
-              </g>
-              <text y="-27" textAnchor="middle" fontFamily="'Spline Sans Mono Variable',monospace" fontSize="8" fill="#12212D">
-                N
-              </text>
-            </g>
-            <text x="60" y="285" fontFamily="'Spline Sans Mono Variable',monospace" fontSize="8.5" fill="#5D7386" letterSpacing="1.5">
-              SAFEST ≠ SHORTEST · 5 KM LONGER · LEGAL
-            </text>
-          </svg>
+        <Reveal delay={120}>
+          <HeroChart language={language} onAsk={onScenario} />
         </Reveal>
       </div>
 
       {/* live stats strip */}
       <Reveal delay={420}>
-        <div className="panel mt-12 grid grid-cols-2 sm:grid-cols-5">
+        <div className="panel mt-10 grid grid-cols-2 sm:grid-cols-5">
           {stats.map((x, i) => (
             <div
               key={x.k}

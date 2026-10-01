@@ -1,0 +1,160 @@
+/* ============================================================
+   "The chart answers" — the landing hero's one orchestrated moment.
+
+   Every rule here describes an ENTRANCE from the finished state:
+   the base styles are the poster (question written, crew ticked,
+   course plotted, verdict stamped). If no animation ever runs, the
+   hero is simply complete. Sequence, one run, about 2.3 s:
+
+     0.00  question writes itself          620 ms
+     0.45  crew ticks in, 45 ms apart      180 ms each
+     0.95  course plots around the hatch   820 ms
+     1.70  destination buoy lands          260 ms
+     1.85  verdict stamps                  420 ms
+     2.00  the "why" bars draw             400 ms, 70 ms apart
+   ============================================================ */
+
+.hero-chart {
+  --hero-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --hero-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+@keyframes heroType {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+.hero-type {
+  animation: heroType 0.62s steps(28, end) both;
+}
+
+@keyframes heroTick {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.94);
+  }
+}
+.hero-tick {
+  animation: heroTick 0.18s var(--hero-ease-out) both;
+  animation-delay: calc(450ms + var(--i, 0) * 45ms);
+}
+
+@keyframes heroDraw {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.hero-draw {
+  stroke-dasharray: 1;
+  animation: heroDraw 0.82s var(--hero-ease-in-out) 0.95s both;
+}
+
+@keyframes heroPop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+.hero-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: heroPop 0.26s var(--hero-ease-out) both;
+  animation-delay: calc(1.7s + var(--i, 0) * 70ms);
+}
+/* Chart furniture that belongs to the scene (hatching, storm, labels)
+   settles in with the course rather than after it. */
+.hero-pop--scene {
+  animation-delay: calc(0.95s + var(--i, 0) * 90ms);
+}
+
+/* The stamp keeps the house stampIn overshoot — a rubber stamp is the one
+   place the system allows it — and adds opacity so it does not hang over
+   the sheet during its delay. */
+@keyframes heroStamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.28) rotate(-6deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(0.97) rotate(-2.6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-3deg);
+  }
+}
+.hero-stamp {
+  transform: rotate(-3deg);
+  animation: heroStamp 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.2) 1.85s both;
+}
+
+@keyframes heroBar {
+  from {
+    transform: scaleX(0);
+  }
+}
+.hero-bar {
+  transform-origin: left center;
+  animation: heroBar 0.4s var(--hero-ease-out) both;
+  animation-delay: calc(2s + var(--i, 0) * 70ms);
+}
+
+@keyframes heroRise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.hero-rise {
+  animation: heroRise 0.3s var(--hero-ease-out) both;
+  animation-delay: calc(2s + var(--i, 0) * 70ms);
+}
+
+/* The sea canvas fades up once it has something to show. */
+.hero-sea {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.hero-sea[data-live="1"] {
+  opacity: 1;
+}
+
+/* Scenario tabs: the selected one is inked; the rest answer a pointer. */
+.hero-tab {
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s var(--hero-ease-out);
+}
+.hero-tab:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hero-tab:not([aria-selected="true"]):hover {
+    background-color: theme("colors.chart.100");
+    border-color: var(--rule-strong);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-type,
+  .hero-tick,
+  .hero-draw,
+  .hero-pop,
+  .hero-stamp,
+  .hero-bar,
+  .hero-rise {
+    animation: none;
+  }
+  .hero-sea {
+    display: none;
+  }
+}
