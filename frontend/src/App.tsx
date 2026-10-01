@@ -90,6 +90,10 @@ export default function App() {
   const [tourPaused, setTourPaused] = useState(false);
   const tourActionDone = useRef(-1);
 
+  // Bumped whenever the conversation is restarted (a scenario, the tour). A
+  // reply that was asked for under an older number is stale and is dropped.
+  const conversation = useRef(0);
+
   // ---------------------------------------------------- outlook on position
   useEffect(() => {
     if (!place) return;
@@ -110,6 +114,8 @@ export default function App() {
 
   // ------------------------------------------------------------- chat
   const send = async (text: string) => {
+    const mine = conversation.current;
+    const stale = () => mine !== conversation.current;
     setError(null);
     setBusy(true);
     setMessages((m) => [...m, { id: `${Date.now()}-u`, role: "user", text }]);
@@ -119,6 +125,7 @@ export default function App() {
         language: langChoice ?? undefined,
         sessionId: SESSION,
       });
+      if (stale()) return;
       setLatest(res);
       setDetected(res.language);
       setMode(res.mode);
@@ -138,6 +145,7 @@ export default function App() {
         }
       }
     } catch (e) {
+      if (stale()) return;
       setError(String(e));
       setMessages((m) => [
         ...m,
@@ -148,13 +156,15 @@ export default function App() {
         },
       ]);
     } finally {
-      setBusy(false);
+      if (!stale()) setBusy(false);
     }
   };
 
   const runScenario = async (ask: string) => {
+    const mine = ++conversation.current;
     setTab("ask");
     await api.resetSession(SESSION).catch(() => {});
+    if (mine !== conversation.current) return; // a newer run has taken over
     setMessages([]);
     setLatest(null);
     setLangChoice(null);
@@ -194,7 +204,10 @@ export default function App() {
   }, [tourOn, tourStep, tourPaused]);
 
   const startTour = async () => {
+    const mine = ++conversation.current;
     await api.resetSession(SESSION).catch(() => {});
+    if (mine !== conversation.current) return;
+    setBusy(false);
     setMessages([]);
     setLatest(null);
     setLangChoice(null);
@@ -238,8 +251,12 @@ export default function App() {
       fallback();
     }
 
-    if (BOOT_SCENARIO) setTimeout(() => runScenario(BOOT_SCENARIO.ask), 250);
-    if (BOOT.tour) setTimeout(() => startTour(), 500);
+    // The timers are cleared on unmount, so StrictMode's mount-unmount-mount
+    // in development fires the scenario once, not twice.
+    const timers: number[] = [];
+    if (BOOT_SCENARIO) timers.push(window.setTimeout(() => runScenario(BOOT_SCENARIO.ask), 250));
+    if (BOOT.tour) timers.push(window.setTimeout(() => startTour(), 500));
+    return () => timers.forEach((t) => window.clearTimeout(t));
     // Runs once: the deep link is read at load and never again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
