@@ -18,6 +18,7 @@ import { T } from "../i18n/mobile";
 import { PORTS } from "../ports";
 import { RATING_COLOR, RISK_COLOR } from "../risk";
 import { getRecognition, SPEECH_LOCALE, type SpeechRecognitionLike } from "../speech";
+import { alpha, ink } from "../tokens";
 
 /**
  * The phone — ORCA for the fisher himself, many of whom read little.
@@ -197,7 +198,7 @@ export default function MobileApp() {
 
   // ---------------------------------------------------------------- bits
   const cat = outlook?.safety.category;
-  const color = cat ? RISK_COLOR[cat] : "#42596D";
+  const color = cat ? RISK_COLOR[cat] : ink[500];
   const danger = cat === "HIGH" || cat === "EXTREME";
 
   const speakArea = (a: FishingOutlook["areas"][number]) => {
@@ -263,7 +264,7 @@ export default function MobileApp() {
               {/* the verdict — colour first, words second */}
               <div
                 className="panel rule-double flex flex-col items-center px-4 pb-4 pt-6 text-center"
-                style={{ background: `${color}14` }}
+                style={{ background: alpha(color, 0.08) }}
               >
                 <div
                   className="grid h-32 w-32 place-items-center rounded-full border-[7px] bg-paper-50"

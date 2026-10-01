@@ -1,6 +1,7 @@
 import type { Language, PFZZone } from "../types";
 import { SchoolGlyph } from "./glyphs";
 import { L } from "../i18n/pfz";
+import { chart, risk } from "../tokens";
 
 export default function PFZList({
   zones,
@@ -23,7 +24,7 @@ export default function PFZList({
       <div className="space-y-2 px-4 py-3.5">
         {zones.map((z) => {
           const best = z.rank === 1;
-          const ring = best ? "#1D7A50" : "#2A7391";
+          const ring = best ? risk.low : chart[500];
           return (
             <div
               key={z.rank}
@@ -57,7 +58,7 @@ export default function PFZList({
               <div className="shrink-0 text-right">
                 <div
                   className="sounding text-[17px] tabular-nums"
-                  style={{ color: best ? "#1D7A50" : "#2A7391" }}
+                  style={{ color: best ? risk.low : chart[500] }}
                 >
                   {Math.round(z.confidence * 100)}%
                 </div>

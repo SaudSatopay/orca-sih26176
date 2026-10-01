@@ -3,6 +3,7 @@ import * as api from "../api";
 import type { Language, Location, TimelinePoint } from "../types";
 import { RISK_BANDS, RISK_COLOR } from "../risk";
 import { L } from "../i18n/riskTimeline";
+import { chart, ink, paper, risk } from "../tokens";
 
 /** Longest run of hours at or below `limit`, returned as [startHour, endHour]. */
 function bestWindow(points: TimelinePoint[], limit = 50): [number, number] | null {
@@ -95,8 +96,8 @@ export default function RiskTimeline({
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 150 }}>
           <defs>
             <linearGradient id="riskArea" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2A7391" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#2A7391" stopOpacity="0.02" />
+              <stop offset="0%" stopColor={chart[500]} stopOpacity="0.22" />
+              <stop offset="100%" stopColor={chart[500]} stopOpacity="0.02" />
             </linearGradient>
           </defs>
 
@@ -126,7 +127,7 @@ export default function RiskTimeline({
                 y1={padTop}
                 x2={x(i)}
                 y2={padTop + plotH}
-                stroke="#12212D"
+                stroke={ink[900]}
                 strokeWidth="0.5"
                 opacity="0.12"
               />
@@ -140,7 +141,7 @@ export default function RiskTimeline({
               y={padTop}
               width={(window[1] - window[0] + 1) * stepX}
               height={plotH}
-              fill="#1D7A50"
+              fill={risk.low}
               opacity={0.1}
             />
           )}
@@ -151,7 +152,7 @@ export default function RiskTimeline({
               width={(window[1] - window[0] + 1) * stepX}
               height={plotH}
               fill="none"
-              stroke="#1D7A50"
+              stroke={risk.low}
               strokeWidth="1"
               strokeDasharray="4 3"
               opacity={0.55}
@@ -159,7 +160,7 @@ export default function RiskTimeline({
           )}
 
           <path d={area} fill="url(#riskArea)" />
-          <path d={line} fill="none" stroke="#12212D" strokeWidth={2} strokeLinejoin="round" />
+          <path d={line} fill="none" stroke={ink[900]} strokeWidth={2} strokeLinejoin="round" />
 
           {/* per-hour dots coloured by category */}
           {points.map((p, i) => (
@@ -169,7 +170,7 @@ export default function RiskTimeline({
               cy={y(p.score)}
               r={p.warning ? 3.8 : 2.7}
               fill={RISK_COLOR[p.category]}
-              stroke={p.warning ? "#FBF7ED" : "none"}
+              stroke={p.warning ? paper[50] : "none"}
               strokeWidth={p.warning ? 1.4 : 0}
             >
               <title>
@@ -187,14 +188,14 @@ export default function RiskTimeline({
             y1={padTop - 4}
             x2={x(nowIdx)}
             y2={padTop + plotH}
-            stroke="#2A7391"
+            stroke={chart[500]}
             strokeWidth={1.3}
             strokeDasharray="4 4"
           />
           <text
             x={x(nowIdx) + 5}
             y={padTop + 6}
-            fill="#2A7391"
+            fill={chart[500]}
             fontSize="10"
             fontWeight="700"
             fontFamily="'Spline Sans Mono Variable', monospace"
@@ -223,7 +224,7 @@ export default function RiskTimeline({
                 key={`t${i}`}
                 x={x(i)}
                 y={H - 8}
-                fill="#5D7386"
+                fill={ink[400]}
                 fontSize="9.5"
                 textAnchor="middle"
                 fontFamily="'Spline Sans Mono Variable', monospace"

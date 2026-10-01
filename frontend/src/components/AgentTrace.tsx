@@ -1,5 +1,6 @@
 import type { AgentTrace as Trace, Language } from "../types";
 import { LABEL, T } from "../i18n/agentTrace";
+import { alpha, ink, risk } from "../tokens";
 
 /** The graph, as it actually executes. */
 const PHASES: { key: string; agents: string[] }[] = [
@@ -10,10 +11,10 @@ const PHASES: { key: string; agents: string[] }[] = [
 ];
 
 const STATUS_DOT: Record<Trace["status"], string> = {
-  ok: "#1D7A50",
-  degraded: "#A17000",
-  failed: "#AF2318",
-  skipped: "#82949F",
+  ok: risk.low,
+  degraded: risk.moderate,
+  failed: risk.extreme,
+  skipped: ink[300],
 };
 
 /**
@@ -87,7 +88,7 @@ export default function AgentTracePanel({
                       borderColor:
                         row.status === "ok" || row.status === "skipped"
                           ? "var(--rule-faint)"
-                          : STATUS_DOT[row.status] + "66",
+                          : alpha(STATUS_DOT[row.status], 0.4),
                     }}
                   >
                     <div className="flex items-center gap-2 text-[11.5px]">

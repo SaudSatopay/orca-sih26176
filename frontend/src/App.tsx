@@ -36,6 +36,7 @@ import { PORTS } from "./ports";
 import { RISK_COLOR } from "./risk";
 import { SPEECH_LOCALE } from "./speech";
 import { readBootParams } from "./boot";
+import { ink, risk } from "./tokens";
 
 const SESSION = "demo";
 const RADIUS_KM = 100;
@@ -643,7 +644,7 @@ export default function App() {
                                 y1="4"
                                 x2="25"
                                 y2="4"
-                                stroke={r.recommended ? "#1D7A50" : "#5D7386"}
+                                stroke={r.recommended ? risk.low : ink[400]}
                                 strokeWidth="2"
                                 strokeDasharray={r.recommended ? "7 4" : "2 4"}
                               />

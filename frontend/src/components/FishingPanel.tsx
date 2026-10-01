@@ -2,6 +2,7 @@ import type { FishingOutlook, Language } from "../types";
 import { FishGlyph, SchoolGlyph, WarnGlyph } from "./glyphs";
 import { RATING_WORD, T } from "../i18n/fishing";
 import { RATING_COLOR } from "../risk";
+import { risk } from "../tokens";
 
 /** The five documented model factors, in reading order, with tooltip labels. */
 const FACTOR_ORDER: { key: string; label: string }[] = [
@@ -326,7 +327,7 @@ export default function FishingPanel({
             {data.avoid.map((z) => (
               <div key={z.name} className="flex items-start gap-2.5">
                 <svg width="14" height="14" className="mt-0.5 shrink-0" aria-hidden>
-                  <rect x="0.5" y="0.5" width="13" height="13" fill="url(#hatch-critical)" stroke="#AF2318" strokeWidth="1" />
+                  <rect x="0.5" y="0.5" width="13" height="13" fill="url(#hatch-critical)" stroke={risk.extreme} strokeWidth="1" />
                 </svg>
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-bold text-ink-900">{z.name}</div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { RISK_BANDS, RISK_COLOR } from "../risk";
 import type { RiskCategory } from "../types";
+import { alpha, ink, paper } from "../tokens";
 
 /**
  * The risk gauge, drawn like a ship's instrument: a fine tick ring, an ink
@@ -94,7 +95,7 @@ export default function RiskDial({
             y1={tk.y1}
             x2={tk.x2}
             y2={tk.y2}
-            stroke="#12212D"
+            stroke={ink[900]}
             strokeWidth={tk.major ? 1.3 : 0.6}
             opacity={tk.major ? 0.7 : 0.35}
           />
@@ -110,7 +111,7 @@ export default function RiskDial({
             strokeWidth={2.4}
           />
         ))}
-        <circle cx={c} cy={c} r={rArc} fill="#FBF7ED" stroke="rgba(18,33,45,0.2)" strokeWidth={7} />
+        <circle cx={c} cy={c} r={rArc} fill={paper[50]} stroke={alpha(ink[900], 0.2)} strokeWidth={7} />
         <circle
           cx={c}
           cy={c}
@@ -124,7 +125,7 @@ export default function RiskDial({
           style={{ transition: "stroke-dashoffset .12s linear" }}
           transform={`rotate(-90 ${c} ${c})`}
         />
-        <circle cx={c} cy={c} r={rArc - 6.5} fill="none" stroke="rgba(18,33,45,0.3)" strokeWidth={0.8} />
+        <circle cx={c} cy={c} r={rArc - 6.5} fill="none" stroke={alpha(ink[900], 0.3)} strokeWidth={0.8} />
       </svg>
       <div className="absolute inset-0 grid place-items-center">
         <div className="text-center leading-none">

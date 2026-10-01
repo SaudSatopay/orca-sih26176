@@ -1,3 +1,4 @@
+import { chance, risk } from "./tokens";
 import type { CatchRating, RiskCategory } from "./types";
 
 /**
@@ -20,10 +21,10 @@ export function riskBand(score: number): RiskCategory {
 }
 
 export const RISK_COLOR: Record<RiskCategory, string> = {
-  LOW: "#1D7A50",
-  MODERATE: "#A17000",
-  HIGH: "#BF4E12",
-  EXTREME: "#AF2318",
+  LOW: risk.low,
+  MODERATE: risk.moderate,
+  HIGH: risk.high,
+  EXTREME: risk.extreme,
 };
 
 /** The colour a bare score is drawn in. */
@@ -33,8 +34,8 @@ export function riskColor(score: number): string {
 
 /** Rating colours tuned for chart paper — inky enough to read as drafted. */
 export const RATING_COLOR: Record<CatchRating, string> = {
-  very_good: "#1D7A50",
-  good: "#63862B",
-  fair: "#B08000",
-  poor: "#9C5F44",
+  very_good: risk.low,
+  good: chance.good,
+  fair: chance.some,
+  poor: chance.poor,
 };

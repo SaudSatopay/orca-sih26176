@@ -4,6 +4,7 @@ import type { Language } from "../types";
 import { CourseArrow, FishGlyph, LockGlyph, WarnGlyph } from "./glyphs";
 import { CREW_TEXT, L10N, PROVIDER_TEXT } from "../i18n/system";
 import { PORTS } from "../ports";
+import { chart, ink, risk } from "../tokens";
 
 /**
  * The engine room — the whole machine on one sheet, running.
@@ -89,11 +90,11 @@ export default function SystemPanel({
   const pText = PROVIDER_TEXT[language] ?? PROVIDER_TEXT.en;
 
   const providers = [
-    { name: "Open-Meteo Marine", status: "LIVE", color: "#1D7A50", live: true, ...pText[0] },
-    { name: "Open-Meteo Forecast", status: "LIVE", color: "#1D7A50", live: true, ...pText[1] },
-    { name: "INCOIS · IMD · MOSDAC", status: "INTERFACE READY", color: "#A17000", live: false, ...pText[2] },
-    { name: "OBIS · Map of Life", status: "BUNDLED SNAPSHOT", color: "#1E5F7A", live: false, ...pText[3] },
-    { name: "Demo store", status: "ALWAYS ON", color: "#42596D", live: false, ...pText[4] },
+    { name: "Open-Meteo Marine", status: "LIVE", color: risk.low, live: true, ...pText[0] },
+    { name: "Open-Meteo Forecast", status: "LIVE", color: risk.low, live: true, ...pText[1] },
+    { name: "INCOIS · IMD · MOSDAC", status: "INTERFACE READY", color: risk.moderate, live: false, ...pText[2] },
+    { name: "OBIS · Map of Life", status: "BUNDLED SNAPSHOT", color: chart[600], live: false, ...pText[3] },
+    { name: "Demo store", status: "ALWAYS ON", color: ink[500], live: false, ...pText[4] },
   ];
 
   const crew = CREW_TEXT[language] ?? CREW_TEXT.en;
@@ -227,8 +228,8 @@ export default function SystemPanel({
                       <span
                         className="pulse-dot !h-[6px] !w-[6px]"
                         style={{
-                          background: "#2A7391",
-                          color: "#2A7391",
+                          background: chart[500],
+                          color: chart[500],
                           animationDelay: `${j * 0.3}s`,
                         }}
                       />
@@ -270,7 +271,7 @@ export default function SystemPanel({
           <span className="label flex items-center gap-2">
             <span
               className={`pulse-dot ${scanning ? "" : "pulse-dot--still"}`}
-              style={{ background: scanning ? "#1D7A50" : "#AF2318", color: scanning ? "#1D7A50" : "#AF2318" }}
+              style={{ background: scanning ? risk.low : risk.extreme, color: scanning ? risk.low : risk.extreme }}
             />
             {t.reading}
           </span>
@@ -346,8 +347,8 @@ export default function SystemPanel({
                     <span
                       className="border px-1.5 py-px text-[8.5px] font-bold tracking-wider"
                       style={{
-                        color: r.mode === "LIVE" ? "#1D7A50" : "#A17000",
-                        borderColor: r.mode === "LIVE" ? "#1D7A50" : "#A17000",
+                        color: r.mode === "LIVE" ? risk.low : risk.moderate,
+                        borderColor: r.mode === "LIVE" ? risk.low : risk.moderate,
                       }}
                     >
                       {r.mode}

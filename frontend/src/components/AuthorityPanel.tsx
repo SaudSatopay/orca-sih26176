@@ -3,6 +3,7 @@ import * as api from "../api";
 import type { AuthorityDashboard, Language } from "../types";
 import { RISK_COLOR } from "../risk";
 import { T } from "../i18n/authority";
+import { chart, risk } from "../tokens";
 
 /** The board as a CSV file — the format an administration actually circulates. */
 function exportCsv(data: AuthorityDashboard) {
@@ -56,10 +57,10 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
   if (!data) return <div className="panel p-6 text-sm italic text-ink-400">{t.loading}</div>;
 
   const tiles = [
-    { key: "monitored", label: t.centres, color: "#1E5F7A" },
+    { key: "monitored", label: t.centres, color: chart[600] },
     { key: "extreme", label: t.extreme, color: RISK_COLOR.EXTREME },
     { key: "high", label: t.high, color: RISK_COLOR.HIGH },
-    { key: "official_warnings", label: t.warnings, color: "#A17000" },
+    { key: "official_warnings", label: t.warnings, color: risk.moderate },
   ];
 
   return (
