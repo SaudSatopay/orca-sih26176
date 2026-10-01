@@ -82,19 +82,30 @@ export interface ArmResult {
   ms: number;
 }
 
+/** Yield the main thread between the backdrop paint and the GL render, so
+ * neither half can become a long task even on a contended machine. */
+function breath(): Promise<void> {
+  return new Promise((done) => {
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number };
+    if (w.requestIdleCallback) w.requestIdleCallback(() => done(), { timeout: 300 });
+    else window.setTimeout(done, 0);
+  });
+}
+
 /**
  * The question tabs: one still per tab, all from one context. The lens body
  * magnifies the distance scale under the selected tab.
  */
-export function armTabs(args: {
+export async function armTabs(args: {
   sheetEl: Element;
   strip: { x: number; y: number; width: number };
   lenses: PageRect[];
   dpr: number;
-}): ArmResult {
+}): Promise<ArmResult> {
   const t0 = performance.now();
   const region = union(args.lenses, 24);
   const backdrop = paintSheet(region, args.sheetEl, args.strip);
+  await breath();
   // A short lens: the magnified body is the star, the bend confined to a
   // couple of pixels at the rim (hot rim values read as ripple, not glass).
   const stills = renderStills(backdrop, region, args.lenses, {
@@ -117,6 +128,7 @@ export async function armOpen(args: {
   const t0 = performance.now();
   const region = union([args.lens], 56);
   const backdrop = await paintGround(region, args.rule);
+  await breath();
   const stills = renderStills(backdrop, region, [args.lens], {
     radius: 2,
     magnify: 1.12,

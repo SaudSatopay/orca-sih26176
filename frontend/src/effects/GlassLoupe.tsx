@@ -204,7 +204,7 @@ function TabsLoupe({ tier, children }: { tier: Exclude<GlassTier, "off">; childr
             height: stripPage.height + TAB_LENS_BLEED_Y * 2,
           };
         });
-        const result = armTabs({
+        const result = await armTabs({
           sheetEl: sheet,
           strip: { x: stripPage.x, y: stripPage.y, width: strip.offsetWidth },
           lenses,
