@@ -50,7 +50,7 @@ export default {
         },
       },
       animation: {
-        rise: "rise .35s ease-out",
+        rise: "rise .26s ease-out",
         stampIn: "stampIn .45s cubic-bezier(.2,.9,.3,1.2)",
       },
     },

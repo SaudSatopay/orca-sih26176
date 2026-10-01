@@ -28,6 +28,8 @@
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --press: 120ms;
   --hover: 180ms;
+  /* every bar that draws itself in — why-bars, factor meters, coast stems */
+  --draw: 600ms;
 
   /* The sheet itself: graticule grid, aged edges, and the sea rising from
      the foot of the sheet — the page always stands in shallow water. */
@@ -273,7 +275,7 @@ main:focus-visible {
 
 .grow-x {
   transform-origin: left center;
-  animation: growx 0.9s var(--ease-out);
+  animation: growx var(--draw) var(--ease-out);
 }
 
 /* Fish idle at station against the current: a small forward dart, drift back. */
