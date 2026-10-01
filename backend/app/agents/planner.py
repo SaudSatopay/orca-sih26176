@@ -141,7 +141,16 @@ def handle(req: ChatRequest) -> ChatResponse:
     # ---- node 4: pfz list / route ---------------------------------------
     pfz_zones: List[PFZZone] = []
     if "pfz" in results and results["pfz"].ok:
-        pfz_zones = [PFZZone(**z) for z in results["pfz"].data.get("zones", [])]
+        zone_rows = results["pfz"].data.get("zones", [])
+        # The PFZ agent ran alongside the Ocean agent, so it scored each
+        # ground against the demo sea temperature. Re-stamp the chance of fish
+        # with the Ocean agent's actual reading (it differs in LIVE mode) so
+        # the answer and the Today view quote the same number.
+        if ocean_d.get("sst_c") is not None:
+            pfz_agent.apply_chance(zone_rows, ocean_d["sst_c"], when.hour)
+            if zone_rows:
+                results["pfz"].confidence = zone_rows[0]["confidence"]
+        pfz_zones = [PFZZone(**z) for z in zone_rows]
 
     routes: List[RouteOption] = []
     if "route" in needs and pfz_zones:

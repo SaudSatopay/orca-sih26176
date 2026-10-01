@@ -59,10 +59,7 @@ def _zone_payload(loc: Location, zones: List[Dict], ambient_sst: Optional[float]
         blocker = _blocking_zone(z["latitude"], z["longitude"])
         if blocker:
             continue  # never recommend a ground inside a restricted area
-        result = fishing.probability(
-            chlorophyll=z.get("chlorophyll_mg_m3"), sst=z.get("sst_c"),
-            ambient_sst=ambient_sst, wave_m=z.get("wave_height_m"), hour=hour,
-        )
+        result = fishing.zone_chance(z, ambient_sst=ambient_sst, hour=hour)
         z = dict(z)
         z["probability"] = result["probability"]
         z["rating"] = fishing.rating(result["probability"])
