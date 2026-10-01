@@ -70,10 +70,12 @@ body {
   background: var(--sheet-ground), var(--paper);
 }
 
-/* The console scrolls as one long sheet. Its ground is a fixed layer (see
-   .sheet-ground) so the graticule and the rising sea stay with the viewport
-   instead of ending after the first screen; the body keeps plain paper. */
-:root[data-surface="console"] body {
+/* The console and the landing scroll as one long sheet. Their ground is a
+   fixed layer (see .sheet-ground) so the graticule and the rising sea stay
+   with the viewport instead of ending after the first screen; the body keeps
+   plain paper. The phone app never scrolls the page, so there the body's own
+   ground is the whole of it. */
+:root[data-surface] body {
   background: var(--paper);
 }
 .sheet-ground {

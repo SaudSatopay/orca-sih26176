@@ -144,6 +144,8 @@ export default function Landing({
 
   return (
     <main className="mx-auto flex min-h-full max-w-[1240px] flex-col px-5 py-5">
+      {/* the ground stays with the viewport, so the page never ends in a seam */}
+      <div className="sheet-ground" aria-hidden />
       {/* the sea at the foot of the sheet; the <i> is the far swell layer
           (index.css): three layers, each on its own transform */}
       <div className="sea-drift" aria-hidden>

@@ -137,11 +137,10 @@ export default function App() {
   useDocumentMeta(language, inConsole ? (VIEW_TITLE[language] ?? VIEW_TITLE.en)[tab] : null);
   useAmbientMotion();
 
-  // The console's ground is a fixed layer (index.css, `.sheet-ground`); the
-  // mark tells the body to stand down so the two never double up.
+  // The ground is a fixed layer on both surfaces (index.css, `.sheet-ground`);
+  // the mark tells the body to stand down so the two never double up.
   useEffect(() => {
-    if (!inConsole) return;
-    document.documentElement.dataset.surface = "console";
+    document.documentElement.dataset.surface = inConsole ? "console" : "landing";
     return () => {
       delete document.documentElement.dataset.surface;
     };
