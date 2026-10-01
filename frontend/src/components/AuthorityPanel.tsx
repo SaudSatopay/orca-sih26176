@@ -2,7 +2,9 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import * as api from "../api";
 import { useFirstSight } from "../firstSight";
 import type { AuthorityDashboard, AuthorityRow, Language, RiskCategory } from "../types";
-import { RISK_BANDS, RISK_COLOR } from "../risk";
+import { RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
+import { dec1, int } from "../format";
+import { PORTS } from "../ports";
 import { BAND, T } from "../i18n/authority";
 import { WarnGlyph } from "./glyphs";
 import { DownloadGlyph, SortGlyph } from "./viewGlyphs";
@@ -113,7 +115,14 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
 
   if (!data) {
     if (state === "error")
-      return <OfflineNotice language={language} body={t.noReading} onRetry={load} busy={loading} />;
+      // A failed first reading keeps the board's frame: the officer still sees
+      // which centres are watched, with em-dash readings (AU3).
+      return (
+        <div className="flex min-w-0 flex-col gap-4">
+          <OfflineNotice language={language} body={t.noReading} onRetry={load} busy={loading} />
+          <EmptyBoard t={t} />
+        </div>
+      );
     return <BoardDraft t={t} />;
   }
 
@@ -141,15 +150,14 @@ function Summary({ data, language, t }: { data: AuthorityDashboard; language: La
   const band = BAND[language] ?? BAND.en;
   const counts = bandCounts(data.locations);
   const total = data.locations.length;
-  const extreme = data.summary.extreme ?? counts.EXTREME;
-  const high = data.summary.high ?? counts.HIGH;
   const warnings = data.summary.official_warnings ?? data.locations.filter((r) => r.official_warning).length;
 
-  // Colour only where the count is not zero and it is a risk.
+  // The risk tiles name their centres instead of repeating the legend's
+  // counts: "Paradip · 92" says where the trouble is (AU1).
+  const named = (c: RiskCategory) => data.locations.filter((r) => r.risk_category === c);
   const tiles = [
-    { key: "extreme", label: t.extreme, n: extreme, on: "text-risk-extreme", hatch: true, warn: false },
-    { key: "high", label: t.high, n: high, on: "text-risk-high", hatch: false, warn: false },
-    { key: "warnings", label: t.warnings, n: warnings, on: "text-risk-extreme", hatch: false, warn: true },
+    { key: "extreme", label: t.extreme, c: "EXTREME" as RiskCategory, rows: named("EXTREME"), hatch: true },
+    { key: "high", label: t.high, c: "HIGH" as RiskCategory, rows: named("HIGH"), hatch: false },
   ];
 
   return (
@@ -157,7 +165,7 @@ function Summary({ data, language, t }: { data: AuthorityDashboard; language: La
       <div className="col-span-2 px-5 py-4 md:col-span-1">
         <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
           <div>
-            <div className="font-display text-display font-black leading-none text-ink-900">
+            <div className="lining font-display text-display font-black leading-none text-ink-900">
               {data.summary.monitored ?? total}
             </div>
             <div className="label mt-1.5">{t.centres}</div>
@@ -188,18 +196,37 @@ function Summary({ data, language, t }: { data: AuthorityDashboard; language: La
       </div>
 
       {tiles.map((x) => (
-        <div key={x.key} className={`px-5 py-4 ${x.n > 0 && x.hatch ? "hatch-danger" : ""}`}>
-          <div
-            className={`flex items-center gap-2 font-display text-display font-black leading-none ${
-              x.n > 0 ? x.on : "text-ink-400"
-            }`}
-          >
-            {x.n}
-            {x.warn && x.n > 0 && <WarnGlyph size={20} className="shrink-0" />}
-          </div>
+        <div key={x.key} className={`px-5 py-4 ${x.rows.length > 0 && x.hatch ? "hatch-danger" : ""}`}>
+          {x.rows.length > 0 ? (
+            <ul className="space-y-1">
+              {x.rows.map((r) => (
+                <li key={r.name} className="font-display text-title font-bold leading-tight text-ink-900">
+                  {r.name}{" "}
+                  <span className="lining whitespace-nowrap" style={{ color: RISK_INK[x.c] }}>
+                    · {r.risk_score}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="font-mono text-body text-ink-400">{t.none}</div>
+          )}
           <div className="label mt-1.5">{x.label}</div>
         </div>
       ))}
+
+      {/* official warnings keep their count and mark */}
+      <div className="px-5 py-4">
+        <div
+          className={`lining flex items-center gap-2 font-display text-display font-black leading-none ${
+            warnings > 0 ? "text-risk-extreme" : "text-ink-400"
+          }`}
+        >
+          {warnings}
+          {warnings > 0 && <WarnGlyph size={20} className="shrink-0" />}
+        </div>
+        <div className="label mt-1.5">{t.warnings}</div>
+      </div>
     </div>
   );
 }
@@ -235,26 +262,24 @@ function CoastProfile({ rows, language, t }: { rows: AuthorityRow[]; language: L
       <div className="overflow-x-auto px-4 pb-3 pt-2" aria-hidden>
         <div
           className="grid min-w-[640px]"
-          style={{ gridTemplateColumns: `30px repeat(${stations.length}, minmax(0, 1fr))` }}
+          style={{ gridTemplateColumns: `repeat(${stations.length}, minmax(0, 1fr))` }}
         >
-          {/* scale: the band edges, ruled across the plot */}
-          <div className="relative col-start-1 row-start-1 mt-8 h-[124px]">
-            {[0, ...EDGES, 100].map((v) => (
-              <span
-                key={v}
-                className="absolute right-2 translate-y-1/2 font-mono text-label tabular-nums leading-none text-ink-500"
-                style={{ bottom: `${v}%` }}
-              >
-                {v}
-              </span>
-            ))}
-          </div>
           <div
             className="relative row-start-1 mt-8 h-[124px] border-b"
-            style={{ gridColumn: "2 / -1", borderColor: "var(--rule-strong)" }}
+            style={{ gridColumn: "1 / -1", borderColor: "var(--rule-strong)" }}
           >
             {[...EDGES, 100].map((v) => (
               <span key={v} className="v-coast-grid" style={{ bottom: `${v}%` }} />
+            ))}
+            {/* the scale names the bands, not their bare edges (AU4) */}
+            {RISK_BANDS.map((b) => (
+              <span
+                key={b.category}
+                className="absolute right-1 z-[1] font-mono text-label uppercase tracking-[0.12em] text-ink-400"
+                style={{ bottom: `${(b.from + b.max) / 2}%`, transform: "translateY(50%)" }}
+              >
+                {band[b.category]}
+              </span>
             ))}
           </div>
 
@@ -262,7 +287,7 @@ function CoastProfile({ rows, language, t }: { rows: AuthorityRow[]; language: L
             <div
               key={r.name}
               className="v-coast-station row-start-1 mt-8 h-[124px]"
-              style={{ gridColumn: i + 2 }}
+              style={{ gridColumn: i + 1 }}
               title={`${r.name}: ${fill(t.of100, { score: r.risk_score, band: band[r.risk_category] })}`}
             >
               <span className="v-coast-stem" style={{ height: `${r.risk_score}%` }} />
@@ -283,7 +308,7 @@ function CoastProfile({ rows, language, t }: { rows: AuthorityRow[]; language: L
             <div
               key={r.name}
               className="row-start-2 px-1 pt-2 text-center text-label font-semibold leading-tight text-ink-800"
-              style={{ gridColumn: i + 2 }}
+              style={{ gridColumn: i + 1 }}
             >
               {r.name}
             </div>
@@ -294,7 +319,7 @@ function CoastProfile({ rows, language, t }: { rows: AuthorityRow[]; language: L
               key={g.stretch}
               className="row-start-3 mx-1.5 mt-2 truncate border-t pt-1.5 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-500"
               style={{
-                gridColumn: `${offset[i] + 2} / span ${g.rows.length}`,
+                gridColumn: `${offset[i] + 1} / span ${g.rows.length}`,
                 borderColor: "var(--rule-strong)",
               }}
             >
@@ -431,7 +456,9 @@ function BoardTable({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] border-collapse text-body">
+          {/* Below lg the warning column folds into the centre cell, so the
+              column an officer needs is never cut by the panel edge (AU2). */}
+          <table className="w-full min-w-[640px] border-collapse text-body lg:min-w-[900px]">
             <caption className="sr-only">{t.caption}</caption>
             <thead>
               <tr className="border-b" style={{ borderColor: "var(--rule-strong)" }}>
@@ -450,7 +477,7 @@ function BoardTable({
                 <SortHead k="wind" {...head} align="right" className="px-3">
                   {t.hWind}
                 </SortHead>
-                <th scope="col" className={`${plainHead} pl-5 pr-4`}>
+                <th scope="col" className={`${plainHead} hidden pl-5 pr-4 lg:table-cell`}>
                   {t.hWarning}
                 </th>
               </tr>
@@ -472,6 +499,12 @@ function BoardTable({
                         </span>
                         <span className="font-display text-body font-bold text-ink-900">{row.name}</span>
                       </span>
+                      {/* below lg the active warning rides the centre cell (AU2) */}
+                      {row.official_warning && row.headline && (
+                        <span className="mt-1 block max-w-[32ch] pl-6 text-label font-medium leading-snug text-ink-800 lg:hidden">
+                          {row.headline}
+                        </span>
+                      )}
                     </th>
                     <td className="px-3 py-2.5 text-ink-700">{row.state}</td>
                     <td className="px-3 py-2.5">
@@ -495,14 +528,14 @@ function BoardTable({
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-right font-mono tabular-nums text-ink-900">
-                      {row.wave_height_m != null ? row.wave_height_m.toFixed(2) : "—"}
+                      {row.wave_height_m != null ? dec1(row.wave_height_m) : "—"}
                       <span className="ml-1 text-ink-500">m</span>
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-right font-mono tabular-nums text-ink-900">
-                      {row.wind_speed_kmh != null ? row.wind_speed_kmh.toFixed(1) : "—"}
+                      {row.wind_speed_kmh != null ? int(row.wind_speed_kmh) : "—"}
                       <span className="ml-1 text-ink-500">km/h</span>
                     </td>
-                    <td className="min-w-[260px] py-2.5 pl-5 pr-4">
+                    <td className="hidden min-w-[260px] py-2.5 pl-5 pr-4 lg:table-cell">
                       {row.headline ? (
                         <span className="flex items-start gap-2">
                           {row.official_warning && (
@@ -513,9 +546,8 @@ function BoardTable({
                           <span className="min-w-0 font-medium leading-snug text-ink-900">{row.headline}</span>
                         </span>
                       ) : (
-                        <span className="text-ink-500">
-                          <span aria-hidden>—</span>
-                          <span className="sr-only">{t.noWarning}</span>
+                        <span className="text-ink-500" role="img" aria-label={t.noWarning}>
+                          —
                         </span>
                       )}
                     </td>
@@ -569,6 +601,50 @@ function BoardTable({
 }
 
 /* ------------------------------------------------------------------- draft */
+
+/**
+ * The board's frame when the first reading failed: column heads and the ten
+ * centres ORCA watches, with em-dash readings, under the error notice (AU3).
+ */
+function EmptyBoard({ t }: { t: Strings }) {
+  const heads = [t.hCentre, t.hState, t.hRisk, t.hWave, t.hWind, t.hWarning];
+  return (
+    <section className="panel rule-double overflow-hidden">
+      <div className="hd">
+        <span className="label">{t.board}</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[640px] border-collapse text-body">
+          <caption className="sr-only">{t.caption}</caption>
+          <thead>
+            <tr className="border-b" style={{ borderColor: "var(--rule-strong)" }}>
+              {heads.map((h, i) => (
+                <th key={h} scope="col" className={`${HEAD} text-left ${i === 0 ? "pl-4 pr-3" : "px-3"}`}>
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {PORTS.map((p) => (
+              <tr key={p.name} className="border-b last:border-0" style={{ borderColor: "var(--rule-faint)" }}>
+                <th scope="row" className="py-2.5 pl-4 pr-3 text-left font-display text-body font-bold text-ink-900">
+                  {p.name}
+                </th>
+                <td className="px-3 py-2.5 text-ink-700">{p.state}</td>
+                {[0, 1, 2, 3].map((i) => (
+                  <td key={i} className="px-3 py-2.5 font-mono text-ink-500">
+                    —
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
 
 function BoardDraft({ t }: { t: Strings }) {
   return (

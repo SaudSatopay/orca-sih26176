@@ -1,0 +1,118 @@
+import { render, screen, within } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import type { AuthorityDashboard } from "../types";
+import AuthorityPanel from "./AuthorityPanel";
+
+vi.mock("../api");
+
+const board: AuthorityDashboard = {
+  generated_at: "2026-10-01T16:32:00",
+  summary: { monitored: 3, official_warnings: 1 },
+  locations: [
+    {
+      name: "Mumbai",
+      state: "Maharashtra",
+      latitude: 18.922,
+      longitude: 72.8347,
+      risk_score: 9,
+      risk_category: "LOW",
+      official_warning: false,
+      wave_height_m: 1.52,
+      wind_speed_kmh: 22.5,
+      headline: null,
+    },
+    {
+      name: "Kochi",
+      state: "Kerala",
+      latitude: 9.9312,
+      longitude: 76.2673,
+      risk_score: 40,
+      risk_category: "MODERATE",
+      official_warning: false,
+      wave_height_m: 2.1,
+      wind_speed_kmh: 31.4,
+      headline: null,
+    },
+    {
+      name: "Paradip",
+      state: "Odisha",
+      latitude: 20.2648,
+      longitude: 86.6947,
+      risk_score: 92,
+      risk_category: "EXTREME",
+      official_warning: true,
+      wave_height_m: 5.5,
+      wind_speed_kmh: 91.2,
+      headline: "Cyclone alert for Odisha coast",
+    },
+  ],
+};
+
+async function openBoard(fail = false) {
+  const api = vi.mocked(await import("../api"));
+  if (fail) api.authority.mockRejectedValue(new Error("offline"));
+  else api.authority.mockResolvedValue(board);
+  return render(<AuthorityPanel language="en" />);
+}
+
+afterEach(() => vi.clearAllMocks());
+
+describe("the summary tiles name their centres (AU1)", () => {
+  it("prints the centre and its score instead of repeating the legend's count", async () => {
+    await openBoard();
+    // "Paradip · 92" — the score rides the name
+    expect(await screen.findByText("· 92")).toBeInTheDocument();
+    // the empty HIGH tile is quiet, not a bare zero
+    expect(screen.getByText("none")).toBeInTheDocument();
+  });
+});
+
+describe("the coast profile's scale names the bands (AU4)", () => {
+  it("rules the bands with their names, not bare edge numbers", async () => {
+    await openBoard();
+    await screen.findByText("· 92");
+    // the band words stand on the scale (the band legend also uses them)
+    expect(screen.getAllByText("Extreme").length).toBeGreaterThanOrEqual(2);
+    // the bare edges are gone
+    expect(screen.queryByText("25")).not.toBeInTheDocument();
+    expect(screen.queryByText("50")).not.toBeInTheDocument();
+  });
+});
+
+describe("readings carry one format (AU5, X5)", () => {
+  it("writes waves to one decimal and wind as whole km/h", async () => {
+    await openBoard();
+    await screen.findByText("· 92");
+    expect(screen.getAllByText("5.5").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("91").length).toBeGreaterThan(0);
+    expect(screen.queryByText("5.50")).not.toBeInTheDocument();
+    expect(screen.queryByText("91.2")).not.toBeInTheDocument();
+  });
+});
+
+describe("the warned row survives narrow sheets (AU2)", () => {
+  it("prints the active warning inside the centre cell as well as its own column", async () => {
+    await openBoard();
+    await screen.findByText("· 92");
+    // once in the lg-only warning column, once folded into the centre cell
+    expect(screen.getAllByText("Cyclone alert for Odisha coast")).toHaveLength(2);
+  });
+
+  it("marks an empty warning cell as none", async () => {
+    await openBoard();
+    await screen.findByText("· 92");
+    expect(screen.getAllByRole("img", { name: "No active warning" }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("a failed first reading keeps the board's frame (AU3)", () => {
+  it("lists the ten watched centres with em-dash readings under the notice", async () => {
+    await openBoard(true);
+    const alert = await screen.findByRole("alert");
+    expect(within(alert).getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    // the frame: the ten centres from ports.ts, readings as em dashes
+    expect(screen.getByText("Visakhapatnam")).toBeInTheDocument();
+    expect(screen.getByText("Port Blair")).toBeInTheDocument();
+    expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(40);
+  });
+});
