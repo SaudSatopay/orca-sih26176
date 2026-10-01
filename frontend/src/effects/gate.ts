@@ -51,7 +51,7 @@ export const WEBGL_CAP = 3;
  * Relief: 98–99, one context, zero frames at rest. Glass joins when its
  * rebuild lands and measures. `?fx=none` is the switch-off.
  */
-export const DEFAULT_EFFECTS: readonly EffectName[] = ["ground", "ink", "relief"];
+export const DEFAULT_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief"];
 
 export interface EffectEnv {
   /** `location.search` */

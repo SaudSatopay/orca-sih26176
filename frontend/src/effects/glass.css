@@ -1,0 +1,161 @@
+/* Effect 3 — the chart loupe. Clear glass on the chart: a 2D still of a
+   one-shot WebGL render (GlassLoupe.tsx), a drawn bezel in CSS, and the
+   graduated scale the lenses lie across. Everything here is aria-hidden
+   decoration with no pointer events; the controls stay the controls.
+
+   Bezel doctrine (the brief): one 1 px ink hairline (--rule-strong), one
+   1 px top-inner highlight in the sheen token at 0.55 (theme(colors.white)
+   carries the sheen value), and the lightest part of shadow.sheet as a
+   contact shadow. Nothing heavier. */
+
+.glass-anchor {
+  display: none;
+}
+
+/* ------------------------------------------------ the distance scale
+   Ticks every 6 px, a longer tick every fifth, a numbered tick every
+   tenth; 60 px to 5 km. The constants and colours mirror glassScale.ts,
+   which paints the identical ruler into the lens textures. */
+.glass-scale {
+  position: relative;
+  height: 24px; /* SCALE_H: numerals 11 + gap 2 + ticks 11 */
+  margin-top: 6px;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, theme(colors.chart.600 / 95%) 0 1px, transparent 1px 60px) left bottom / 100%
+      11px no-repeat,
+    repeating-linear-gradient(90deg, theme(colors.chart.600 / 62%) 0 1px, transparent 1px 30px) left bottom / 100%
+      8px no-repeat,
+    repeating-linear-gradient(90deg, theme(colors.ink.500 / 40%) 0 1px, transparent 1px 6px) left bottom / 100% 5px
+      no-repeat;
+}
+.glass-scale > span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  font-family: "Spline Sans Mono Variable", Consolas, monospace;
+  font-size: theme(fontSize.label);
+  font-weight: 600;
+  line-height: 1;
+  color: theme(colors.ink.500);
+  white-space: nowrap;
+}
+.glass-scale > span[data-first="1"] {
+  transform: none;
+}
+
+/* ------------------------------------------------ the lens stills */
+.glass-hosts {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.glass-host {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 3px;
+  /* 1 px ink hairline + sheen highlight + the lightest part of shadow.sheet. */
+  box-shadow:
+    0 0 0 1px var(--rule-strong),
+    0 1px 3px theme(colors.ink.900 / 10%);
+}
+.glass-host::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 1px 0 theme(colors.white / 55%);
+}
+.glass-host > canvas {
+  display: block;
+  border-radius: inherit;
+}
+
+/* The three tab stills crossfade; no layout, no new canvas on a press. */
+.glass-host-tab {
+  opacity: 0;
+  transition: opacity 160ms var(--ease-out);
+}
+.glass-host-tab[data-sel="1"] {
+  opacity: 1;
+}
+
+/* The primary action's slab: a 2 px bezel and a visible rise. */
+.glass-host-open {
+  visibility: hidden;
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 1px var(--rule-strong),
+    0 0 0 2px theme(colors.ink.900 / 18%),
+    0 3px 6px theme(colors.ink.900 / 10%),
+    0 1px 3px theme(colors.ink.900 / 10%);
+}
+.glass-host-open[data-live="1"] {
+  visibility: visible;
+}
+
+/* The graduated rule the primary-action loupe lies across. Ticks only;
+   same rhythm and colours as the scale. */
+.glass-rule {
+  position: absolute;
+  pointer-events: none;
+  visibility: hidden;
+  background:
+    repeating-linear-gradient(90deg, theme(colors.chart.600 / 95%) 0 1px, transparent 1px 60px) left bottom / 100%
+      11px no-repeat,
+    repeating-linear-gradient(90deg, theme(colors.chart.600 / 62%) 0 1px, transparent 1px 30px) left bottom / 100%
+      8px no-repeat,
+    repeating-linear-gradient(90deg, theme(colors.ink.500 / 40%) 0 1px, transparent 1px 6px) left bottom / 100% 5px
+      no-repeat;
+}
+.glass-rule[data-live="1"] {
+  visibility: visible;
+}
+
+/* The primary action while its glass is live: the label and arrow are the
+   primary, in ink, on clear glass. The fallback keeps the solid button. */
+.btn-ink[data-glass-live="1"] {
+  position: relative;
+  background: transparent;
+  color: theme(colors.ink.900);
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-ink[data-glass-live="1"]:hover:not(:disabled) {
+    background: theme(colors.paper.50 / 45%);
+    color: theme(colors.ink.900);
+    transform: none;
+    box-shadow: none;
+  }
+}
+.btn-ink[data-glass-live="1"]:active:not(:disabled) {
+  background: theme(colors.paper.150);
+}
+
+/* ------------------------------------------------ the CSS fallback
+   When WebGL or the backdrop fails: a real backdrop-filter lens over the
+   scale, blur kept at anti-aliasing strength, same bezel. Tabs only. */
+.glass-css {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 3px;
+  -webkit-backdrop-filter: blur(1.5px);
+  backdrop-filter: blur(1.5px);
+  background: theme(colors.paper.50 / 4%);
+  box-shadow:
+    0 0 0 1px var(--rule-strong),
+    inset 0 1px 0 theme(colors.white / 55%),
+    0 1px 3px theme(colors.ink.900 / 10%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-host-tab {
+    transition: none;
+  }
+}
