@@ -17,13 +17,25 @@
  * without a browser.
  */
 
-export type EffectName = "sea" | "relief" | "glass";
+/**
+ * - `ink`: wet ink in the ORCA wordmark (Paper Shaders LiquidMetal through an
+ *   ink ramp), one canvas;
+ * - `glass`: the chart loupe on the hero's question tabs and the primary
+ *   action (liquid-glass-js). A lens draws once and releases its context, so
+ *   it holds none at rest;
+ * - `relief`: the sea bed below the hero as a 3D paper sheet (React Three
+ *   Fiber), one canvas, drawn on demand.
+ *
+ * The ShaderGradient sea was tried and removed (MISSILE.md, Decisions): the
+ * CSS swell at the foot of the sheet is the sea.
+ */
+export type EffectName = "ink" | "glass" | "relief";
 
 /** In priority order: when the context cap bites, later ones lose. */
-export const ALL_EFFECTS: readonly EffectName[] = ["sea", "relief", "glass"];
+export const ALL_EFFECTS: readonly EffectName[] = ["ink", "glass", "relief"];
 
-/** Live WebGL contexts each effect holds while it runs. */
-export const CONTEXTS: Record<EffectName, number> = { sea: 1, relief: 1, glass: 1 };
+/** Live WebGL contexts each effect holds at rest. */
+export const CONTEXTS: Record<EffectName, number> = { ink: 1, glass: 0, relief: 1 };
 
 export const WEBGL_CAP = 3;
 
@@ -49,7 +61,7 @@ export interface EffectEnv {
 
 /**
  * `?fx=none` switches everything off, `?fx=all` asks for every effect, and
- * `?fx=sea,relief` for those two. No `fx` at all means "the shipped set".
+ * `?fx=ink,relief` for those two. No `fx` at all means "the shipped set".
  */
 export function requestedEffects(search: string): readonly EffectName[] | null {
   const raw = new URLSearchParams(search).get("fx");

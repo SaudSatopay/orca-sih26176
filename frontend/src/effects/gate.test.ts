@@ -25,8 +25,8 @@ describe("which landing effects may run", () => {
     expect(requestedEffects("?tab=home")).toBeNull();
     expect(requestedEffects("?fx=none")).toEqual([]);
     expect(requestedEffects("?fx=all")).toEqual(ALL_EFFECTS);
-    expect(requestedEffects("?fx=relief,sea")).toEqual(["sea", "relief"]);
-    expect(requestedEffects("?fx=SEA")).toEqual(["sea"]);
+    expect(requestedEffects("?fx=relief,ink")).toEqual(["ink", "relief"]);
+    expect(requestedEffects("?fx=INK")).toEqual(["ink"]);
     expect(requestedEffects("?fx=nonsense")).toEqual([]);
   });
 
@@ -44,7 +44,7 @@ describe("which landing effects may run", () => {
   it("keeps glass opaque under reduced transparency and leaves the rest alone", () => {
     const got = allowedEffects({ ...desktop, reducedTransparency: true });
     expect(got).not.toContain("glass");
-    expect(got).toContain("sea");
+    expect(got).toContain("ink");
   });
 
   it("never exceeds the WebGL context cap, whatever is asked for", () => {
@@ -55,7 +55,7 @@ describe("which landing effects may run", () => {
   });
 
   it("runs only what was asked for, in priority order", () => {
-    expect(allowedEffects({ ...desktop, search: "?fx=glass,sea" })).toEqual(["sea", "glass"]);
+    expect(allowedEffects({ ...desktop, search: "?fx=glass,ink" })).toEqual(["ink", "glass"]);
     expect(allowedEffects({ ...desktop, search: "?fx=none" })).toEqual([]);
   });
 

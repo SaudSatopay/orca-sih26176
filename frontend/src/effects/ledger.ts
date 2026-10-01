@@ -5,7 +5,7 @@ import type { EffectName } from "./gate";
  * many WebGL contexts the page has opened. It exists so the rule "at most
  * three live WebGL contexts on the landing" is measured, not assumed.
  *
- *   window.__orcaFx = { effects: { sea: "live", … }, contexts: { opened, lost, live } }
+ *   window.__orcaFx = { effects: { relief: "live", … }, contexts: { opened, lost, live } }
  *
  * The context count is only kept when the page was opened with `?fxdebug=1`:
  * it works by wrapping `getContext`, which has no business running for

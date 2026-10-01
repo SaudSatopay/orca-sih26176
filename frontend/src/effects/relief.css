@@ -1,0 +1,48 @@
+/* Effect 2 — the relief sheet below the hero.
+   The poster (ReliefPoster.tsx) is the finished chart and fills the frame.
+   This file sizes the frame, places the running 3D sheet over it, and says
+   what the poster does once the sheet is really drawing. Owned by the relief
+   effect. Colours come from tokens.ts through theme(). */
+
+.relief-frame {
+  aspect-ratio: 600 / 330;
+  background: theme(colors.paper.50);
+}
+
+/* The running sheet: the canvas, and over it the same ink the poster prints. */
+.relief-live {
+  position: absolute;
+  inset: 0;
+}
+.relief-live canvas {
+  display: block;
+}
+.relief-live .relief-ink {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Once the sheet is drawing, the poster steps back: it stays in the document
+   (it carries the chart's name and description) but is no longer painted, and
+   its dashes stop running under the canvas. */
+[data-effect="relief"][data-live="1"] .relief-poster {
+  opacity: 0;
+}
+[data-effect="relief"][data-live="1"] .relief-poster .route-live {
+  animation: none;
+}
+/* Until then the sheet is mounted but not shown, so a first frame that is
+   still compiling never covers the finished poster. */
+[data-effect="relief"][data-live="0"] .relief-live {
+  visibility: hidden;
+}
+
+/* The depth key: one cell per band, washed like the sheet. */
+.relief-key i {
+  display: block;
+  height: 10px;
+  background: theme(colors.chart.500);
+}

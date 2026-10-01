@@ -1,18 +1,12 @@
-import { lazy, useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import * as api from "../api";
 import type { Language } from "../types";
 import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph } from "./glyphs";
 import { L10N } from "../i18n/landing";
 import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
-import { EffectSlot } from "../effects/EffectSlot";
 import GlassLoupe from "../effects/GlassLoupe";
 import { countContexts } from "../effects/ledger";
-import "../effects/sea.css";
-
-// The effects are separate chunks, fetched only when a slot mounts them
-// (effects/gate.ts decides whether this browser gets anything but the poster).
-const SeaGradient = lazy(() => import("../effects/SeaGradient"));
 
 // With ?fxdebug=1 the page counts the WebGL contexts it opens (effects/ledger.ts).
 countContexts();
@@ -150,22 +144,12 @@ export default function Landing({
 
   return (
     <main className="mx-auto flex min-h-full max-w-[1240px] flex-col px-5 py-5">
-      {/* the <i> is the far swell layer (index.css): three layers, each on its own transform */}
-      {/* the sea at the foot of the sheet: the CSS swell is the poster */}
-      <EffectSlot
-        name="sea"
-        Effect={SeaGradient}
-        eager
-        effectClassName="sea-live"
-        poster={
-          <>
-            <div className="sea-drift" aria-hidden>
-              <i />
-            </div>
-            <div className="fish-drift" aria-hidden />
-          </>
-        }
-      />
+      {/* the sea at the foot of the sheet; the <i> is the far swell layer
+          (index.css): three layers, each on its own transform */}
+      <div className="sea-drift" aria-hidden>
+        <i />
+      </div>
+      <div className="fish-drift" aria-hidden />
 
       {/* top strip: the mark and its name, the phone edition, the language */}
       <Reveal>
