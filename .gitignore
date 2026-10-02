@@ -35,3 +35,9 @@ Thumbs.db
 .vercel
 
 .vercel
+
+# Working files that stay on this machine, out of the published repo
+.claude/
+/CLAUDE.md
+/MISSILE.md
+/HANDOFF.md

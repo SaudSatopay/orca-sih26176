@@ -26,7 +26,7 @@ A question goes in and the chart answers. On the landing hero, a fisher's questi
 - Not an official advisory. It is decision support and says so on every screen.
 - Not a guarantee of fish. A potential fishing zone is a likelihood.
 
-## Out of scope for this flight
+## Out of scope
 
 - Changing the risk model, the fishing model, the weights or the safety floors.
 - Real INCOIS, IMD or MOSDAC ingestion; SMS or IVR; model training.

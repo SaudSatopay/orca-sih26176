@@ -1,6 +1,6 @@
 # ORCA — design system: the living nautical chart
 
-Extracted from the shipped code on 1 October 2026 and kept current through the missile flight. This file is the single source of truth for visual decisions; `frontend/src/tokens.ts` is the single source of the values. Tailwind reads that file, `index.css` derives its custom properties from it, and canvas, Leaflet and SVG code import it. No component spells a colour or a pixel size literally (a test enforces the colours).
+Extracted from the shipped code on 1 October 2026 and kept current since. This file is the single source of truth for visual decisions; `frontend/src/tokens.ts` is the single source of the values. Tailwind reads that file, `index.css` derives its custom properties from it, and canvas, Leaflet and SVG code import it. No component spells a colour or a pixel size literally (a test enforces the colours).
 
 ## The idea
 
@@ -48,8 +48,7 @@ All four are self-hosted through `@fontsource-variable` imports in `main.tsx`; n
 
 Nine steps, a minor third (x1.2) apart, counted from 16 px and rounded to the
 pixel. Nothing is set smaller than 11 px, and components never use a literal
-pixel size. (The first flight shipped seventeen ad-hoc steps from 9 px; the
-critic called it a list, not a scale, and it collapsed to this on 1 Oct 2026.)
+pixel size.
 
 | Step | px | Role |
 |---|---|---|
