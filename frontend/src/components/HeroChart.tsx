@@ -25,7 +25,7 @@ import "./hero.css";
  * (DEMO edition only — in LIVE the sea has moved on from the drawing, so
  * the poster stays and says it is a rehearsed scenario).
  *
- * Motion doctrine (HANDOFF 3.5): nothing here is revealed by a CSS animation
+ * Motion doctrine (DESIGN.md): nothing here is revealed by a CSS animation
  * that could stall. The sequence is STATE, advanced by a timer — what is on
  * the sheet at any moment is what the state says, and the timer always
  * reaches the end, with or without frames. The keyframes in hero.css are

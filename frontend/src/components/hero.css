@@ -6,7 +6,7 @@
    is on the sheet never depends on an animation having run.
 
    What is here is only how a thing arrives once the state has put it
-   there: transform-only keyframes with NO fill-mode (HANDOFF 3.5 — an
+   there: transform-only keyframes with NO fill-mode (the motion doctrine — an
    entrance that stalls must leave its content exactly where it belongs),
    and one stroke transition for the line being drawn. Easing comes from
    the house curves in index.css.

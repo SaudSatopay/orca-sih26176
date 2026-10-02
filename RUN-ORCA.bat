@@ -18,7 +18,13 @@ echo   ===============================================================
 echo.
 
 REM ---------- 1. Python ----------
-where python >nul 2>&1
+REM  Prefer the py launcher, fall back to python - and test that it RUNS,
+REM  because the Microsoft Store alias sits on PATH without being a real
+REM  interpreter.
+set "PY=py -3"
+%PY% -c "import sys" >nul 2>&1
+if errorlevel 1 set "PY=python"
+%PY% -c "import sys" >nul 2>&1
 if errorlevel 1 (
     echo   [X] Python was not found on this PC.
     echo.
@@ -28,14 +34,15 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-for /f "tokens=2" %%v in ('python --version 2^>^&1') do set PYVER=%%v
+for /f "tokens=2" %%v in ('%PY% --version 2^>^&1') do set PYVER=%%v
 echo   [OK] Python !PYVER!
 
 REM ---------- 2. Backend dependencies ----------
-python -c "import fastapi, uvicorn, pydantic, httpx" >nul 2>&1
+%PY% -c "import fastapi, uvicorn, pydantic, httpx" >nul 2>&1
 if errorlevel 1 (
     echo   [..] Installing backend packages ^(one time, ~30 seconds^)...
-    python -m pip install --quiet --disable-pip-version-check -r backend\requirements.txt
+    %PY% -m ensurepip --upgrade >nul 2>&1
+    %PY% -m pip install --quiet --disable-pip-version-check -r backend\requirements.txt
     if errorlevel 1 (
         echo   [X] Could not install Python packages.
         echo       Try manually:  python -m pip install -r backend\requirements.txt
@@ -108,7 +115,7 @@ if not defined ORCA_DATA_MODE set ORCA_DATA_MODE=DEMO
 start "" /b cmd /c "timeout /t 4 /nobreak >nul & start http://127.0.0.1:%PORT%/?tour=1"
 
 cd backend
-python -m uvicorn app.main:app --host 127.0.0.1 --port %PORT%
+%PY% -m uvicorn app.main:app --host 127.0.0.1 --port %PORT%
 
 echo.
 echo   ORCA stopped.

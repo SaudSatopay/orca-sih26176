@@ -3,8 +3,8 @@ import { overWide } from "./overWide";
 
 /**
  * `/?debug=1` on the phone: an on-screen layout probe listing the over-wide
- * elements, so a headless screenshot carries its own diagnosis (HANDOFF.md,
- * section 2). It is a separate chunk that only this query ever fetches.
+ * elements, so a headless screenshot carries its own diagnosis. It is a
+ * separate chunk that only this query ever fetches.
  */
 export default function LayoutProbe() {
   const [report, setReport] = useState("");

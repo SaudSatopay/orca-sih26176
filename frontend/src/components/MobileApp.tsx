@@ -64,7 +64,7 @@ import "./mobile.css";
 import { tripIsOff } from "./todayModel";
 import { locationAlreadyAllowed } from "../locate";
 
-// `/?debug=1`: an on-screen list of over-wide elements (HANDOFF.md, section 2).
+// `/?debug=1`: an on-screen list of over-wide elements, for layout checks.
 const LayoutProbe = lazy(() => import("./LayoutProbe"));
 
 /** One frozen empty list for the chart props with no reading yet (R1). */

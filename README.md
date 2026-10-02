@@ -93,6 +93,12 @@ Or from a terminal:
 .\start-orca.ps1
 ```
 
+macOS / Linux:
+
+```bash
+./run-orca.sh
+```
+
 Then open <http://127.0.0.1:8000>. That is the whole demo — **one process, one
 port, no database, no API key, no internet required.** (The map's street tiles
 and live weather want a connection; everything else, fonts included, is served

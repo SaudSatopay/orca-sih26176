@@ -5,7 +5,7 @@
  * content: each one sits on top of a poster that is already the finished
  * design, and this gate decides whether the poster is all the visitor gets.
  *
- * Rules (MISSILE.md, "Rules for the effects"):
+ * Rules (the effects contract):
  *   - the phone app gets none of them (they are not even in its chunk graph;
  *     this gate is the second lock for a narrow or touch-first desktop window);
  *   - reduced motion and reduced transparency get the poster;
@@ -28,7 +28,7 @@
  * - `relief`: the sea bed below the hero as a 3D paper sheet (React Three
  *   Fiber), one canvas, drawn on demand.
  *
- * The ShaderGradient sea was tried and removed (MISSILE.md, Decisions): the
+ * The ShaderGradient sea was tried and removed: the
  * CSS swell at the foot of the sheet is the sea.
  */
 export type EffectName = "ground" | "ink" | "glass" | "relief";
