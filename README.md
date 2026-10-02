@@ -107,7 +107,7 @@ locally and the app degrades gracefully without it.)
 | Command | What it does |
 |---|---|
 | `RUN-ORCA.bat` / `.\start-orca.ps1` | Demo mode (cached, rehearsed data). **Use this on stage.** |
-| *(verified)* | *These steps were re-run on a fresh clone on 1 Oct 2026: pip install, smoke test, server, phone and desktop views — nothing else needed.* |
+| *(verified)* | *Verified end to end: a cold `git clone` of this repo, then one run of `RUN-ORCA.bat` — Python check, dependency install, server, app and all five scenarios (2 Oct 2026).* |
 | `.\start-orca.ps1 -Live` | Live public providers, auto-falls back to cache per reading |
 | `.\dev.ps1` | Hot-reload backend + Vite HMR frontend |
 | `cd backend; python smoke_test.py` | All five demo scenarios, headless, with pass/fail |

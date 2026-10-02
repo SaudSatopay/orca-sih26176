@@ -112,7 +112,8 @@ echo.
 set PYTHONIOENCODING=utf-8
 if not defined ORCA_DATA_MODE set ORCA_DATA_MODE=DEMO
 
-start "" /b cmd /c "timeout /t 4 /nobreak >nul & start http://127.0.0.1:%PORT%/?tour=1"
+REM  ping as the sleep: immune to a unix timeout.exe shadowing PATH
+start "" /b cmd /c "ping -n 5 127.0.0.1 >nul & start http://127.0.0.1:%PORT%/?tour=1"
 
 cd backend
 %PY% -m uvicorn app.main:app --host 127.0.0.1 --port %PORT%
