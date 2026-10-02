@@ -262,6 +262,8 @@ Order: foundations, then ship a preview early, then tokens and accessibility, th
 
 - Pushed, 1 Oct 2026 on the owner's instruction: `missile/20261001` to github.com/SaudSatopay/orca-sih26176 (95 commits ahead of main, sole author Saud Satopay). `main` untouched; the CI workflow now has a public branch to run on, which closes the critic's "branch is local only" evidence gap.
 
+- Main fast-forwarded, 2 Oct 2026, on the owner's instruction (they expected the front page to show the work): `main` now equals the flight tip. Verified first that the Vercel project carries no Git integration, so the push triggers no deployment and the production alias is untouched. No history was rewritten — main was a strict ancestor.
+
 ## Remaining gaps
 
 (filled at Impact, or on stall)
