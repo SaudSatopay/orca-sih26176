@@ -62,6 +62,28 @@ afterEach(() => {
   window.matchMedia = original;
 });
 
+describe("the hand-drawn mark under the teal word", () => {
+  it("leaves the word readable throughout and marks it once the hero has settled", async () => {
+    const { container } = await openLanding("pending");
+    const h1 = container.querySelector("h1")!;
+    const mark = h1.querySelector("[data-mark]")!;
+    expect(mark).toHaveTextContent(L10N.en.tag2b);
+    expect(mark).toHaveAttribute("data-mark", "waiting");
+    await tick(1200);
+    expect(mark).toHaveAttribute("data-mark", "drawn");
+    expect(mark).toHaveTextContent(L10N.en.tag2b);
+    expect(h1).toHaveTextContent(`${L10N.en.tag2a}${L10N.en.tag2b}${L10N.en.tag2c}`);
+  });
+
+  it("is drawn from the start under reduced motion, in every language", async () => {
+    reducedMotion(true);
+    const { container } = await openLanding("pending", "hi");
+    const mark = container.querySelector("h1 [data-mark]")!;
+    expect(mark).toHaveAttribute("data-mark", "drawn");
+    expect(mark).toHaveTextContent(L10N.hi.tag2b);
+  });
+});
+
 describe("the stats strip", () => {
   const cell = (container: HTMLElement, label: string) =>
     [...container.querySelectorAll(".label")].find((l) => l.textContent === label)!.nextElementSibling!;

@@ -5,6 +5,7 @@ import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph, WarnGlyph }
 import { L10N } from "../i18n/landing";
 import { HERO } from "../i18n/hero";
 import { RISK_COLOR } from "../risk";
+import { chart } from "../tokens";
 import { Marquee } from "../ui/magicui/marquee";
 import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
@@ -26,6 +27,15 @@ const NumberTicker = lazy(() =>
   import("../ui/magicui/number-ticker")
     .then((m) => ({ default: m.NumberTicker }))
     .catch(() => ({ default: ({ value }: { value: number }) => <>{value}</> })),
+);
+const Highlighter = lazy(() =>
+  import("../ui/magicui/highlighter")
+    .then((m) => ({ default: m.Highlighter }))
+    .catch(() => ({
+      default: ({ children }: { children: ReactNode }) => (
+        <span className="relative inline-block bg-transparent">{children}</span>
+      ),
+    })),
 );
 
 // With ?fxdebug=1 the page counts the WebGL contexts it opens (effects/ledger.ts).
@@ -105,6 +115,39 @@ function Count({ to, delay = 0 }: { to: number | null; delay?: number }) {
     <Suspense fallback={first}>
       <NumberTicker value={to} delay={delay} />
     </Suspense>
+  );
+}
+
+/** When the hand-drawn mark goes down under the teal word: after the hero has settled. */
+const MARK_AFTER_MS = 1100;
+
+/**
+ * The teal word in the claim, underlined by hand in chart teal (Magic UI's
+ * Highlighter, kit, drawing with rough-notation) once the hero has settled.
+ * The word is plain text from the first frame: the stand-in is the very box
+ * the Highlighter renders, so swapping one for the other moves nothing.
+ */
+function MarkedWord({ children }: { children: ReactNode }) {
+  const [drawn, setDrawn] = useState(prefersStill);
+  useEffect(() => {
+    if (drawn) return;
+    const id = window.setTimeout(() => setDrawn(true), MARK_AFTER_MS);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const word = <span className="relative inline-block bg-transparent">{children}</span>;
+  return (
+    <span data-mark={drawn ? "drawn" : "waiting"}>
+      {drawn ? (
+        <Suspense fallback={word}>
+          <Highlighter action="underline" color={chart[500]} strokeWidth={2} animationDuration={800} iterations={2} padding={1}>
+            {children}
+          </Highlighter>
+        </Suspense>
+      ) : (
+        word
+      )}
+    </span>
   );
 }
 
@@ -318,7 +361,9 @@ export default function Landing({
               {t.tag1}
               <br />
               {t.tag2a}
-              <span className="text-chart-600">{t.tag2b}</span>
+              <span className="text-chart-600">
+                <MarkedWord>{t.tag2b}</MarkedWord>
+              </span>
               {t.tag2c}
             </h1>
             <div className="wave-rule mt-6 max-w-[360px]" />
