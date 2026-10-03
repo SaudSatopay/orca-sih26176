@@ -7,6 +7,7 @@ import RiskDial from "./RiskDial";
 import { CATEGORY, FACTOR, INSTRUCTION, UI, VERDICT } from "../i18n/riskCard";
 import { T as TRACE_T } from "../i18n/agentTrace";
 import { LANG_NAME } from "../i18n/app";
+import { BorderBeam } from "../ui/magicui/border-beam";
 
 /** How many reasons get a bar of their own; the rest share one line. */
 const RANKED = 4;
@@ -18,6 +19,10 @@ const RANKED = 4;
  * of the track, not the whole of it.
  */
 const MAX_CONTRIBUTION = 25;
+
+/** The arrival beam: seconds per lap round the card, and how many laps. */
+const BEAM_LAP_S = 2.2;
+const BEAM_LAPS = 2;
 
 /**
  * The verdict: the first thing the answer column shows. The dial and the
@@ -66,9 +71,24 @@ export default function RiskCard({
   // The stamp, the count and the bars belong to this reading. They play when
   // it arrives and stay still when the sheet is only opened again.
   const fresh = useFirstSight(`risk:${risk.generated_at}:${risk.category}:${risk.score}`);
+  // A fresh verdict is announced by a teal light running the card's neatline
+  // twice, then gone. It decorates a verdict already on screen; opening the
+  // same verdict again runs nothing.
+  const beaming = useFirstSight(
+    `risk-beam:${risk.generated_at}:${risk.category}:${risk.score}`,
+    BEAM_LAP_S * BEAM_LAPS * 1000,
+  );
 
   return (
     <section className="verdict panel rule-double overflow-hidden" aria-labelledby="verdict-words">
+      {beaming && (
+        // The kit's ring clips its own children at the padding edge, which is
+        // exactly where the light should show; the host lets it paint into
+        // the border ring (the mask still keeps it there).
+        <div className="pointer-events-none absolute inset-0 z-[2] rounded-[inherit] [&>div]:!overflow-visible">
+          <BorderBeam duration={BEAM_LAP_S} arc={90} borderWidth={3} />
+        </div>
+      )}
       <div className="verdict-body">
         <div className="flex items-start gap-5 p-5">
           <RiskDial score={risk.score} category={risk.category} label={band} size={124} fresh={fresh} />
