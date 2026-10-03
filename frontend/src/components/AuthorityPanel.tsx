@@ -22,6 +22,10 @@ import {
   type SortKey,
 } from "./authorityBoard";
 import { fill, panelState } from "./todayModel";
+import { NumberTicker } from "../ui/magicui/number-ticker";
+import { AnimateDigits } from "../ui/unlumen/animate-digits";
+import { RefreshButton } from "../ui/unlumen/refresh-button";
+import { SplitFlapText } from "../ui/reactbits/split-flap-text";
 import "./views.css";
 
 const REFRESH_MS = 30_000;
@@ -100,15 +104,22 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
     return read();
   }, [read]);
 
+  const timer = useRef<number | undefined>(undefined);
   useEffect(() => {
     alive.current = true;
     read(); // the first reading; `loading` starts true
-    const timer = window.setInterval(load, REFRESH_MS);
+    timer.current = window.setInterval(load, REFRESH_MS);
     return () => {
       alive.current = false;
-      window.clearInterval(timer);
+      window.clearInterval(timer.current);
     };
   }, [read, load]);
+  /** The officer asked for a reading now: the 30 s clock starts again from it. */
+  const readNow = useCallback(() => {
+    window.clearInterval(timer.current);
+    timer.current = window.setInterval(load, REFRESH_MS);
+    return load();
+  }, [load]);
 
   const { data, changes, error } = board;
   const state = panelState({ hasData: data != null, loading, error });
@@ -135,6 +146,8 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
         data={data}
         changes={changes}
         stale={state === "stale"}
+        loading={loading}
+        onReadNow={readNow}
         sort={sort}
         onSort={(key) => setSort((s) => nextSort(s, key))}
         language={language}
@@ -165,9 +178,12 @@ function Summary({ data, language, t }: { data: AuthorityDashboard; language: La
       <div className="col-span-2 px-5 py-4 md:col-span-1">
         <div className="flex flex-wrap items-end gap-x-5 gap-y-3">
           <div>
-            <div className="lining font-display text-display font-black leading-none text-ink-900">
-              {data.summary.monitored ?? total}
-            </div>
+            {/* the count of centres watched counts in; the warnings and the
+                named scores beside it are printed at once (safety data) */}
+            <NumberTicker
+              value={data.summary.monitored ?? total}
+              className="block font-display text-display font-black leading-none text-ink-900"
+            />
             <div className="label mt-1.5">{t.centres}</div>
           </div>
           {total > 0 && (
@@ -398,6 +414,8 @@ function BoardTable({
   data,
   changes,
   stale,
+  loading,
+  onReadNow,
   sort,
   onSort,
   language,
@@ -407,6 +425,9 @@ function BoardTable({
   changes: ScoreChange[] | null;
   /** The newest refresh failed: this is the last reading, not a live one. */
   stale: boolean;
+  /** A reading is in flight. */
+  loading: boolean;
+  onReadNow: () => Promise<unknown>;
   sort: Sort;
   onSort: (key: SortKey) => void;
   language: Language;
@@ -422,12 +443,15 @@ function BoardTable({
   // Constant key on purpose: a sort or a 30 s refresh must not redraw the
   // meters on the rows React moves — the officer asked for an order, not a show.
   const fresh = useFirstSight("authority:board");
+  // The board's name settles on its tiles once per page load, like a
+  // departures board coming on; a refresh or a return to the sheet does not.
+  const [flap] = useState(() => fresh);
 
   return (
     <section className="panel rule-double overflow-hidden" aria-labelledby={titleId} data-fresh={fresh ? "" : undefined}>
       <div className="hd flex-wrap">
         <h2 id={titleId} className="label">
-          {t.board}
+          <SplitFlapText text={t.board} play={flap} />
         </h2>
         <span className="flex items-center gap-2 font-mono text-label tabular-nums text-ink-500">
           <span
@@ -438,6 +462,7 @@ function BoardTable({
           <span className="ml-1">
             {fill(t.updated, { time })} · {t.refresh}
           </span>
+          <RefreshButton onRefresh={onReadNow} label={t.refreshNow} busy={loading} className="ml-1" />
         </span>
       </div>
       {/* the 30 seconds running out; restarts with each reading */}
@@ -509,9 +534,12 @@ function BoardTable({
                     <td className="px-3 py-2.5 text-ink-700">{row.state}</td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2.5">
-                        <span className="w-[2ch] shrink-0 text-right font-mono text-body font-bold tabular-nums text-ink-900">
-                          {row.risk_score}
-                        </span>
+                        {/* a refresh that moves the score rolls it, digit by
+                            digit; the new number is never hidden or late */}
+                        <AnimateDigits
+                          value={String(row.risk_score)}
+                          className="w-[2ch] shrink-0 justify-end font-mono text-body font-bold text-ink-900"
+                        />
                         <span className="v-meter w-[104px] shrink-0" aria-hidden>
                           <span
                             className="v-meter-fill"

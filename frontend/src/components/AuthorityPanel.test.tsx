@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AuthorityDashboard } from "../types";
 import AuthorityPanel from "./AuthorityPanel";
@@ -102,6 +102,42 @@ describe("the warned row survives narrow sheets (AU2)", () => {
     await openBoard();
     await screen.findByText("· 92");
     expect(screen.getAllByRole("img", { name: "No active warning" }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("the board as a departures board", () => {
+  it("keeps its name for assistive tech while the tiles settle", async () => {
+    await openBoard();
+    await screen.findByText("· 92");
+    expect(screen.getByRole("heading", { name: "Coastal risk board" })).toBeInTheDocument();
+  });
+
+  it("offers a refresh beside the countdown that reads the board now", async () => {
+    const api = vi.mocked(await import("../api"));
+    await openBoard();
+    await screen.findByText("· 92");
+    const now = screen.getByRole("button", { name: "Read the board now" });
+    expect(api.authority).toHaveBeenCalledTimes(1);
+    fireEvent.click(now);
+    await waitFor(() => expect(api.authority).toHaveBeenCalledTimes(2));
+  });
+
+  it("names the refresh in Hindi and Marathi too", async () => {
+    const api = vi.mocked(await import("../api"));
+    api.authority.mockResolvedValue(board);
+    const hi = render(<AuthorityPanel language="hi" />);
+    expect(await screen.findByRole("button", { name: "बोर्ड अभी पढ़ें" })).toBeInTheDocument();
+    hi.unmount();
+    render(<AuthorityPanel language="mr" />);
+    expect(await screen.findByRole("button", { name: "फलक आत्ता वाचा" })).toBeInTheDocument();
+  });
+
+  it("prints every score whole for assistive tech while its digits roll", async () => {
+    await openBoard();
+    await screen.findByText("· 92");
+    const table = screen.getByRole("table");
+    for (const score of ["9", "40", "92"])
+      expect(within(table).getAllByText(score, { selector: ".sr-only" }).length).toBe(1);
   });
 });
 
