@@ -62,6 +62,30 @@ afterEach(() => {
   window.matchMedia = original;
 });
 
+describe("how ORCA decides, as a live pipeline", () => {
+  it("draws the four phases and the five specialists Gather fans out to, joined by beams", async () => {
+    const { container } = await openLanding("pending");
+    const live = container.querySelector(".pipeline-live")!;
+    expect(live).not.toBeNull();
+    for (const p of L10N.en.phases) expect(live).toHaveTextContent(p.t);
+    for (const name of ["Weather", "Ocean", "Fishing zones", "Alerts", "GIS"])
+      expect(live.querySelector(`[data-specialist="${name}"]`), name).not.toBeNull();
+    // Understand→Gather, Gather→each specialist, each specialist→Decide, Decide→Explain
+    await tick(400);
+    expect(live.querySelectorAll("svg[aria-hidden='true'] path").length).toBeGreaterThanOrEqual(12);
+    // the narrow layout keeps the stacked grid
+    expect(container.querySelector(".pipeline-stacked")).not.toBeNull();
+    expect(screen.getByRole("link", { name: L10N.en.watchLive })).toBeInTheDocument();
+  });
+
+  it("names the specialists in the reader's language", async () => {
+    const { container } = await openLanding("pending", "mr");
+    const live = container.querySelector(".pipeline-live")!;
+    expect(live.querySelector('[data-specialist="मासेमारी क्षेत्रे"]')).not.toBeNull();
+    expect(live).toHaveTextContent(L10N.mr.fanNote);
+  });
+});
+
 describe("the reading lamp (spotlight)", () => {
   it("follows a fine pointer over every index row and the relief panel; the rows stay links", async () => {
     window.matchMedia = ((q: string) => ({

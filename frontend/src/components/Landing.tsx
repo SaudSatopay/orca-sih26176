@@ -1,12 +1,25 @@
-import { Suspense, lazy, useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  Suspense,
+  lazy,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import * as api from "../api";
 import type { AuthorityRow, Language, RiskCategory } from "../types";
 import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph, WarnGlyph } from "./glyphs";
 import { L10N } from "../i18n/landing";
 import { HERO } from "../i18n/hero";
+import { LABEL as AGENT } from "../i18n/agentTrace";
+import { PHASES } from "../crew";
 import { RISK_COLOR } from "../risk";
 import { chart } from "../tokens";
 import { Marquee } from "../ui/magicui/marquee";
+import type { AnimatedBeamProps } from "../ui/magicui/animated-beam";
 import DecryptedText from "../ui/reactbits/decrypted-text";
 import SpotlightCard from "../ui/reactbits/spotlight-card";
 import HeroChart from "./HeroChart";
@@ -29,6 +42,11 @@ const NumberTicker = lazy(() =>
   import("../ui/magicui/number-ticker")
     .then((m) => ({ default: m.NumberTicker }))
     .catch(() => ({ default: ({ value }: { value: number }) => <>{value}</> })),
+);
+const AnimatedBeam = lazy<ComponentType<AnimatedBeamProps>>(() =>
+  import("../ui/magicui/animated-beam")
+    .then((m) => ({ default: m.AnimatedBeam }))
+    .catch(() => ({ default: () => null })),
 );
 const Highlighter = lazy(() =>
   import("../ui/magicui/highlighter")
@@ -150,6 +168,155 @@ function MarkedWord({ children }: { children: ReactNode }) {
         word
       )}
     </span>
+  );
+}
+
+/** One phase of the pipeline as a node on the diagram. */
+function PhaseNode({
+  n,
+  title,
+  note,
+  nodeRef,
+}: {
+  n: number;
+  title: string;
+  note: string;
+  nodeRef: RefObject<HTMLDivElement>;
+}) {
+  return (
+    <div
+      ref={nodeRef}
+      className="relative z-[1] rounded-[2px] border bg-paper-50 px-3 py-2.5 shadow-sheet"
+      style={{ borderColor: "var(--rule)" }}
+    >
+      <span className="block font-mono text-label font-bold text-chart-700">0{n}</span>
+      <span className="mt-0.5 block font-display text-lead font-bold leading-tight text-ink-900">{title}</span>
+      <span className="mt-1 block text-label italic leading-snug text-ink-500">{note}</span>
+    </div>
+  );
+}
+
+/**
+ * The signal's timing: every leg takes the same lap, and each leg starts a
+ * beat after the one before, so the light visibly runs Understand → Gather →
+ * the five → Decide → Explain and starts again.
+ */
+const LAP = 3.2;
+const BEAT = 0.8;
+const LEGS = 4;
+const leg = (n: number) => ({
+  duration: LAP,
+  delay: n * BEAT,
+  repeatDelay: LEGS * BEAT - LAP + BEAT,
+  pathWidth: 2,
+  pathOpacity: 0.45,
+  gradientStartColor: chart[600],
+  gradientStopColor: chart[500],
+});
+
+/**
+ * How ORCA decides, drawn as the graph it runs: Understand, then Gather
+ * fanning out to the five specialists at once, then Decide and Explain. The
+ * joins are Magic UI's Animated Beam (kit): a dashed resting course with a
+ * teal light travelling it.
+ *
+ * Each leg is drawn in its own lane: a grid cell spanning the node the leg
+ * leaves and the gap after it. The kit measures its light in percent of the
+ * container it is given, and eases out hard, so in a lane the light dashes
+ * through (hidden behind) the node it leaves and then runs slowly along the
+ * visible gap into the next one, which is the part worth watching. The lane
+ * also clips the line at the next node's edge.
+ *
+ * The beams load with the other motion-backed pieces after first paint; the
+ * diagram reads without them. Wide screens only: below `md` the stacked grid
+ * stands in.
+ */
+function PipelineLive({ language }: { language: Language }) {
+  const t = L10N[language] ?? L10N.en;
+  const crewName = AGENT[language] ?? AGENT.en;
+  const gather = PHASES.find((p) => p.key === "gather")!.agents;
+  const understand = useRef<HTMLDivElement>(null);
+  const gatherNode = useRef<HTMLDivElement>(null);
+  const decide = useRef<HTMLDivElement>(null);
+  const explain = useRef<HTMLDivElement>(null);
+  const laneA = useRef<HTMLDivElement>(null);
+  const laneB = useRef<HTMLDivElement>(null);
+  const laneC = useRef<HTMLDivElement>(null);
+  const laneD = useRef<HTMLDivElement>(null);
+  const c0 = useRef<HTMLSpanElement>(null);
+  const c1 = useRef<HTMLSpanElement>(null);
+  const c2 = useRef<HTMLSpanElement>(null);
+  const c3 = useRef<HTMLSpanElement>(null);
+  const c4 = useRef<HTMLSpanElement>(null);
+  const lane = "pointer-events-none relative row-start-1 self-stretch";
+  const chip = (i: number, ref: RefObject<HTMLSpanElement>) => {
+    const name = crewName[gather[i]] ?? gather[i];
+    return (
+      <span
+        ref={ref}
+        data-specialist={name}
+        className="relative z-[1] inline-flex items-center gap-1.5 whitespace-nowrap rounded-[2px] border bg-paper-50 px-2 py-1 font-mono text-label font-semibold text-ink-800"
+        style={{ borderColor: "var(--rule)" }}
+      >
+        <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-chart-500" />
+        {name}
+      </span>
+    );
+  };
+
+  return (
+    <div className="pipeline-live hidden grid-cols-[minmax(0,1fr)_4rem_minmax(0,1fr)_4rem_auto_4rem_minmax(0,1fr)_4rem_minmax(0,1fr)] items-center px-6 py-6 md:grid">
+      {/* the lanes the legs are drawn in, under the nodes */}
+      <div ref={laneA} aria-hidden className={`${lane} col-span-2 col-start-1`}>
+        <Suspense fallback={null}>
+          <AnimatedBeam containerRef={laneA} fromRef={understand} toRef={gatherNode} {...leg(0)} />
+        </Suspense>
+      </div>
+      <div ref={laneB} aria-hidden className={`${lane} col-span-2 col-start-3`}>
+        <Suspense fallback={null}>
+          <AnimatedBeam containerRef={laneB} fromRef={gatherNode} toRef={c0} {...leg(1)} />
+          <AnimatedBeam containerRef={laneB} fromRef={gatherNode} toRef={c1} {...leg(1)} />
+          <AnimatedBeam containerRef={laneB} fromRef={gatherNode} toRef={c2} {...leg(1)} />
+          <AnimatedBeam containerRef={laneB} fromRef={gatherNode} toRef={c3} {...leg(1)} />
+          <AnimatedBeam containerRef={laneB} fromRef={gatherNode} toRef={c4} {...leg(1)} />
+        </Suspense>
+      </div>
+      <div ref={laneC} aria-hidden className={`${lane} col-span-2 col-start-5`}>
+        <Suspense fallback={null}>
+          <AnimatedBeam containerRef={laneC} fromRef={c0} toRef={decide} {...leg(2)} />
+          <AnimatedBeam containerRef={laneC} fromRef={c1} toRef={decide} {...leg(2)} />
+          <AnimatedBeam containerRef={laneC} fromRef={c2} toRef={decide} {...leg(2)} />
+          <AnimatedBeam containerRef={laneC} fromRef={c3} toRef={decide} {...leg(2)} />
+          <AnimatedBeam containerRef={laneC} fromRef={c4} toRef={decide} {...leg(2)} />
+        </Suspense>
+      </div>
+      <div ref={laneD} aria-hidden className={`${lane} col-span-2 col-start-7`}>
+        <Suspense fallback={null}>
+          <AnimatedBeam containerRef={laneD} fromRef={decide} toRef={explain} {...leg(3)} />
+        </Suspense>
+      </div>
+
+      <div className="col-start-1 row-start-1">
+        <PhaseNode n={1} title={t.phases[0].t} note={t.phases[0].n} nodeRef={understand} />
+      </div>
+      <div className="col-start-3 row-start-1">
+        <PhaseNode n={2} title={t.phases[1].t} note={t.phases[1].n} nodeRef={gatherNode} />
+      </div>
+      <div className="col-start-5 row-start-1 flex flex-col items-start gap-1.5">
+        <span className="label mb-0.5 !text-chart-700">{t.fanNote}</span>
+        {chip(0, c0)}
+        {chip(1, c1)}
+        {chip(2, c2)}
+        {chip(3, c3)}
+        {chip(4, c4)}
+      </div>
+      <div className="col-start-7 row-start-1">
+        <PhaseNode n={3} title={t.phases[2].t} note={t.phases[2].n} nodeRef={decide} />
+      </div>
+      <div className="col-start-9 row-start-1">
+        <PhaseNode n={4} title={t.phases[3].t} note={t.phases[3].n} nodeRef={explain} />
+      </div>
+    </div>
   );
 }
 
@@ -513,7 +680,8 @@ export default function Landing({
               {t.watchLive}
             </a>
           </div>
-          <div className="grid sm:grid-cols-4">
+          <PipelineLive language={language} />
+          <div className="pipeline-stacked grid sm:grid-cols-4 md:hidden">
             {t.phases.map((p, i) => (
               <div
                 key={p.t}
