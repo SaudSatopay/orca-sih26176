@@ -64,7 +64,20 @@ afterEach(() => {
 
 describe("how ORCA decides, as a live pipeline", () => {
   it("draws the four phases and the five specialists Gather fans out to, joined by beams", async () => {
-    const { container } = await openLanding("pending");
+    // the beams are fetched as the diagram nears the viewport: say it is there
+    const Seen = class {
+      constructor(private cb: IntersectionObserverCallback) {}
+      observe(el: Element) {
+        this.cb([{ isIntersecting: true, target: el } as IntersectionObserverEntry], this as never);
+      }
+      unobserve() {}
+      disconnect() {}
+    };
+    const NoOp = globalThis.IntersectionObserver;
+    globalThis.IntersectionObserver = Seen as unknown as typeof IntersectionObserver;
+    const { container } = await openLanding("pending").finally(() => {
+      globalThis.IntersectionObserver = NoOp;
+    });
     const live = container.querySelector(".pipeline-live")!;
     expect(live).not.toBeNull();
     for (const p of L10N.en.phases) expect(live).toHaveTextContent(p.t);

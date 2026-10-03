@@ -249,6 +249,26 @@ function PipelineLive({ language }: { language: Language }) {
   const c2 = useRef<HTMLSpanElement>(null);
   const c3 = useRef<HTMLSpanElement>(null);
   const c4 = useRef<HTMLSpanElement>(null);
+  // The beams' chunk (motion) is fetched only as the diagram nears the
+  // viewport, never during the first paint, and never where the diagram is
+  // not shown at all (below md it is display: none and never intersects).
+  const root = useRef<HTMLDivElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const el = root.current;
+    if (!el || near || typeof IntersectionObserver !== "function") return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          io.disconnect();
+          setNear(true);
+        }
+      },
+      { rootMargin: "400px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [near]);
   const lane = "pointer-events-none relative row-start-1 self-stretch";
   const chip = (i: number, ref: RefObject<HTMLSpanElement>) => {
     const name = crewName[gather[i]] ?? gather[i];
@@ -266,35 +286,35 @@ function PipelineLive({ language }: { language: Language }) {
   };
 
   return (
-    <div className="pipeline-live hidden grid-cols-[minmax(0,1fr)_4rem_minmax(0,1fr)_4rem_auto_4rem_minmax(0,1fr)_4rem_minmax(0,1fr)] items-center px-6 py-6 md:grid">
+    <div ref={root} className="pipeline-live hidden grid-cols-[minmax(0,1fr)_4rem_minmax(0,1fr)_4rem_auto_4rem_minmax(0,1fr)_4rem_minmax(0,1fr)] items-center px-6 py-6 md:grid">
       {/* the lanes the legs are drawn in, under the nodes */}
       <div ref={laneA} aria-hidden className={`${lane} col-span-2 col-start-1`}>
-        <Suspense fallback={null}>
+        {near && (<Suspense fallback={null}>
           <AnimatedBeam containerRef={laneA} fromRef={understand} toRef={gatherNode} {...leg(0)} />
-        </Suspense>
+        </Suspense>)}
       </div>
       <div ref={laneB} aria-hidden className={`${lane} col-span-2 col-start-3`}>
-        <Suspense fallback={null}>
+        {near && (<Suspense fallback={null}>
           <AnimatedBeam containerRef={laneB} fromRef={gatherNode} toRef={c0} {...leg(1)} />
           <AnimatedBeam containerRef={laneB} fromRef={gatherNode} toRef={c1} {...leg(1)} />
           <AnimatedBeam containerRef={laneB} fromRef={gatherNode} toRef={c2} {...leg(1)} />
           <AnimatedBeam containerRef={laneB} fromRef={gatherNode} toRef={c3} {...leg(1)} />
           <AnimatedBeam containerRef={laneB} fromRef={gatherNode} toRef={c4} {...leg(1)} />
-        </Suspense>
+        </Suspense>)}
       </div>
       <div ref={laneC} aria-hidden className={`${lane} col-span-2 col-start-5`}>
-        <Suspense fallback={null}>
+        {near && (<Suspense fallback={null}>
           <AnimatedBeam containerRef={laneC} fromRef={c0} toRef={decide} {...leg(2)} />
           <AnimatedBeam containerRef={laneC} fromRef={c1} toRef={decide} {...leg(2)} />
           <AnimatedBeam containerRef={laneC} fromRef={c2} toRef={decide} {...leg(2)} />
           <AnimatedBeam containerRef={laneC} fromRef={c3} toRef={decide} {...leg(2)} />
           <AnimatedBeam containerRef={laneC} fromRef={c4} toRef={decide} {...leg(2)} />
-        </Suspense>
+        </Suspense>)}
       </div>
       <div ref={laneD} aria-hidden className={`${lane} col-span-2 col-start-7`}>
-        <Suspense fallback={null}>
+        {near && (<Suspense fallback={null}>
           <AnimatedBeam containerRef={laneD} fromRef={decide} toRef={explain} {...leg(3)} />
-        </Suspense>
+        </Suspense>)}
       </div>
 
       <div className="col-start-1 row-start-1">
