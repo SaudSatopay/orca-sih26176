@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import * as api from "../api";
 import type { Language } from "../types";
 import { CourseArrow, FishGlyph, LockGlyph, WarnGlyph } from "./glyphs";
@@ -9,6 +9,8 @@ import { PORTS } from "../ports";
 import { chart, ink, risk } from "../tokens";
 import { measurement } from "../format";
 import { fill } from "./todayModel";
+import { useMediaQuery } from "../layout";
+import { BeamGap } from "../ui/console/BeamGap";
 import "./views.css";
 
 /**
@@ -42,19 +44,8 @@ function fmt(m?: api.Measurement | null): string {
   return measurement(m?.value, m?.unit);
 }
 
-/** Three signals riding a connector between two things in the pipeline. */
-function Connector({ className = "", style }: { className?: string; style?: CSSProperties }) {
-  return (
-    <div className={`v-connector ${className}`} style={style} aria-hidden>
-      <i />
-      <i />
-      <i />
-    </div>
-  );
-}
-
 /** The crew's pipeline at desktop width: phase, gap, phase, gap… */
-const CREW_COLUMNS = "minmax(0,1fr) 56px minmax(0,1.7fr) 56px minmax(0,1.2fr) 56px minmax(0,1fr)";
+const CREW_COLUMNS = "minmax(0,1fr) 72px minmax(0,1.7fr) 72px minmax(0,1.2fr) 72px minmax(0,1fr)";
 
 export default function SystemPanel({
   mode,
@@ -77,6 +68,9 @@ export default function SystemPanel({
   // Seconds until the next try, shown while the feed is not answering.
   const [retryIn, setRetryIn] = useState(POLL_MS / 1000);
   const portIdx = useRef(0);
+  // The pipeline's beams run at desktop width, where the flow is a row; the
+  // stacked flow below it keeps its drop lines.
+  const wide = useMediaQuery("(min-width: 1024px)");
 
   // Cycle the coastline: one port per poll, newest reading on top. The tick
   // rests while the sheet is held or the tab is hidden.
@@ -200,14 +194,15 @@ export default function SystemPanel({
           ))}
         </div>
 
-        {/* the flow into the cache: each connector spans the gap it joins */}
-        <div className="flex flex-col items-center gap-1.5 px-4 pb-4 lg:flex-row lg:gap-3">
-          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 lg:text-right">
+        {/* the flow into the cache: each beam spans the gap it joins, the
+            second a beat after the first — fetch, cache, then the crew */}
+        <div className="flex flex-col items-center gap-1.5 px-4 pb-4 lg:flex-row lg:gap-0">
+          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 lg:pr-3 lg:text-right">
             {t.oneFetch}
             <br />
             <span className="text-ink-500">{t.perProvider}</span>
           </div>
-          <Connector className="hidden lg:block" />
+          <BeamGap on={wide} className="hidden flex-1 lg:flex" />
           <span className="v-connector-down !m-0 lg:hidden" aria-hidden />
           <div className="min-w-0 rounded-[2px] border-2 border-chart-600 bg-chart-100/40 px-4 py-3 text-center lg:max-w-[520px] lg:flex-[3_1_0]">
             <h4 className="font-display text-lead font-bold text-ink-900">{t.cacheTitle}</h4>
@@ -216,9 +211,9 @@ export default function SystemPanel({
               {t.cacheMeta}
             </p>
           </div>
-          <Connector className="hidden lg:block" />
+          <BeamGap on={wide} delay={0.9} className="hidden flex-1 lg:flex" />
           <span className="v-connector-down !m-0 lg:hidden" aria-hidden />
-          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 lg:text-left">
+          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 lg:pl-3 lg:text-left">
             {t.everyAgent}
             <br />
             <span className="text-ink-500">{t.fromMemory}</span>
@@ -240,8 +235,8 @@ export default function SystemPanel({
           <span className="font-mono text-label text-ink-500">{t.s2note}</span>
         </div>
         {/* One DOM, two layouts: stacked with drop lines when narrow; at desktop
-            a grid whose middle row holds the agents and the connectors between
-            them, so every signal runs chip to chip. */}
+            a grid whose middle row holds the agents and the beams between
+            them, so the signal runs phase to phase in the order of the work. */}
         <div
           className="flex flex-col px-4 py-4 lg:grid lg:gap-y-2"
           style={{ gridTemplateColumns: CREW_COLUMNS }}
@@ -251,8 +246,10 @@ export default function SystemPanel({
               {i > 0 && (
                 <>
                   <span className="v-connector-down lg:hidden" aria-hidden />
-                  <Connector
-                    className="mx-2 hidden self-center lg:block"
+                  <BeamGap
+                    on={wide}
+                    delay={(i - 1) * 0.5}
+                    className="mx-1 hidden lg:flex"
                     style={{ gridColumn: i * 2, gridRow: 2 }}
                   />
                 </>

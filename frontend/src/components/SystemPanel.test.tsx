@@ -48,6 +48,47 @@ async function openPanel(mode: string) {
 
 afterEach(() => vi.clearAllMocks());
 
+/** A window that answers the media queries in `on` and no others. */
+function mediaWindow(on: string[]) {
+  const original = window.matchMedia;
+  window.matchMedia = ((query: string) => ({
+    matches: on.some((q) => query.includes(q)),
+    media: query,
+    onchange: null,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+  return () => {
+    window.matchMedia = original;
+  };
+}
+
+describe("the engine room runs (beams between the pipeline's nodes)", () => {
+  it("at desktop width every gap in the pipeline carries a beam, not the old travelling dots", async () => {
+    const restore = mediaWindow(["min-width: 1024px"]);
+    try {
+      const { container } = await openPanel("DEMO");
+      await screen.findByText("28.3 °C");
+      // intake → cache → agents (2) and the four crew phases (3)
+      expect(container.querySelectorAll("[data-beam-gap]")).toHaveLength(5);
+      expect(container.querySelectorAll("[data-beam-gap] svg")).toHaveLength(5);
+      expect(container.querySelector(".v-connector")).toBeNull();
+    } finally {
+      restore();
+    }
+  });
+
+  it("below desktop width the stacked flow keeps its drop lines and draws no beams", async () => {
+    const { container } = await openPanel("DEMO");
+    await screen.findByText("28.3 °C");
+    expect(container.querySelectorAll("[data-beam-gap] svg")).toHaveLength(0);
+    expect(container.querySelectorAll(".v-connector-down").length).toBeGreaterThanOrEqual(5);
+  });
+});
+
 describe("provider status follows the data edition (S1)", () => {
   it("in DEMO the live providers stand by and the demo store is in use", async () => {
     await openPanel("DEMO");
