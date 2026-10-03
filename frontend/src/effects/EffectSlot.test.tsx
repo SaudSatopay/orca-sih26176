@@ -9,17 +9,24 @@ vi.mock("./gate", async (importOriginal) => {
   return { ...real, effectsHere: () => ["ground", "ink", "glass", "relief", "splash"] };
 });
 
-import { AWAY_MS, EffectSlot } from "./EffectSlot";
+import { AWAY_MS, EffectSlot, LOOK_AHEAD_AFTER_MS, POINTER_LINGER_MS, WARM_MARGIN } from "./EffectSlot";
 import { HANDOVER_MS, leases, type Lease } from "./contexts";
 
-/** An IntersectionObserver the test drives: every observer reports `near`. */
-let observers: { cb: IntersectionObserverCallback; el: Element }[] = [];
-function look(isIntersecting: boolean) {
+/**
+ * An IntersectionObserver the test drives. `look` reports to every observer
+ * (in view, and so within a screen too); `lookAhead` only to the warm zone's,
+ * as for a section a screen below the fold.
+ */
+let observers: { cb: IntersectionObserverCallback; el: Element; margin: string }[] = [];
+function report(isIntersecting: boolean, which: (margin: string) => boolean) {
   act(() => {
     for (const o of observers)
-      o.cb([{ isIntersecting, target: o.el } as IntersectionObserverEntry], {} as IntersectionObserver);
+      if (which(o.margin))
+        o.cb([{ isIntersecting, target: o.el } as IntersectionObserverEntry], {} as IntersectionObserver);
   });
 }
+const look = (isIntersecting: boolean) => report(isIntersecting, () => true);
+const lookAhead = (isIntersecting: boolean) => report(isIntersecting, (m) => m === WARM_MARGIN);
 
 function Live({ onReady }: EffectProps) {
   return (
@@ -44,9 +51,12 @@ describe("a WebGL effect's slot", () => {
     vi.useFakeTimers();
     observers = [];
     globalThis.IntersectionObserver = class {
-      constructor(private cb: IntersectionObserverCallback) {}
+      constructor(
+        private cb: IntersectionObserverCallback,
+        private opts?: IntersectionObserverInit,
+      ) {}
       observe(el: Element) {
-        observers.push({ cb: this.cb, el });
+        observers.push({ cb: this.cb, el, margin: this.opts?.rootMargin ?? "" });
       }
       unobserve() {}
       disconnect() {}
@@ -103,6 +113,17 @@ describe("a WebGL effect's slot", () => {
     expect(queryByTestId("live")).not.toBeNull();
   });
 
+  it("before the visitor first moves, leaves a section a screen ahead as its poster: the load is posters alone", async () => {
+    const { queryByTestId, getByText } = render(
+      <EffectSlot name="relief" Effect={Live} poster={<p>poster</p>} />,
+    );
+    lookAhead(true);
+    await tick(5000);
+    expect(queryByTestId("live")).toBeNull();
+    expect(leases.stats().holders).not.toContain("relief");
+    expect(getByText("poster")).toBeInTheDocument();
+  });
+
   it("armed on interaction, keeps its poster through the load until the visitor first moves", async () => {
     const { queryByTestId, getByText } = render(
       <EffectSlot name="ink" Effect={Live} poster={<p>printed mark</p>} armOn="interaction" />,
@@ -117,6 +138,62 @@ describe("a WebGL effect's slot", () => {
     });
     await tick(700);
     expect(queryByTestId("live")).not.toBeNull();
+  });
+
+  it("once the visitor has moved, draws a section a screen ahead off screen, then rests it until it is in view", async () => {
+    act(() => {
+      window.dispatchEvent(new Event("pointermove"));
+    });
+    const active: boolean[] = [];
+    function Probe({ active: on, onReady }: EffectProps) {
+      active.push(on);
+      return (
+        <canvas
+          data-testid="live"
+          ref={(c) => {
+            if (c) queueMicrotask(onReady);
+          }}
+        />
+      );
+    }
+    const { queryByTestId, container } = render(
+      <EffectSlot name="relief" Effect={Probe} poster={<p>poster</p>} />,
+    );
+    lookAhead(true);
+    await tick(LOOK_AHEAD_AFTER_MS + 700);
+    // mounted ahead of the reader, under a lease, and live before anyone sees it
+    expect(queryByTestId("live")).not.toBeNull();
+    expect(leases.stats().holders).toContain("relief");
+    expect(container.querySelector('[data-live="1"]')).not.toBeNull();
+    // it drew its first frame out of view, then rests
+    expect(active[0]).toBe(true);
+    expect(active[active.length - 1]).toBe(false);
+    // in view: it moves
+    look(true);
+    expect(active[active.length - 1]).toBe(true);
+  });
+
+  it("armed on pointer, holds no context until a mouse comes over it, and lets go after it leaves", async () => {
+    const { queryByTestId, container } = render(
+      <EffectSlot name="relief" Effect={Live} poster={<p>still water</p>} armOn="pointer" />,
+    );
+    look(true);
+    await tick(5000);
+    expect(queryByTestId("live")).toBeNull();
+    expect(leases.stats().holders).not.toContain("relief");
+    const slot = container.querySelector("[data-effect]")!;
+    act(() => {
+      slot.dispatchEvent(new PointerEvent("pointerenter", { pointerType: "mouse" }));
+    });
+    await tick(10);
+    expect(queryByTestId("live")).not.toBeNull();
+    act(() => {
+      slot.dispatchEvent(new PointerEvent("pointerleave", { pointerType: "mouse" }));
+    });
+    await tick(POINTER_LINGER_MS - 10);
+    expect(queryByTestId("live")).not.toBeNull();
+    await tick(20);
+    expect(queryByTestId("live")).toBeNull();
   });
 
   it("does not lease anything for an effect without a WebGL context", async () => {

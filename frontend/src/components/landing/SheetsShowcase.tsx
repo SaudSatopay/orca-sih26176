@@ -1,4 +1,4 @@
-import { lazy, useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Language } from "../../types";
 import { SHOWCASE, type ShowcaseStrings } from "../../i18n/showcase";
 import { EffectSlot } from "../../effects/EffectSlot";
@@ -8,6 +8,7 @@ import { prefersReducedMotion } from "../../ui/cn";
 import { PauseGlyph, PlayGlyph } from "../glyphs";
 import { BULLETIN, PHONE_EDITION, SHEETS, ShowcaseContext, sheet, type Sheet } from "./sheets";
 import "./showcase.css";
+import { lazyEffect } from "../../effects/lazyEffect";
 
 /*
  * The showcase: ORCA has no photography, so its pictures are ORCA itself:
@@ -20,9 +21,9 @@ import "./showcase.css";
  */
 
 // Each its own chunk, fetched only when its slot mounts it (effects/gate.ts).
-const FlexCarousel = lazy(() => import("../../effects/FlexCarousel"));
-const RippleDistortion = lazy(() => import("../../effects/RippleDistortion"));
-const PaperCrumple = lazy(() => import("../../effects/PaperCrumple"));
+const FlexCarousel = lazyEffect(() => import("../../effects/FlexCarousel"));
+const RippleDistortion = lazyEffect(() => import("../../effects/RippleDistortion"));
+const PaperCrumple = lazyEffect(() => import("../../effects/PaperCrumple"));
 
 const strings = (language: Language): ShowcaseStrings => SHOWCASE[language] ?? SHOWCASE.en;
 
@@ -284,9 +285,11 @@ export function ChartRipple({ language }: { language: Language }) {
           <div className="wave-rule u5-ripple-rule" />
           <figcaption className="u5-ripple-caption text-body leading-relaxed text-ink-700">{t.ripple.caption}</figcaption>
         </div>
+        {/* still water draws exactly the sheet: the water needs a context only under the pointer */}
         <EffectSlot
           name="ripple"
           Effect={RippleDistortion}
+          armOn="pointer"
           className="u5-ripple u5-frame u5-16x10"
           poster={<Shot s={ask} alt={t.sheets.ask.alt} className="u5-ripple-poster u5-cover" />}
         />

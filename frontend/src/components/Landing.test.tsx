@@ -186,12 +186,27 @@ describe("the stats strip", () => {
     expect(cell(container, languages).textContent).toBe("3");
   });
 
-  it("starts the ticker from zero when motion is allowed, and shows a dash until the board answers", async () => {
-    const live = await openLanding("ok");
-    expect(cell(live.container, L10N.en.stats[1]).querySelector(".tabular-nums")).toHaveTextContent("0");
-    live.unmount();
+  it("counts up from zero a figure that is on screen as the board answers, and shows a dash until it does", async () => {
+    const onScreen = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockReturnValue({ top: 120, bottom: 160, left: 0, right: 80, width: 80, height: 40, x: 0, y: 120 } as DOMRect);
+    try {
+      const live = await openLanding("ok");
+      // the warnings figure waits 0.15 s before it counts: still at its first frame
+      expect(cell(live.container, L10N.en.stats[2]).querySelector(".tabular-nums")).toHaveTextContent("0");
+      live.unmount();
+    } finally {
+      onScreen.mockRestore();
+    }
     const pending = await openLanding("pending");
     expect(cell(pending.container, L10N.en.stats[1]).textContent).toBe("—");
+  });
+
+  it("prints a figure first met below the fold as it stands: nothing counts while the reader scrolls onto it", async () => {
+    // jsdom lays nothing out, so every box reads as off screen
+    const { container } = await openLanding("ok");
+    expect(cell(container, L10N.en.stats[1]).querySelector(".tabular-nums")).toHaveTextContent("3");
+    expect(cell(container, L10N.en.stats[2]).querySelector(".tabular-nums")).toHaveTextContent("2");
   });
 });
 

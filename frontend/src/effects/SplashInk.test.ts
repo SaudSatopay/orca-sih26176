@@ -105,6 +105,6 @@ describe("the splash's canvas", () => {
 
   it("mounts once, behind a gated slot, for the whole landing", () => {
     expect(appSource.match(/name="splash"/g)).toHaveLength(1);
-    expect(appSource).toMatch(/lazy\(\(\) => import\("\.\/effects\/SplashInk"\)\)/);
+    expect(appSource).toMatch(/lazyEffect\(\(\) => import\("\.\/effects\/SplashInk"\)\)/);
   });
 });

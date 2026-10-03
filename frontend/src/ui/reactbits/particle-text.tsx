@@ -29,6 +29,12 @@ export interface ParticleTextProps {
   particleSize?: number;
   density?: number;
   scatter?: number;
+  /**
+   * Assemble from scattered motes the first time the word is on screen.
+   * Off, the word is already formed when it is first drawn: the motes only
+   * drift, and scatter from the pointer.
+   */
+  gather?: boolean;
   gatherDuration?: number;
   stagger?: number;
   pointerRepel?: number;
@@ -102,6 +108,7 @@ export default function ParticleText({
   particleSize = 2,
   density = 4,
   scatter = 180,
+  gather = true,
   gatherDuration = 1600,
   stagger = 420,
   pointerRepel = 40,
@@ -311,8 +318,8 @@ export default function ParticleText({
         const startX = target.x + Math.cos(angle) * distance + (seed - 0.5) * scatter * 0.45;
         const startY = target.y + Math.sin(angle) * distance + (depth - 0.9) * scatter * 0.45;
         return {
-          x: reducedMotion ? target.x : startX,
-          y: reducedMotion ? target.y : startY,
+          x: reducedMotion || !gather ? target.x : startX,
+          y: reducedMotion || !gather ? target.y : startY,
           startX,
           startY,
           targetX: target.x,
@@ -337,7 +344,7 @@ export default function ParticleText({
           p.delay = 0;
         }
         gathering = false;
-      } else if (!announced) {
+      } else if (!announced && gather) {
         // first build: gather when first seen
         gatherPending = true;
       }
@@ -395,6 +402,7 @@ export default function ParticleText({
     particleSize,
     density,
     scatter,
+    gather,
     gatherDuration,
     stagger,
     pointerRepel,

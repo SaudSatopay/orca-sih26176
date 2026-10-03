@@ -1,14 +1,15 @@
-import { lazy, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
 import type { Language } from "../types";
 import { L10N } from "../i18n/landing";
 import { EffectSlot } from "./EffectSlot";
 import { WORD } from "./inkRamp";
 import "./ink.css";
+import { lazyEffect } from "./lazyEffect";
 
 // Its own chunk (the shader library and the live canvas), fetched only when
 // the slot mounts it: effects/gate.ts decides whether this browser gets more
 // than the poster.
-const InkLive = lazy(() => import("./InkLive"));
+const InkLive = lazyEffect(() => import("./InkLive"));
 
 /**
  * The poster — all that most visitors ever get, and the whole design: the

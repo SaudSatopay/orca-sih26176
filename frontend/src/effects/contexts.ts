@@ -6,13 +6,24 @@ import { ALL_EFFECTS, WEBGL_CAP, type EffectName } from "./gate";
  *
  * Every effect that opens a WebGL context first takes a lease and gives it
  * back only once its context is lost. While `cap` leases are out, the next
- * asker waits; waiters are served by priority (their place in ALL_EFFECTS),
- * first come first served within one effect.
+ * asker waits. Waiters are served nearest the reader first (`distance`: 0
+ * on screen, then by how far off it they are), then by priority (their
+ * place in ALL_EFFECTS), first come first served within one effect.
  *
- * A holder may say it can step aside (`onYield`). When a higher-priority
- * effect is kept waiting, the lowest-priority holder that can step aside is
- * asked to, once; it lets go when it is ready (the splash waits for its ink
- * to fade) and queues again behind the one it made room for.
+ * A full house makes room for the waiter at the head of the queue, asking
+ * each holder at most once:
+ *   - a holder that is off screen and clearly farther away than the waiter
+ *     steps aside (`onStepAside`, or `onYield` if that is all it has): this
+ *     is how a section a screen ahead gets its context from one the reader
+ *     has left behind, and arrives already drawn;
+ *   - for a waiter on screen, a lower-priority holder that can step aside
+ *     (`onYield`) is asked to; it lets go when it is ready (the splash waits
+ *     for its ink to fade) and queues again behind the one it made room for.
+ * A holder on screen is never asked to make room for one that is not.
+ *
+ * Waiters farther away than the horizon (a screen, on the landing) are not
+ * served at all: a section the reader has left behind does not take a free
+ * context back only to give it up to the next one coming up.
  *
  * A released lease is handed on after a short pause, so the old context's
  * `webglcontextlost` has fired before the next one opens and the measured
@@ -30,6 +41,17 @@ export interface AcquireOptions {
   signal?: AbortSignal;
   /** Called at most once per lease when a higher-priority effect is kept waiting. */
   onYield?: () => void;
+  /**
+   * Called at most once per lease when the holder is off screen and a waiter
+   * nearer the reader needs its context: nobody is looking, so let go now.
+   */
+  onStepAside?: () => void;
+  /**
+   * How far the effect is from the reader now, in CSS pixels: 0 while any of
+   * it is on screen. Read again whenever the queue is reconsidered. Without
+   * it the effect counts as on screen.
+   */
+  distance?: () => number;
   /** How many contexts this lease covers (an effect's CONTEXTS value). Default 1. */
   count?: number;
 }
@@ -46,6 +68,8 @@ interface Holder {
   rank: number;
   count: number;
   onYield?: () => void;
+  onStepAside?: () => void;
+  distance: () => number;
   asked: boolean;
 }
 
@@ -55,8 +79,14 @@ interface Waiter {
   count: number;
   seq: number;
   onYield?: () => void;
+  onStepAside?: () => void;
+  distance: () => number;
+  /** Read once per pump: the order must not shift while it is being used. */
+  near: number;
   grant: (lease: Lease) => void;
 }
+
+const onScreen = () => 0;
 
 const rankOf = (name: EffectName) => {
   const at = ALL_EFFECTS.indexOf(name);
@@ -66,7 +96,19 @@ const rankOf = (name: EffectName) => {
 /** A pause long enough for a queued `webglcontextlost` task to run first. */
 export const HANDOVER_MS = 60;
 
-export function createLeaseManager(cap: number = WEBGL_CAP, handoverMs: number = HANDOVER_MS) {
+/**
+ * How much farther from the reader than the waiter a holder must be before
+ * it is asked to make room: two slots at about the same distance never trade
+ * a context back and forth as the page creeps.
+ */
+export const ROOM_MARGIN_PX = 160;
+
+export function createLeaseManager(
+  cap: number = WEBGL_CAP,
+  handoverMs: number = HANDOVER_MS,
+  /** Waiters farther from the reader than this are kept waiting. */
+  horizon: () => number = () => Number.POSITIVE_INFINITY,
+) {
   const held = new Set<Holder>();
   let waiting: Waiter[] = [];
   /** Released leases still inside their handover pause: they count against the cap. */
@@ -91,7 +133,15 @@ export function createLeaseManager(cap: number = WEBGL_CAP, handoverMs: number =
   const fits = (count: number) => units + cooling + count <= cap;
 
   function grant(next: Waiter) {
-    const holder: Holder = { name: next.name, rank: next.rank, count: next.count, onYield: next.onYield, asked: false };
+    const holder: Holder = {
+      name: next.name,
+      rank: next.rank,
+      count: next.count,
+      onYield: next.onYield,
+      onStepAside: next.onStepAside,
+      distance: next.distance,
+      asked: false,
+    };
     held.add(holder);
     units += holder.count;
     peak = Math.max(peak, units);
@@ -114,36 +164,55 @@ export function createLeaseManager(cap: number = WEBGL_CAP, handoverMs: number =
   }
 
   /**
-   * The best waiter is kept out by a full house: ask the humblest holders
-   * that can step aside, fewest first, until enough contexts are on their
-   * way back. Each holder is asked once.
+   * The best waiter is kept out by a full house: ask holders to make room,
+   * until enough contexts are on their way back. First those off screen and
+   * farther from the reader, farthest first; then, for a waiter on screen,
+   * the humblest that can step aside. Each holder is asked once.
    */
-  function askToYield() {
+  function makeRoom() {
     const best = waiting[0];
-    if (!best || fits(best.count)) return;
-    const humble = [...held]
-      .filter((h) => h.onYield && h.rank > best.rank)
-      .sort((a, b) => b.rank - a.rank);
-    let coming = humble.filter((h) => h.asked).reduce((n, h) => n + h.count, 0);
-    for (const h of humble) {
-      if (fits(best.count - coming)) return;
-      if (h.asked) continue;
+    if (!best || fits(best.count) || best.near > horizon()) return;
+    let coming = [...held].filter((h) => h.asked).reduce((n, h) => n + h.count, 0);
+    const ask = (h: Holder, how: (() => void) | undefined) => {
       h.asked = true;
       coming += h.count;
-      h.onYield!();
+      how!();
+    };
+    const far = [...held]
+      .filter((h) => !h.asked && (h.onStepAside || h.onYield))
+      .map((h) => ({ h, d: h.distance() }))
+      .filter(({ d }) => d > 0 && d > best.near + ROOM_MARGIN_PX)
+      .sort((a, b) => b.d - a.d);
+    for (const { h } of far) {
+      if (fits(best.count - coming)) return;
+      ask(h, h.onStepAside ?? h.onYield);
+    }
+    if (best.near > 0) return;
+    const humble = [...held]
+      .filter((h) => !h.asked && h.onYield && h.rank > best.rank)
+      .sort((a, b) => b.rank - a.rank);
+    for (const h of humble) {
+      if (fits(best.count - coming)) return;
+      ask(h, h.onYield);
     }
   }
 
   function pump() {
+    // The reader moves: read each waiter's distance once, then order the
+    // queue nearest first, by priority within the same distance.
+    for (const w of waiting) w.near = w.distance();
+    waiting.sort((a, b) => a.near - b.near || a.rank - b.rank || a.seq - b.seq);
     // Strictly in queue order: a big lease at the head is not overtaken by
     // smaller ones behind it, so it can never starve.
-    while (waiting.length && fits(waiting[0].count)) grant(waiting.shift()!);
-    askToYield();
+    const far = horizon();
+    while (waiting.length && waiting[0].near <= far && fits(waiting[0].count)) grant(waiting.shift()!);
+    makeRoom();
     tell();
   }
 
   function acquire(name: EffectName, opts: AcquireOptions = {}): Promise<Lease> {
-    const { signal, onYield } = opts;
+    const { signal, onYield, onStepAside } = opts;
+    const distance = opts.distance ?? onScreen;
     // A lease larger than the cap could never be granted; it takes the whole cap.
     const count = Math.max(1, Math.min(cap, Math.round(opts.count ?? 1)));
     return new Promise<Lease>((resolve, reject) => {
@@ -165,6 +234,9 @@ export function createLeaseManager(cap: number = WEBGL_CAP, handoverMs: number =
         count,
         seq: seq++,
         onYield,
+        onStepAside,
+        distance,
+        near: 0,
         grant: (lease) => {
           signal?.removeEventListener("abort", onAbort);
           resolve(lease);
@@ -172,7 +244,6 @@ export function createLeaseManager(cap: number = WEBGL_CAP, handoverMs: number =
       };
       signal?.addEventListener("abort", onAbort, { once: true });
       waiting.push(waiter);
-      waiting.sort((a, b) => a.rank - b.rank || a.seq - b.seq);
       pump();
     });
   }
@@ -180,6 +251,11 @@ export function createLeaseManager(cap: number = WEBGL_CAP, handoverMs: number =
   return {
     acquire,
     stats,
+    /**
+     * Look at the queue again: the reader has scrolled, so who is nearest,
+     * and who is now far enough behind to make room, may have changed.
+     */
+    reconsider: pump,
     /** Watch the counts (the debug ledger does). Returns the unsubscribe. */
     watch(fn: (s: LeaseStats) => void): () => void {
       listeners.add(fn);
@@ -194,7 +270,9 @@ export function createLeaseManager(cap: number = WEBGL_CAP, handoverMs: number =
 export type LeaseManager = ReturnType<typeof createLeaseManager>;
 
 /** The landing's one manager. */
-export const leases: LeaseManager = createLeaseManager();
+export const leases: LeaseManager = createLeaseManager(WEBGL_CAP, HANDOVER_MS, () =>
+  typeof window === "undefined" ? Number.POSITIVE_INFINITY : window.innerHeight,
+);
 
 /**
  * Give a lease back once every canvas it covered has really lost its

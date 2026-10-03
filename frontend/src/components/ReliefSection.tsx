@@ -1,14 +1,15 @@
-import { lazy, useId } from "react";
+import { useId } from "react";
 import type { Language } from "../types";
 import { RELIEF } from "../i18n/relief";
 import { EffectSlot } from "../effects/EffectSlot";
 import ReliefPoster, { ReliefLanguage } from "../effects/ReliefPoster";
 import { LEVELS, tintOf } from "../effects/bathymetry";
 import "../effects/relief.css";
+import { lazyEffect } from "../effects/lazyEffect";
 
 // Its own chunk (three, fiber, one drei line), fetched only when the slot
 // mounts it: effects/gate.ts decides whether this browser gets more than the poster.
-const ReliefSheet = lazy(() => import("../effects/ReliefSheet"));
+const ReliefSheet = lazyEffect(() => import("../effects/ReliefSheet"));
 
 /** Band edges under the depth key: 0, 5, 10 … 50. */
 const EDGES = [0, ...LEVELS];

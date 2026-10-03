@@ -36,7 +36,9 @@ const SLUG: Record<string, string> = {
 };
 
 const effectFiles = Object.keys(SLUG).map((name) => `./${name}.tsx`);
-const webgl = effectFiles.filter((f) => f !== "./ParticleText.tsx");
+/** Drawn in 2D: they hold no WebGL context. */
+const canvas2d = ["./ParticleText.tsx", "./GlowCursor.tsx"];
+const webgl = effectFiles.filter((f) => !canvas2d.includes(f));
 
 describe("the night bands' vendored pieces", () => {
   it("are all here, one module per effect name", () => {
@@ -75,6 +77,16 @@ describe("the night bands' vendored pieces", () => {
     }
   });
 
+  it("hold no WebGL context in the 2D pieces", () => {
+    for (const f of canvas2d) {
+      expect(sources[f], f).not.toMatch(/getContext\("webgl|from "ogl"|from "three"/);
+      expect(CONTEXTS[f.slice(2, -4).toLowerCase() as keyof typeof CONTEXTS], f).toBe(0);
+    }
+    // the trail still runs on the night stage, at its DPR cap
+    expect(sources["./GlowCursor.tsx"]).toContain("useNightScene(");
+    expect(sources["./GlowCursor.tsx"]).toContain("nightDpr()");
+  });
+
   it("listen for the pointer on the band or the piece, never the whole window", () => {
     for (const f of effectFiles) expect(sources[f], f).not.toMatch(/window\.addEventListener\("pointer/);
   });
@@ -84,7 +96,7 @@ describe("the night bands' vendored pieces", () => {
       expect(src, f).not.toMatch(/#[0-9a-fA-F]{6}\b/);
       expect(src, f).not.toMatch(/#[0-9a-fA-F]{3}\b['"]/);
     }
-    for (const f of webgl) {
+    for (const f of [...webgl, "./GlowCursor.tsx"]) {
       expect(sources[f], f).toMatch(/from "\.\.\/tokens";/);
       expect(sources[f], f).toContain("hexToVec3(");
     }

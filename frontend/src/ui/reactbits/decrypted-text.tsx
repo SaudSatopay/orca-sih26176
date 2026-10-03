@@ -39,8 +39,11 @@ export interface DecryptedTextProps {
   encryptedClassName?: string;
   /** Classes on the wrapper. */
   parentClassName?: string;
-  /** Decode on mount, or the first time the text comes into view. */
-  animateOn?: "mount" | "view";
+  /**
+   * Decode on mount, the first time the text comes into view, or each time
+   * a mouse or pen comes over it (React Bits' own default).
+   */
+  animateOn?: "mount" | "view" | "hover";
   /** Milliseconds to wait before decoding starts. */
   delay?: number;
 }
@@ -105,11 +108,14 @@ export default function DecryptedText({
     const order = revealOrder(glyphs.length, revealDirection);
     let timer: ReturnType<typeof setInterval> | null = null;
     let wait: ReturnType<typeof setTimeout> | null = null;
-    let done = false;
+    let runs = 0;
+    let running = false;
 
     const run = () => {
-      if (done) return;
-      done = true;
+      // once on mount or view; on hover, again each time, but never over itself
+      if (running || (animateOn !== "hover" && runs > 0)) return;
+      running = true;
+      runs += 1;
       const settled = glyphs.map((c) => !c.trim());
       let step = 0;
       const scramble = () =>
@@ -126,6 +132,8 @@ export default function DecryptedText({
         }
         if (settled.every(Boolean)) {
           if (timer) clearInterval(timer);
+          timer = null;
+          running = false;
           setShown(null);
           return;
         }
@@ -138,7 +146,11 @@ export default function DecryptedText({
     };
 
     let io: IntersectionObserver | null = null;
-    if (animateOn === "mount" || typeof IntersectionObserver !== "function") start();
+    const onEnter = (e: PointerEvent) => {
+      if (e.pointerType === "mouse" || e.pointerType === "pen") start();
+    };
+    if (animateOn === "hover") el.addEventListener("pointerenter", onEnter);
+    else if (animateOn === "mount" || typeof IntersectionObserver !== "function") start();
     else {
       io = new IntersectionObserver(
         (entries) => {
@@ -153,6 +165,7 @@ export default function DecryptedText({
     }
     return () => {
       io?.disconnect();
+      el.removeEventListener("pointerenter", onEnter);
       if (timer) clearInterval(timer);
       if (wait) clearTimeout(wait);
       setShown(null);

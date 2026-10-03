@@ -33,9 +33,10 @@ import { EffectSlot } from "../effects/EffectSlot";
 import "../effects/ground.css";
 import InkCartouche from "../effects/InkWordmark";
 import { countContexts } from "../effects/ledger";
+import { lazyEffect } from "../effects/lazyEffect";
 
 // The living ground is its own chunk, mounted only when the gate allows it.
-const GroundSwell = lazy(() => import("../effects/GroundSwell"));
+const GroundSwell = lazyEffect(() => import("../effects/GroundSwell"));
 
 // The kit pieces that ride on `motion` (spring values, in-view watching, the
 // beams' moving gradients) load as their own chunk after the first paint, so
@@ -124,9 +125,11 @@ function Reveal({
 
 /**
  * A live figure on the stats strip: Magic UI's Number Ticker (kit), which
- * springs up from zero the first time the strip is on screen and writes each
- * frame straight to its own text node (no React render per frame). A dash
- * until the board answers; the full number at once under reduced motion.
+ * springs up from zero if the strip is on screen as the figures arrive, and
+ * writes each frame straight to its own text node (no React render per
+ * frame). Met further down the page, the figure is simply there: nothing
+ * counts while the reader scrolls onto it. A dash until the board answers;
+ * the full number at once under reduced motion.
  */
 function Count({ to, delay = 0 }: { to: number | null; delay?: number }) {
   if (to == null) return <>—</>;
@@ -136,7 +139,7 @@ function Count({ to, delay = 0 }: { to: number | null; delay?: number }) {
   );
   return (
     <Suspense fallback={first}>
-      <NumberTicker value={to} delay={delay} />
+      <NumberTicker value={to} delay={delay} countOn="mount" />
     </Suspense>
   );
 }
@@ -272,7 +275,7 @@ function PipelineLive({ language }: { language: Language }) {
           setNear(true);
         }
       },
-      { rootMargin: "400px" },
+      { rootMargin: "100% 0px" },
     );
     io.observe(el);
     return () => io.disconnect();
@@ -650,7 +653,7 @@ export default function Landing({
         <nav aria-label={t.indexTitle} className="panel rule-double mt-5 overflow-hidden">
           <div className="hd">
             <span className="label">
-              <DecryptedText text={t.indexTitle} speed={45} encryptedClassName="text-chart-500" />
+              <DecryptedText text={t.indexTitle} speed={45} animateOn="hover" encryptedClassName="text-chart-500" />
             </span>
           </div>
           <ul>
@@ -716,7 +719,7 @@ export default function Landing({
         <div className="panel mt-5 overflow-hidden">
           <div className="hd">
             <span className="label">
-              <DecryptedText text={t.pipelineTitle} speed={45} encryptedClassName="text-chart-500" />
+              <DecryptedText text={t.pipelineTitle} speed={45} animateOn="hover" encryptedClassName="text-chart-500" />
             </span>
             <a
               href={`?tab=system&lang=${language}`}

@@ -1,4 +1,4 @@
-import { lazy, useId, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
 import type { Language } from "../../types";
 import { EffectSlot } from "../../effects/EffectSlot";
 import { BANDS } from "../../i18n/bands";
@@ -10,6 +10,7 @@ import { chart, ink, paper, risk } from "../../tokens";
 import { CourseArrow, PlayGlyph, WarnGlyph } from "../glyphs";
 import { STORM_ARM_WIDTH, STORM_ARMS, STORM_BOX, STORM_EYE } from "./storm";
 import { swellPaths, threadPaths, WAKE_HALF, wakePaths } from "./nightPaths";
+import { lazyEffect } from "../../effects/lazyEffect";
 
 /**
  * The sea at night: full-bleed ink interludes between the landing's paper
@@ -23,14 +24,14 @@ import { swellPaths, threadPaths, WAKE_HALF, wakePaths } from "./nightPaths";
  * the phone (the phone app does not import this module).
  */
 
-const GradientWaves = lazy(() => import("../../effects/GradientWaves"));
-const GlowCursor = lazy(() => import("../../effects/GlowCursor"));
-const ParticleWord = lazy(() => import("../../effects/ParticleText"));
-const SideRays = lazy(() => import("../../effects/SideRays"));
-const ElectricLogo = lazy(() => import("../../effects/ElectricLogo"));
-const WebThreads = lazy(() => import("../../effects/WebThreads"));
-const Strands = lazy(() => import("../../effects/Strands"));
-const PatternWaves = lazy(() => import("../../effects/PatternWaves"));
+const GradientWaves = lazyEffect(() => import("../../effects/GradientWaves"));
+const GlowCursor = lazyEffect(() => import("../../effects/GlowCursor"));
+const ParticleWord = lazyEffect(() => import("../../effects/ParticleText"));
+const SideRays = lazyEffect(() => import("../../effects/SideRays"));
+const ElectricLogo = lazyEffect(() => import("../../effects/ElectricLogo"));
+const WebThreads = lazyEffect(() => import("../../effects/WebThreads"));
+const Strands = lazyEffect(() => import("../../effects/Strands"));
+const PatternWaves = lazyEffect(() => import("../../effects/PatternWaves"));
 
 type Enter = (tab: "home" | "ask" | "authority" | "system") => void;
 
@@ -235,7 +236,8 @@ function WakePoster() {
 /**
  * Night watch. The swell rolls toward a hazy horizon under the copy; "ORCA"
  * gathers out of drifting motes; inside this band only, the pointer leaves
- * a plankton-light trail. Two WebGL contexts (waves, trail) and one 2D.
+ * a plankton-light trail. One WebGL context (waves) and two 2D canvases
+ * (the word, the trail).
  */
 export function NightWatchBand({ language }: { language: Language }) {
   const t = (BANDS[language] ?? BANDS.en).watch;

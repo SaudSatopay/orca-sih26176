@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createLeaseManager, releaseAfterLoss, type Lease } from "./contexts";
+import { ROOM_MARGIN_PX, createLeaseManager, releaseAfterLoss, type Lease } from "./contexts";
 import { ALL_EFFECTS, WEBGL_CAP } from "./gate";
 
 const HANDOVER = 60;
@@ -148,6 +148,102 @@ describe("WebGL context leases", () => {
     a.release();
     await vi.advanceTimersByTimeAsync(HANDOVER);
     expect(m.stats().held).toBe(1);
+  });
+});
+
+describe("leases follow the reader", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  it("serves the waiter nearest the reader first, whatever its priority", async () => {
+    const m = createLeaseManager(1, HANDOVER);
+    const first = await m.acquire("ink");
+    const order: string[] = [];
+    void m.acquire("relief", { distance: () => 700 }).then((l) => (order.push("relief"), l.release()));
+    void m.acquire("strands", { distance: () => 120 }).then((l) => (order.push("strands"), l.release()));
+    void m.acquire("webthreads", { distance: () => 0 }).then((l) => (order.push("webthreads"), l.release()));
+    first.release();
+    await vi.advanceTimersByTimeAsync(HANDOVER * 5);
+    expect(order).toEqual(["webthreads", "strands", "relief"]);
+  });
+
+  it("takes the context of a holder left far behind, farthest first, and never of one on screen", async () => {
+    const m = createLeaseManager(2, HANDOVER);
+    const behind = vi.fn();
+    const farther = vi.fn();
+    const shown = vi.fn();
+    await m.acquire("ink", { distance: () => 900, onStepAside: behind });
+    await m.acquire("relief", { distance: () => 0, onStepAside: shown });
+    void m.acquire("gradientwaves", { distance: () => 200 });
+    expect(behind).toHaveBeenCalledTimes(1);
+    expect(shown).not.toHaveBeenCalled();
+    // asked once, however often the queue is looked at
+    m.reconsider();
+    expect(behind).toHaveBeenCalledTimes(1);
+
+    const m2 = createLeaseManager(2, HANDOVER);
+    await m2.acquire("ink", { distance: () => 600, onStepAside: behind });
+    await m2.acquire("relief", { distance: () => 1800, onStepAside: farther });
+    void m2.acquire("gradientwaves", { distance: () => 0 });
+    expect(farther).toHaveBeenCalledTimes(1);
+    expect(behind).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not trade a context between two slots about as far away", async () => {
+    const m = createLeaseManager(1, HANDOVER);
+    const step = vi.fn();
+    await m.acquire("ink", { distance: () => 300, onStepAside: step });
+    void m.acquire("relief", { distance: () => 300 - ROOM_MARGIN_PX + 40 });
+    expect(step).not.toHaveBeenCalled();
+  });
+
+  it("never asks the splash on screen to yield for a section that is still ahead", async () => {
+    const m = createLeaseManager(1, HANDOVER);
+    const splashYield = vi.fn();
+    await m.acquire("splash", { distance: () => 0, onYield: splashYield });
+    void m.acquire("gradientwaves", { distance: () => 240 });
+    expect(splashYield).not.toHaveBeenCalled();
+    // …but does for one on screen
+    void m.acquire("relief", { distance: () => 0 });
+    expect(splashYield).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps a waiter beyond the horizon waiting, even with a context free", async () => {
+    let horizon = 900;
+    const m = createLeaseManager(2, HANDOVER, () => horizon);
+    let behind: Lease | null = null;
+    void m.acquire("patternwaves", { distance: () => 1300 }).then((l) => (behind = l));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(behind).toBeNull();
+    expect(m.stats()).toMatchObject({ held: 0, waiting: 1 });
+    // nor may it take a context from anyone: two holders the reader has left far behind
+    let away = 0;
+    const step = vi.fn();
+    await m.acquire("ink", { distance: () => away, onStepAside: step });
+    await m.acquire("relief", { distance: () => away, onStepAside: step });
+    away = 2400;
+    m.reconsider();
+    expect(step).not.toHaveBeenCalled();
+    // the reader turns round: it is ahead again, and within reach
+    horizon = 1400;
+    m.reconsider();
+    expect(step).toHaveBeenCalledTimes(1);
+  });
+
+  it("looks again when asked: a holder the reader has left behind makes room", async () => {
+    const m = createLeaseManager(1, HANDOVER);
+    let inkAt = 0;
+    const step = vi.fn();
+    const ink = await m.acquire("ink", { distance: () => inkAt, onStepAside: step });
+    let granted: Lease | null = null;
+    void m.acquire("relief", { distance: () => 300 }).then((l) => (granted = l));
+    expect(step).not.toHaveBeenCalled();
+    inkAt = 1200;
+    m.reconsider();
+    expect(step).toHaveBeenCalledTimes(1);
+    ink.release();
+    await vi.advanceTimersByTimeAsync(HANDOVER);
+    expect(granted).not.toBeNull();
   });
 });
 

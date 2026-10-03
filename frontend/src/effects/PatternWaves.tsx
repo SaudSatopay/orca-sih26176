@@ -70,7 +70,6 @@ const WAVE_UNIT = 520;
 const RIPPLE_CELL = 8;
 const RIPPLE_RATE = 60;
 const PIXEL_BUDGET = 4.5e6;
-const INTRO_SECONDS = 2;
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
@@ -486,7 +485,6 @@ export default function PatternWaves(props: EffectProps) {
     let width = 1;
     let height = 1;
     let time = 0;
-    let introClock = still ? 1 : 0;
     let rippleUntil = 0;
     let rippleLive = false;
     let rippleClock = 0;
@@ -586,14 +584,10 @@ export default function PatternWaves(props: EffectProps) {
         renderer.setSize(w, h);
         buildRipple();
       },
-      moving: () => !still || introClock < 1 || rippleActive,
+      moving: () => !still || rippleActive,
       draw(_t, dt) {
         const now = performance.now();
         if (!still) time += dt * HALFTONE.speed;
-        introClock = still ? 1 : Math.min(1, introClock + dt / INTRO_SECONDS);
-        const appear = 1 - Math.pow(1 - clamp(introClock / 0.75, 0, 1), 3);
-        const rise = clamp((introClock - 0.1) / 0.9, 0, 1);
-        const amp = rise * rise * (3 - 2 * rise);
 
         const rippling = !still && !!ripple && HALFTONE.cursorStrength > 0;
         if (rippling && pointer.inside && !pointer.placed) {
@@ -630,8 +624,10 @@ export default function PatternWaves(props: EffectProps) {
         fieldUniforms.uOrigin.value = origin;
         fieldUniforms.uPitch.value = [pitchX, pitchY];
         fieldUniforms.uTime.value = time;
-        fieldUniforms.uAmp.value = amp;
-        fieldUniforms.uAppear.value = appear;
+        // No entrance: the section is drawn a screen ahead (EffectSlot) and
+        // arrives with its whole sea already printed.
+        fieldUniforms.uAmp.value = 1;
+        fieldUniforms.uAppear.value = 1;
         fieldUniforms.tRipple.value = ripple && rippleLive ? ripple.read.texture : blank;
         fieldUniforms.uRipple.value = rippleLive ? 0.32 : 0;
         renderer.render({ scene: fieldMesh, target: fieldTarget });

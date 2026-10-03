@@ -3,8 +3,9 @@
  * MIT + Commons Clause, Copyright (c) 2026 David Haz — see src/ui/LICENSES.md
  *
  * Adapted for ORCA: the Night watch band's wordmark. "ORCA" in Fraunces
- * Black gathers out of drifting paper-and-teal motes the first time the
- * band is seen and scatters from the pointer. The component itself is
+ * Black, set in drifting paper-and-teal motes that scatter from the
+ * pointer. The word is already formed when the band arrives (it is drawn a
+ * screen ahead, EffectSlot): nothing assembles while the reader watches. The component itself is
  * vendored at src/ui/reactbits/particle-text.tsx; this module is the slot's
  * lazy chunk and maps the slot's contract (active, onReady) onto it. A 2D
  * canvas: it holds no WebGL context.
@@ -26,8 +27,6 @@ const MOTES = {
   particleSize: 1.6,
   density: 3,
   scatter: 160,
-  gatherDuration: 1500,
-  stagger: 380,
   pointerRepel: 34,
   repelRadius: 110,
   idleDrift: 0.6,
@@ -48,8 +47,7 @@ export default function ParticleText({ active, onReady }: EffectProps) {
       particleSize={MOTES.particleSize}
       density={MOTES.density}
       scatter={MOTES.scatter}
-      gatherDuration={MOTES.gatherDuration}
-      stagger={MOTES.stagger}
+      gather={false}
       pointerRepel={MOTES.pointerRepel}
       repelRadius={MOTES.repelRadius}
       idleDrift={MOTES.idleDrift}

@@ -1168,6 +1168,13 @@ html {
 .night-band--ink :focus-visible {
   outline-color: theme(colors.chart.300);
 }
+/* The plankton trail is light (GlowCursor.tsx draws it as colour on a clear
+   canvas): its slot screens onto the band, so the trail only ever brightens
+   the ink, and its dim tail never prints as a dark line. On the slot, not
+   the canvas: the slot's z-index makes it its own stacking context. */
+.nb-slot[data-effect="glowcursor"] {
+  mix-blend-mode: screen;
+}
 
 /* Night watch: the swell under a hazy horizon, the sky left dark for the
    copy. The live sea's canvas is centred on its horizon, so the sea is a box

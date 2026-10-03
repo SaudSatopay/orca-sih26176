@@ -44,7 +44,8 @@
  * The night bands (components/landing/NightBands.tsx): the sea at night,
  * full-bleed ink interludes between the paper sections of the landing only.
  * - `gradientwaves`: the swell rolling to a hazy horizon (Night watch);
- * - `glowcursor`: a plankton-light trail inside the Night watch band only;
+ * - `glowcursor`: a plankton-light trail inside the Night watch band only
+ *   (a 2D canvas);
  * - `particletext`: the word assembling from drifting motes (2D canvas);
  * - `siderays`: light falling from one side over the warning band;
  * - `electriclogo`: the storm symbol as a living lightning outline;
@@ -115,7 +116,8 @@ export const ALL_EFFECTS: readonly EffectName[] = [
 // Glass opens one context while arming and loses it at once, under a lease,
 // so it holds none at rest. Ink, relief and splash fill the cap of three;
 // each night-band effect and each showcase sheet holds one context while
-// its section is in view (particletext is a 2D canvas).
+// its section is near the reader (particletext and glowcursor are 2D
+// canvases and hold none).
 export const CONTEXTS: Record<EffectName, number> = {
   ground: 0,
   ink: 1,
@@ -123,7 +125,7 @@ export const CONTEXTS: Record<EffectName, number> = {
   relief: 1,
   splash: 1,
   gradientwaves: 1,
-  glowcursor: 1,
+  glowcursor: 0,
   particletext: 0,
   siderays: 1,
   electriclogo: 1,

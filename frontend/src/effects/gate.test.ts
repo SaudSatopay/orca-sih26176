@@ -89,14 +89,14 @@ describe("which landing effects may run", () => {
     expect(WEBGL_CAP).toBe(3);
   });
 
-  it("names the night bands' effects, one context each, on by default", () => {
+  it("names the night bands' effects, one context each but the two 2D canvases, on by default", () => {
     expect(BAND_EFFECTS).toEqual([
       "gradientwaves", "glowcursor", "particletext", "patternwaves",
       "siderays", "electriclogo", "webthreads", "strands",
     ]);
     for (const name of BAND_EFFECTS) {
       expect(LEASED.has(name), name).toBe(true);
-      expect(CONTEXTS[name], name).toBe(name === "particletext" ? 0 : 1);
+      expect(CONTEXTS[name], name).toBe(name === "particletext" || name === "glowcursor" ? 0 : 1);
       expect(DEFAULT_EFFECTS).toContain(name);
     }
     // a lone lease never needs more than the cap

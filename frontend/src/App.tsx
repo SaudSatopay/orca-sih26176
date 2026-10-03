@@ -66,6 +66,7 @@ import { initialLanguage, readBootParams } from "./boot";
 import { ink, risk } from "./tokens";
 import { GlowingBadge } from "./ui/unlumen/glowing-badge";
 import { SonarDial } from "./ui/console/SonarDial";
+import { lazyEffect } from "./effects/lazyEffect";
 
 // The sheets that carry the motion library load as their own chunks, so the
 // App chunk (which also carries the landing) stays light. They are fetched
@@ -96,7 +97,7 @@ import { EffectSlot } from "./effects/EffectSlot";
 import "./effects/splash.css";
 
 // The splash's own chunk, fetched only when the gate lets it run (effects/gate.ts).
-const SplashInk = lazy(() => import("./effects/SplashInk"));
+const SplashInk = lazyEffect(() => import("./effects/SplashInk"));
 
 const SESSION = "demo";
 const RADIUS_KM = 100;
@@ -591,7 +592,7 @@ export default function App() {
           onScenario={runScenario}
         />
         {/* wet ink in the water under the whole landing (effects/SplashInk.tsx) */}
-        <EffectSlot name="splash" Effect={SplashInk} poster={null} yieldable armOn="interaction" className="splash-slot" effectClassName="splash-live" />
+        <EffectSlot name="splash" Effect={SplashInk} poster={null} yieldable fixed armOn="pointer" className="splash-slot" effectClassName="splash-live" />
       </>
     );
   }

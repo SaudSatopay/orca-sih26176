@@ -6,6 +6,7 @@
 /** What counts as the first interaction. */
 const INTERACTIONS = ["pointermove", "wheel", "scroll", "touchstart", "keydown"] as const;
 let interacted = false;
+let interactedAt = 0;
 let listening = false;
 const waiting = new Set<() => void>();
 
@@ -23,6 +24,7 @@ export function onFirstInteraction(cb: () => void): () => void {
     listening = true;
     const fire = () => {
       interacted = true;
+      interactedAt = performance.now();
       listening = false;
       INTERACTIONS.forEach((type) => window.removeEventListener(type, fire, { capture: true }));
       const all = [...waiting];
@@ -40,4 +42,9 @@ export function onFirstInteraction(cb: () => void): () => void {
 /** Whether the first interaction has happened. */
 export function hasInteracted(): boolean {
   return interacted;
+}
+
+/** Milliseconds since the first interaction; -1 before it. */
+export function sinceFirstInteraction(): number {
+  return interacted ? performance.now() - interactedAt : -1;
 }
