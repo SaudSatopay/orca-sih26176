@@ -23,6 +23,14 @@ export const L10N: Record<
     phases: { t: string; n: string }[];
     /** Under the closing cartouche's wordmark: the name written out. */
     folioTagline: string;
+    /** The live strip under the masthead: every landing centre, scored now. */
+    coastLabel: string;
+    /** The strip read aloud: how many centres, then each one. */
+    coastSr: (n: number, list: string) => string;
+    /** Said after a centre that is under an official warning. */
+    warnWord: string;
+    /** Beside the five specialists in the pipeline: they run at once. */
+    fanNote: string;
     footer: string;
   }
 > = {
@@ -87,6 +95,10 @@ export const L10N: Record<
       { t: "Explain", n: "plain words, with sources, spoken back" },
     ],
     folioTagline: "Marine Ecosystem Reasoning · Collaborative Agents",
+    coastLabel: "The coast, right now",
+    coastSr: (n, list) => `${n} landing centres, scored just now: ${list}.`,
+    warnWord: "official warning",
+    fanNote: "five at once",
     footer:
       "Demo / simulated data is always labelled · ORCA is decision support — never a replacement for an official advisory",
   },
@@ -151,6 +163,10 @@ export const L10N: Record<
       { t: "समझाओ", n: "सीधी भाषा, स्रोतों के साथ, बोलकर भी" },
     ],
     folioTagline: "समुद्री पारिस्थितिकी तर्क · सहयोगी एजेंट",
+    coastLabel: "तट, इस समय",
+    coastSr: (n, list) => `तट के ${n} लैंडिंग सेंटर, अभी का आकलन: ${list}।`,
+    warnWord: "आधिकारिक चेतावनी",
+    fanNote: "पाँचों एक साथ",
     footer:
       "नक़ली/डेमो डेटा पर हमेशा लेबल · ORCA निर्णय-सहायक है — आधिकारिक सलाह का विकल्प कभी नहीं",
   },
@@ -215,6 +231,10 @@ export const L10N: Record<
       { t: "समजावा", n: "सोपी भाषा, स्रोतांसह, बोलूनही" },
     ],
     folioTagline: "सागरी परिसंस्था तर्क · सहयोगी एजंट",
+    coastLabel: "किनारा, आत्ता",
+    coastSr: (n, list) => `किनाऱ्यावरील ${n} लँडिंग सेंटर, आत्ताचे मूल्यांकन: ${list}.`,
+    warnWord: "अधिकृत इशारा",
+    fanNote: "पाचही एकाच वेळी",
     footer:
       "नमुना/डेमो डेटावर नेहमी लेबल · ORCA निर्णय-सहाय्यक आहे — अधिकृत सल्ल्याचा पर्याय कधीही नाही",
   },

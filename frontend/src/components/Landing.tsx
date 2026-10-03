@@ -1,8 +1,11 @@
-import { lazy, useEffect, useState, type ReactNode } from "react";
+import { lazy, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import * as api from "../api";
-import type { Language } from "../types";
-import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph } from "./glyphs";
+import type { AuthorityRow, Language, RiskCategory } from "../types";
+import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph, WarnGlyph } from "./glyphs";
 import { L10N } from "../i18n/landing";
+import { HERO } from "../i18n/hero";
+import { RISK_COLOR } from "../risk";
+import { Marquee } from "../ui/magicui/marquee";
 import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
 import GlassLoupe from "../effects/GlassLoupe";
@@ -109,6 +112,84 @@ function Count({ to, ms }: { to: number | null; ms?: number }) {
   return <>{useCountUp(to, ms)}</>;
 }
 
+/** A band word as text: the ink of its hue that holds 4.5:1 on paper (tokens.ts). */
+const BAND_INK: Record<RiskCategory, string> = {
+  LOW: "text-risk-low",
+  MODERATE: "text-risk-moderate",
+  HIGH: "text-risk-high",
+  EXTREME: "text-risk-extreme",
+};
+
+/**
+ * The coast, right now: every landing centre the authority board scores,
+ * running past under the masthead like a harbour's notice board. Each centre
+ * is its band as a square, its name, its score and its band word, with the
+ * warning mark when an official warning is up. The moving copies are
+ * decoration; a screen reader hears one sentence for the whole coast. Under
+ * reduced motion the centres stand still in a wrapped row.
+ */
+function CoastTicker({ rows, language }: { rows: AuthorityRow[]; language: Language }) {
+  const t = L10N[language] ?? L10N.en;
+  const band = (HERO[language] ?? HERO.en).band;
+  const still = prefersStill();
+  const said = t.coastSr(
+    rows.length,
+    rows
+      .map(
+        (r) =>
+          `${r.name} ${Math.round(r.risk_score)} ${band[r.risk_category]}${r.official_warning ? `, ${t.warnWord}` : ""}`,
+      )
+      .join("; "),
+  );
+  const centres = rows.map((r) => (
+    <span
+      key={r.name}
+      data-centre
+      className="inline-flex items-center gap-2 whitespace-nowrap border-l pl-4 font-mono text-label uppercase tracking-[0.08em]"
+      style={{ borderColor: "var(--rule-faint)" }}
+    >
+      <span aria-hidden className="h-2 w-2 shrink-0" style={{ background: RISK_COLOR[r.risk_category] }} />
+      <span className="font-semibold text-ink-900">{r.name}</span>
+      <span className="lining font-bold text-ink-900">{Math.round(r.risk_score)}</span>
+      <span className={`font-semibold ${BAND_INK[r.risk_category]}`}>{band[r.risk_category]}</span>
+      {r.official_warning && <WarnGlyph size={13} className="shrink-0 text-risk-extreme" />}
+    </span>
+  ));
+  return (
+    <section
+      className="coast-ticker flex min-h-9 items-stretch border-y"
+      style={{ borderColor: "var(--rule)" }}
+      aria-label={t.coastLabel}
+    >
+      <span
+        aria-hidden
+        className="label flex shrink-0 items-center gap-2 border-r pl-1.5 pr-4 !text-chart-700"
+        style={{ borderColor: "var(--rule-faint)" }}
+      >
+        <span className="pulse-dot bg-chart-500 text-chart-500" />
+        {t.coastLabel}
+      </span>
+      {still ? (
+        <div aria-hidden className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1.5 py-2 pl-4">
+          {centres}
+        </div>
+      ) : (
+        <div aria-hidden className="coast-ticker-run min-w-0 flex-1 overflow-hidden">
+          <Marquee
+            pauseOnHover
+            repeat={2}
+            className="h-full items-center"
+            style={{ "--duration": `${Math.max(40, rows.length * 7)}s`, "--gap": "1rem" } as CSSProperties}
+          >
+            {centres}
+          </Marquee>
+        </div>
+      )}
+      <p className="sr-only">{said}</p>
+    </section>
+  );
+}
+
 /**
  * The front door — the chart sheet before you step aboard.
  *
@@ -134,6 +215,7 @@ export default function Landing({
   const t = L10N[language] ?? L10N.en;
   const [centres, setCentres] = useState<number | null>(null);
   const [warnings, setWarnings] = useState<number | null>(null);
+  const [coast, setCoast] = useState<AuthorityRow[] | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -143,6 +225,7 @@ export default function Landing({
         if (!alive) return;
         setCentres(d.summary.monitored ?? null);
         setWarnings(d.summary.official_warnings ?? null);
+        setCoast(Array.isArray(d.locations) && d.locations.length ? d.locations : null);
       })
       .catch(() => {});
     return () => {
@@ -220,8 +303,13 @@ export default function Landing({
         </div>
       </Reveal>
 
+      {/* the coast, right now: the slot keeps its height from the first frame,
+          so the hero never moves when the board arrives; while the board is
+          loading, or if it fails, the slot is simply empty */}
+      <div className="mt-4 min-h-9">{coast && <CoastTicker rows={coast} language={language} />}</div>
+
       {/* hero: the claim on the left, the product performing it on the right */}
-      <div className="mt-9 grid items-center gap-x-12 gap-y-9 lg:mt-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
+      <div className="mt-6 grid items-center gap-x-12 gap-y-9 lg:mt-7 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)]">
         <div>
           <Reveal delay={60}>
             {/* the wordmark in wet ink leads the hero — the same mark as the

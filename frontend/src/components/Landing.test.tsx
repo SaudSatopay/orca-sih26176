@@ -1,0 +1,108 @@
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuthorityDashboard } from "../types";
+import { L10N } from "../i18n/landing";
+
+// The landing's heavy neighbours are not under test here.
+vi.mock("../api");
+vi.mock("./ReliefSection", () => ({ default: () => null }));
+vi.mock("../effects/GroundSwell", () => ({ default: () => null }));
+
+const board: AuthorityDashboard = {
+  generated_at: "2026-10-03T19:11:47+05:30",
+  summary: { monitored: 3, official_warnings: 2 },
+  locations: [
+    { name: "Paradip", state: "Odisha", latitude: 20.26, longitude: 86.69, risk_score: 92, risk_category: "EXTREME", official_warning: true, wave_height_m: 5.28, wind_speed_kmh: 88.1, headline: null },
+    { name: "Digha", state: "West Bengal", latitude: 21.6, longitude: 87.5, risk_score: 78, risk_category: "HIGH", official_warning: true, wave_height_m: 2.85, wind_speed_kmh: 42.3, headline: null },
+    { name: "Goa", state: "Goa", latitude: 15.4, longitude: 73.8, risk_score: 12, risk_category: "LOW", official_warning: false, wave_height_m: 0.8, wind_speed_kmh: 10, headline: null },
+  ],
+};
+
+const tick = (ms = 20) => act(() => new Promise<void>((r) => setTimeout(r, ms)));
+
+/** Pretend the reader asked for less motion (or not). */
+function reducedMotion(on: boolean) {
+  window.matchMedia = ((q: string) => ({
+    matches: on && q.includes("reduce"),
+    media: q,
+    onchange: null,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
+
+async function openLanding(authority: "ok" | "fail" | "pending", language: "en" | "hi" | "mr" = "en") {
+  const api = vi.mocked(await import("../api"));
+  vi.clearAllMocks();
+  if (authority === "ok") api.authority.mockResolvedValue(board);
+  else if (authority === "fail") api.authority.mockRejectedValue(new Error("offline"));
+  else api.authority.mockReturnValue(new Promise(() => {}));
+  api.ask.mockRejectedValue(new Error("not under test"));
+  const { default: Landing } = await import("./Landing");
+  const view = render(
+    <Landing
+      mode="DEMO"
+      language={language}
+      onLanguage={() => {}}
+      onEnter={() => {}}
+      onTour={() => {}}
+      onScenario={() => {}}
+    />,
+  );
+  await tick();
+  return view;
+}
+
+const original = window.matchMedia;
+beforeEach(() => reducedMotion(false));
+afterEach(() => {
+  window.matchMedia = original;
+});
+
+describe("the coast, right now (ticker)", () => {
+  it("runs every landing centre past as a marquee, with a sentence for screen readers", async () => {
+    const { container } = await openLanding("ok");
+    const strip = container.querySelector(".coast-ticker")!;
+    expect(strip).not.toBeNull();
+    expect(strip).toHaveTextContent(L10N.en.coastLabel);
+    // the moving copies are decoration; the sentence is what is read
+    const moving = strip.querySelector(".animate-marquee")!;
+    expect(moving.closest("[aria-hidden='true']")).not.toBeNull();
+    const said = strip.querySelector(".sr-only")!;
+    expect(said.textContent).toContain("Paradip 92 Extreme, official warning");
+    expect(said.textContent).toContain("Goa 12 Low");
+    // each centre: a band square, the name, the score, the band word, and a warning mark when warned
+    const first = moving.querySelectorAll("[data-centre]");
+    expect(first).toHaveLength(3);
+    expect(first[0]).toHaveTextContent(/Paradip\s*92\s*Extreme/);
+    expect(first[0].querySelector("svg")).not.toBeNull();
+    expect(first[2].querySelector("svg")).toBeNull();
+  });
+
+  it("draws nothing while the board is loading or when it fails", async () => {
+    const pending = await openLanding("pending");
+    expect(pending.container.querySelector(".coast-ticker")).toBeNull();
+    expect(screen.queryByText(L10N.en.coastLabel)).toBeNull();
+    pending.unmount();
+    const failed = await openLanding("fail");
+    expect(failed.container.querySelector(".coast-ticker")).toBeNull();
+  });
+
+  it("stands still as a wrapped row under reduced motion", async () => {
+    reducedMotion(true);
+    const { container } = await openLanding("ok");
+    const strip = container.querySelector(".coast-ticker")!;
+    expect(strip.querySelector(".animate-marquee")).toBeNull();
+    expect(strip.querySelectorAll("[data-centre]")).toHaveLength(3);
+  });
+
+  it("speaks the reader's language", async () => {
+    const { container } = await openLanding("ok", "mr");
+    const strip = container.querySelector(".coast-ticker")!;
+    expect(strip).toHaveTextContent(L10N.mr.coastLabel);
+    expect(strip.querySelector(".sr-only")!.textContent).toContain("अधिकृत इशारा");
+  });
+});
