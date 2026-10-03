@@ -21,7 +21,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useMotionValue, useSpring, useTransform, useVelocity } from "motion/react";
 import { cn, prefersReducedMotion } from "../cn";
 
@@ -102,9 +101,11 @@ export function TooltipProvider({ children, className }: { children: ReactNode; 
   return (
     <TooltipContext.Provider value={api}>
       {children}
-      {typeof document !== "undefined" &&
-        createPortal(
-          <AnimatePresence>
+      {/* Fixed to the viewport, beside the triggers rather than portalled
+          to <body>: the console chunk then needs nothing from react-dom (a
+          new import there renames the entry's exports and changes the phone
+          chunks). Nothing above it creates a containing block for it. */}
+      <AnimatePresence>
             {active && (
               <motion.div
                 key="tip"
@@ -136,9 +137,7 @@ export function TooltipProvider({ children, className }: { children: ReactNode; 
                 </motion.div>
               </motion.div>
             )}
-          </AnimatePresence>,
-          document.body,
-        )}
+      </AnimatePresence>
     </TooltipContext.Provider>
   );
 }

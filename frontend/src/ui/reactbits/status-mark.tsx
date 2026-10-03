@@ -6,7 +6,7 @@
  * dashed ring while it is standing by, a turning arc while it is called, a
  * closed ring with a hand-drawn tick once it has reported; the dashes morph
  * into the arc and the arc into the ring, as in the original. Colours are
- * tokens, the styles moved from arbitrary Tailwind classes into
+ * tokens (defaults in the stylesheet), the styles moved from arbitrary Tailwind classes into
  * status-mark.css (no keyframes: transitions and stroke-dashoffset only), the
  * spoken English labels are gone (the caller's row already says the status in
  * the reader's language, so the mark is decoration) and the failed and
@@ -15,7 +15,6 @@
  */
 import { useEffect, useLayoutEffect, useRef, type CSSProperties } from "react";
 import { animate, useMotionValue } from "motion/react";
-import { chart } from "../../tokens";
 import { cn, prefersReducedMotion } from "../cn";
 import "./status-mark.css";
 
@@ -23,7 +22,9 @@ export type StatusMarkStatus = "pending" | "running" | "done";
 
 export interface StatusMarkProps {
   status?: StatusMarkStatus;
+  /** Defaults to chart-600 (status-mark.css). */
   color?: string;
+  /** Defaults to chart-700 (status-mark.css). */
   doneColor?: string;
   /** px */
   size?: number;
@@ -43,8 +44,8 @@ const IDLE_DASH = 0.3;
 
 export function StatusMark({
   status = "pending",
-  color = chart[600],
-  doneColor = chart[700],
+  color,
+  doneColor,
   size = 14,
   strokeWidth = 2.2,
   dashes = 8,
