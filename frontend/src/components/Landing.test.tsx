@@ -62,6 +62,19 @@ afterEach(() => {
   window.matchMedia = original;
 });
 
+describe("decoded labels", () => {
+  it("the masthead kicker and the two panel labels decode, each read once by assistive tech", async () => {
+    const { container } = await openLanding("pending");
+    for (const words of ["SIH26176 · ISRO · Smart India Hackathon 2026", L10N.en.indexTitle, L10N.en.pipelineTitle]) {
+      const hidden = [...container.querySelectorAll(".sr-only")].find((s) => s.textContent === words);
+      expect(hidden, words).toBeDefined();
+      const drawn = hidden!.nextElementSibling!;
+      expect(drawn).toHaveAttribute("aria-hidden", "true");
+      expect(drawn.textContent).toBe(words);
+    }
+  });
+});
+
 describe("the hand-drawn mark under the teal word", () => {
   it("leaves the word readable throughout and marks it once the hero has settled", async () => {
     const { container } = await openLanding("pending");

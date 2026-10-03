@@ -7,6 +7,7 @@ import { HERO } from "../i18n/hero";
 import { RISK_COLOR } from "../risk";
 import { chart } from "../tokens";
 import { Marquee } from "../ui/magicui/marquee";
+import DecryptedText from "../ui/reactbits/decrypted-text";
 import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
 import GlassLoupe from "../effects/GlassLoupe";
@@ -312,7 +313,14 @@ export default function Landing({
             </span>
           </span>
           <span className="font-mono text-label font-bold uppercase tracking-[0.2em] text-chart-700">
-            SIH26176 · ISRO · Smart India Hackathon 2026
+            {/* read off the chart as the page opens (React Bits DecryptedText) */}
+            <DecryptedText
+              text="SIH26176 · ISRO · Smart India Hackathon 2026"
+              animateOn="mount"
+              speed={28}
+              delay={250}
+              encryptedClassName="text-chart-500"
+            />
           </span>
           {/* full reload on purpose: phone vs console is decided at boot */}
           <a
@@ -431,7 +439,9 @@ export default function Landing({
       <Reveal delay={420}>
         <nav aria-label={t.indexTitle} className="panel rule-double mt-5 overflow-hidden">
           <div className="hd">
-            <span className="label">{t.indexTitle}</span>
+            <span className="label">
+              <DecryptedText text={t.indexTitle} speed={45} encryptedClassName="text-chart-500" />
+            </span>
           </div>
           <ul>
             {t.cards.map((c, i) => (
@@ -481,7 +491,9 @@ export default function Landing({
       <Reveal delay={880}>
         <div className="panel mt-5 overflow-hidden">
           <div className="hd">
-            <span className="label">{t.pipelineTitle}</span>
+            <span className="label">
+              <DecryptedText text={t.pipelineTitle} speed={45} encryptedClassName="text-chart-500" />
+            </span>
             <a
               href={`?tab=system&lang=${language}`}
               onClick={(e) => {
