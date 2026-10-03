@@ -1,4 +1,4 @@
-import { lazy, useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import * as api from "../api";
 import type { AuthorityRow, Language, RiskCategory } from "../types";
 import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph, WarnGlyph } from "./glyphs";
@@ -17,6 +17,16 @@ import { countContexts } from "../effects/ledger";
 
 // The living ground is its own chunk, mounted only when the gate allows it.
 const GroundSwell = lazy(() => import("../effects/GroundSwell"));
+
+// The kit pieces that ride on `motion` (spring values, in-view watching, the
+// beams' moving gradients) load as their own chunk after the first paint, so
+// the page's first script stays as small as it was. Each has a still
+// stand-in, and a chunk that fails to load leaves the stand-in in place.
+const NumberTicker = lazy(() =>
+  import("../ui/magicui/number-ticker")
+    .then((m) => ({ default: m.NumberTicker }))
+    .catch(() => ({ default: ({ value }: { value: number }) => <>{value}</> })),
+);
 
 // With ?fxdebug=1 the page counts the WebGL contexts it opens (effects/ledger.ts).
 countContexts();
@@ -79,37 +89,23 @@ function Reveal({
   );
 }
 
-/** Count-up with the same fail-safe as the risk dial: the number always lands. */
-function useCountUp(target: number | null, ms = 1000): string {
-  const [v, setV] = useState(0);
-  const still = prefersStill();
-  useEffect(() => {
-    // Reduced motion: no count, the number is simply there (see the return).
-    if (target == null || still) return;
-    let raf = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, Math.max(0, (now - start) / ms));
-      setV(Math.round(target * (1 - Math.pow(1 - t, 3))));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    const settle = window.setTimeout(() => setV(target), ms + 150);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.clearTimeout(settle);
-    };
-  }, [target, ms, still]);
-  return target == null ? "—" : String(still ? target : v);
-}
-
 /**
- * The counting number as its own leaf: the per-frame state lives here, so
- * sixty renders a second touch this text node and nothing else. (Measured
- * before: the whole landing, hero included, reconciled every frame for 1.3 s.)
+ * A live figure on the stats strip: Magic UI's Number Ticker (kit), which
+ * springs up from zero the first time the strip is on screen and writes each
+ * frame straight to its own text node (no React render per frame). A dash
+ * until the board answers; the full number at once under reduced motion.
  */
-function Count({ to, ms }: { to: number | null; ms?: number }) {
-  return <>{useCountUp(to, ms)}</>;
+function Count({ to, delay = 0 }: { to: number | null; delay?: number }) {
+  if (to == null) return <>—</>;
+  // Until the ticker's chunk arrives, print exactly its first frame.
+  const first = (
+    <span className="lining inline-block tabular-nums">{prefersStill() ? to : 0}</span>
+  );
+  return (
+    <Suspense fallback={first}>
+      <NumberTicker value={to} delay={delay} />
+    </Suspense>
+  );
 }
 
 /** A band word as text: the ink of its hue that holds 4.5:1 on paper (tokens.ts). */
@@ -237,8 +233,8 @@ export default function Landing({
 
   const stats: { k: string; v: ReactNode; warn?: boolean }[] = [
     { k: t.stats[0], v: "10" },
-    { k: t.stats[1], v: <Count to={centres} ms={1100} /> },
-    { k: t.stats[2], v: <Count to={warnings} ms={1300} />, warn: (warnings ?? 0) > 0 },
+    { k: t.stats[1], v: <Count to={centres} /> },
+    { k: t.stats[2], v: <Count to={warnings} delay={0.15} />, warn: (warnings ?? 0) > 0 },
     { k: t.stats[3], v: "3" },
     { k: t.stats[4], v: mode },
   ];

@@ -62,6 +62,30 @@ afterEach(() => {
   window.matchMedia = original;
 });
 
+describe("the stats strip", () => {
+  const cell = (container: HTMLElement, label: string) =>
+    [...container.querySelectorAll(".label")].find((l) => l.textContent === label)!.nextElementSibling!;
+
+  it("counts the live numbers with the number ticker; the two constants stay plain", async () => {
+    reducedMotion(true); // the ticker prints its final value at once
+    const { container } = await openLanding("ok");
+    const [crew, centres, warnings, languages] = L10N.en.stats;
+    expect(cell(container, centres).querySelector(".tabular-nums")).toHaveTextContent("3");
+    expect(cell(container, warnings).querySelector(".tabular-nums")).toHaveTextContent("2");
+    expect(cell(container, crew).textContent).toBe("10");
+    expect(cell(container, crew).querySelector("span")).toBeNull();
+    expect(cell(container, languages).textContent).toBe("3");
+  });
+
+  it("starts the ticker from zero when motion is allowed, and shows a dash until the board answers", async () => {
+    const live = await openLanding("ok");
+    expect(cell(live.container, L10N.en.stats[1]).querySelector(".tabular-nums")).toHaveTextContent("0");
+    live.unmount();
+    const pending = await openLanding("pending");
+    expect(cell(pending.container, L10N.en.stats[1]).textContent).toBe("—");
+  });
+});
+
 describe("the coast, right now (ticker)", () => {
   it("runs every landing centre past as a marquee, with a sentence for screen readers", async () => {
     const { container } = await openLanding("ok");
