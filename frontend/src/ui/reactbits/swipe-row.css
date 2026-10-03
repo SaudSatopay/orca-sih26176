@@ -1,0 +1,84 @@
+/* SwipeRow (swipe-row.tsx): a ground row that slides over its drawer.
+   This sheet belongs to SwipeRow's own lazy chunk, so the phone's first load
+   carries none of it. Colours, type and rules from tokens.ts via theme(). */
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+}
+.swipe-rail {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+}
+/* The row carries the panel's paper, so the drawer never shows through it. */
+.swipe-surface {
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+  background: theme(colors.paper.50);
+}
+.swipe-row[data-dragging] .swipe-surface {
+  user-select: none;
+}
+.swipe-action {
+  display: grid;
+  height: 100%;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  padding: 0 4px;
+  font-family: theme(fontFamily.mono);
+  font-size: theme(fontSize.label);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+  touch-action: manipulation;
+  user-select: none;
+  color: theme(colors.paper.50);
+  transition: background-color 120ms ease-out;
+}
+.swipe-action--chart {
+  background: theme(colors.chart.700);
+}
+.swipe-action--chart:active {
+  background: theme(colors.chart.600);
+}
+.swipe-action--ink {
+  background: theme(colors.ink.900);
+}
+.swipe-action--ink:active {
+  background: theme(colors.ink.800);
+}
+/* Visible to screen readers; the keyboard's toggle shows itself as a chip. */
+.swipe-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.swipe-toggle:focus-visible {
+  top: 50%;
+  right: 8px;
+  z-index: 2;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: 4px 8px;
+  clip: auto;
+  transform: translateY(-50%);
+  border: 1px solid var(--rule-strong);
+  border-radius: 2px;
+  background: theme(colors.paper.50);
+  color: theme(colors.ink.900);
+  font-family: theme(fontFamily.mono);
+  font-size: theme(fontSize.label);
+}

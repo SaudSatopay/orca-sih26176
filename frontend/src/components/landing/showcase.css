@@ -1,0 +1,218 @@
+/* The showcase: the four sections of SheetsShowcase.tsx (the landing): ORCA's own sheets
+   in a frame, a flowing row, water over the Ask sheet, and the officers'
+   bulletin over ORCA's plain answer. Each poster is the finished design;
+   the [data-live] rules only say what a poster does once its effect is
+   really drawing. Imported by SheetsShowcase.tsx, so it travels with the
+   landing and never reaches the phone. Colours from tokens.ts via theme(). */
+.u5-frame {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: theme(colors.paper.100);
+  box-shadow: theme(boxShadow.sheet);
+}
+
+/* The flowing row. The strip and the running row share one geometry: cards
+   64% of the band's height, centred, 16 px apart, the caption below. */
+.u5-flow {
+  --u5-flow-h: 440px;
+  height: var(--u5-flow-h);
+}
+@media (max-width: 1023px) {
+  .u5-flow {
+    --u5-flow-h: 360px;
+  }
+}
+.u5-flow-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: theme(spacing.4);
+  height: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  padding: calc(var(--u5-flow-h) * 0.18) theme(spacing.4) theme(spacing.4);
+  scroll-snap-type: x proximity;
+}
+.u5-flow-card {
+  flex: none;
+  margin: 0;
+  scroll-snap-align: center;
+}
+.u5-flow-shot {
+  display: block;
+  height: calc(var(--u5-flow-h) * 0.64);
+  width: auto;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: theme(colors.paper.200);
+  box-shadow: theme(boxShadow.sheet);
+}
+.sheets-flow-live {
+  cursor: grab;
+  touch-action: pan-y;
+}
+.sheets-flow-live[data-dragging] {
+  cursor: grabbing;
+}
+.sheets-flow-live[data-zoom] {
+  cursor: zoom-out;
+}
+.sheets-flow-caption {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(50% + 32% + 12px);
+  display: flex;
+  justify-content: center;
+  gap: theme(spacing.3);
+  pointer-events: none;
+}
+[data-effect="sheets"][data-live="1"] .u5-flow-strip {
+  opacity: 0;
+  pointer-events: none;
+}
+[data-effect="sheets"][data-live="0"] .u5-flow-live {
+  visibility: hidden;
+}
+/* The keyboard gets the strip back: it scrolls, and it is the accessible one. */
+.u5-flow[data-live="1"]:has(.u5-flow-strip:focus-visible) .u5-flow-strip {
+  opacity: 1;
+  pointer-events: auto;
+}
+.u5-flow[data-live="1"]:has(.u5-flow-strip:focus-visible) .u5-flow-live {
+  visibility: hidden;
+}
+
+/* Water over the Ask sheet. */
+.u5-ripple .sheet-ripple {
+  cursor: crosshair;
+}
+[data-effect="ripple"][data-live="1"] .u5-ripple-poster {
+  opacity: 0;
+}
+[data-effect="ripple"][data-live="0"] .sheet-ripple {
+  visibility: hidden;
+}
+
+/* The bulletin and the plain answer. Poster: side by side on the table.
+   Live: the answer alone in the middle, under the paper. */
+.u5-stage {
+  min-height: 540px;
+  border: 1px solid var(--rule-faint);
+  border-radius: 3px;
+  background: theme(colors.paper.100);
+}
+.u5-stage-poster {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr);
+  align-items: center;
+  gap: theme(spacing.6);
+  height: 100%;
+  min-height: inherit;
+  padding: theme(spacing.6);
+}
+@media (max-width: 639px) {
+  .u5-stage-poster {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+}
+.u5-bulletin {
+  margin: 0;
+  max-width: 320px;
+  transform: rotate(-1.5deg);
+}
+.u5-bulletin img {
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  box-shadow: theme(boxShadow.sheet);
+}
+.u5-answer {
+  max-width: 320px;
+  padding: theme(spacing.5);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: theme(colors.paper.50);
+  box-shadow: theme(boxShadow.sheet);
+}
+[data-effect="crumple"][data-live="1"] .u5-stage-poster {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+[data-effect="crumple"][data-live="1"] .u5-bulletin {
+  display: none;
+}
+[data-effect="crumple"][data-live="0"] .u5-stage-live {
+  visibility: hidden;
+}
+.bulletin-grip {
+  cursor: grab;
+}
+.bulletin-live[data-held] .bulletin-grip {
+  cursor: grabbing;
+}
+/* The crumple button only means something once the paper is live. */
+.u5-crumple-controls {
+  display: none;
+}
+.u5-crumple:has([data-effect="crumple"][data-live="1"]) .u5-crumple-controls {
+  display: flex;
+}
+/* Layout of the four sections: a text column and a picture, side by side
+   from 1024 px, stacked below. */
+.u5-split {
+  display: grid;
+  align-items: center;
+  gap: theme(spacing.5) theme(spacing.8);
+  padding: theme(spacing.4);
+}
+@media (min-width: 1024px) {
+  .u5-split--editions {
+    grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  }
+  .u5-split--ripple {
+    grid-template-columns: minmax(0, 0.5fr) minmax(0, 1.5fr);
+  }
+  .u5-split--crumple {
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  }
+}
+.u5-head {
+  padding: theme(spacing.4) theme(spacing.4) 0;
+}
+.u5-16x10 {
+  position: relative;
+  aspect-ratio: 16 / 10;
+}
+.u5-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.u5-caption {
+  margin-top: theme(spacing[2.5]);
+  color: theme(colors.ink.700);
+}
+.u5-fisher {
+  color: theme(colors.chart.700);
+}
+.u5-ripple-rule {
+  margin-top: theme(spacing.4);
+  max-width: 220px;
+}
+.u5-ripple-caption {
+  margin-top: theme(spacing.4);
+  max-width: 340px;
+}
+.u5-bulletin img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.bulletin-live {
+  isolation: isolate;
+}
+.bulletin-grip {
+  touch-action: none;
+}

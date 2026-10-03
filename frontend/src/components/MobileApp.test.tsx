@@ -193,6 +193,64 @@ describe("the phone's Today tab", () => {
   });
 });
 
+describe("the phone's fishing grounds", () => {
+  const groundButton = () => screen.getByRole("button", { name: /Area 1: hear it and see it on the map/ });
+
+  it("render as plain rows first, and a tap still opens the ground on the map", async () => {
+    const { MobileApp } = await openPhone();
+    render(<MobileApp />);
+    await screen.findByText("Go with care");
+    // no swipe drawer until a finger asks for one
+    expect(screen.queryByRole("group", { name: "Area 1" })).not.toBeInTheDocument();
+    fireEvent.click(groundButton());
+    expect(within(screen.getByRole("navigation")).getByRole("button", { name: "Map" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("become swipe rows after the first touch, with Show on map and Hear it", async () => {
+    const { MobileApp } = await openPhone();
+    render(<MobileApp />);
+    await screen.findByText("Go with care");
+
+    fireEvent.pointerDown(groundButton(), { button: 0, pointerId: 1 });
+    fireEvent.pointerUp(window, { pointerId: 1 });
+    const group = await screen.findByRole("group", { name: "Area 1" }, { timeout: 10_000 });
+    // the row's own button survived the upgrade
+    expect(within(group).getByRole("button", { name: /Area 1: hear it/ })).toBeInTheDocument();
+
+    // the keyboard's way in: the hidden toggle opens the drawer
+    const more = within(group).getByRole("button", { name: "More for area 1" });
+    fireEvent.keyDown(more, { key: "ArrowLeft" });
+    fireEvent.click(within(group).getByRole("button", { name: "Hear it" }));
+    // hearing it stays on Today
+    expect(within(screen.getByRole("navigation")).getByRole("button", { name: "Today" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+
+    fireEvent.keyDown(more, { key: "ArrowLeft" });
+    fireEvent.click(within(group).getByRole("button", { name: "Show on map" }));
+    expect(within(screen.getByRole("navigation")).getByRole("button", { name: "Map" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("names the drawer in the reader's language", async () => {
+    const { MobileApp } = await openPhone("?lang=hi");
+    render(<MobileApp />);
+    await screen.findByText("सावधानी से जाएँ");
+    fireEvent.pointerDown(screen.getByRole("button", { name: /क्षेत्र 1:/ }), { button: 0, pointerId: 1 });
+    fireEvent.pointerUp(window, { pointerId: 1 });
+    const group = await screen.findByRole("group", { name: "क्षेत्र 1" }, { timeout: 10_000 });
+    fireEvent.keyDown(within(group).getByRole("button", { name: "क्षेत्र 1 के लिए और" }), { key: "ArrowLeft" });
+    expect(within(group).getByRole("button", { name: "नक्शे पर देखें" })).toBeInTheDocument();
+    expect(within(group).getByRole("button", { name: "सुनें" })).toBeInTheDocument();
+  });
+});
+
 describe("the phone's Ask tab", () => {
   it("says plainly that this browser cannot listen and takes a typed question", async () => {
     const { api, MobileApp } = await openPhone("?lang=en&tab=ask");

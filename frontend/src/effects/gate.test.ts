@@ -54,6 +54,21 @@ describe("which landing effects may run", () => {
     expect(CONTEXTS.splash).toBe(1);
   });
 
+  it("knows the showcase's three WebGL sheets, one context each, leased and on by default", () => {
+    for (const name of ["sheets", "ripple", "crumple"] as const) {
+      expect(ALL_EFFECTS).toContain(name);
+      expect(CONTEXTS[name]).toBe(1);
+      expect(LEASED.has(name), name).toBe(true);
+      expect(DEFAULT_EFFECTS).toContain(name);
+    }
+    // the three together sit exactly on the cap
+    expect(allowedEffects({ ...desktop, search: "?fx=sheets,ripple,crumple" })).toEqual([
+      "sheets",
+      "ripple",
+      "crumple",
+    ]);
+  });
+
   it("gives reduced motion, data saver and no-WebGL the poster", () => {
     expect(allowedEffects({ ...desktop, reducedMotion: true })).toEqual([]);
     expect(allowedEffects({ ...desktop, saveData: true })).toEqual([]);

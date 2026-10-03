@@ -1,0 +1,1 @@
+function n(...e){return e.filter(Boolean).join(" ")}function o(){var e;return typeof window<"u"&&!!((e=window.matchMedia)!=null&&e.call(window,"(prefers-reduced-motion: reduce)").matches)}export{n as c,o as p};

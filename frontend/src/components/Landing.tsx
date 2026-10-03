@@ -26,6 +26,7 @@ import CircularText from "../ui/reactbits/circular-text";
 import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
 import { CallBand, HalftoneSea, NightWatchBand, ThreadsBand, WarningBand } from "./landing/NightBands";
+import { BulletinCrumple, ChartRipple, EditionsSwap, SheetsFlow } from "./landing/SheetsShowcase";
 import GlassLoupe from "../effects/GlassLoupe";
 import { InkMark } from "../effects/InkWordmark";
 import { EffectSlot } from "../effects/EffectSlot";
@@ -698,6 +699,12 @@ export default function Landing({
           </ul>
         </nav>
       </Reveal>
+
+      {/* the sheets themselves: both editions, the console's flow, the Ask sheet under water, the bulletin crumpled */}
+      <EditionsSwap language={language} />
+      <SheetsFlow language={language} />
+      <ChartRipple language={language} />
+      <BulletinCrumple language={language} />
 
       {/* the one rule above the model: official warnings override everything */}
       <div className="mt-5">

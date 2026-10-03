@@ -31,6 +31,12 @@
  *   pointer moves (React Bits SplashCursor, SplashInk.tsx), one canvas,
  *   no frames at rest. It follows a pointer, so it needs a fine one even
  *   when `?fx=` asks for it.
+ * - `sheets`: ORCA's own screens as a flowing row (React Bits FlexCarousel,
+ *   ogl), one canvas;
+ * - `ripple`: water displacement over the Ask sheet under the pointer (React
+ *   Bits RippleDistortion, ogl), one canvas, no frames once the water is still;
+ * - `crumple`: the officers' bulletin crumpled into a paper ball (React Bits
+ *   PaperCrumple, three), one canvas, drawn on demand.
  *
  * The ShaderGradient sea was tried and removed: the
  * CSS swell at the foot of the sheet is the sea.
@@ -60,7 +66,10 @@ export type EffectName =
   | "electriclogo"
   | "webthreads"
   | "strands"
-  | "patternwaves";
+  | "patternwaves"
+  | "sheets"
+  | "ripple"
+  | "crumple";
 
 /** The night bands' effects, in page order. */
 export const BAND_EFFECTS: readonly EffectName[] = [
@@ -74,6 +83,9 @@ export const BAND_EFFECTS: readonly EffectName[] = [
   "strands",
 ];
 
+/** The showcase's WebGL sheets, in page order (components/landing/SheetsShowcase.tsx). */
+export const SHOWCASE_EFFECTS: readonly EffectName[] = ["sheets", "ripple", "crumple"];
+
 /**
  * In priority order: when the context cap bites, later ones wait
  * (contexts.ts serves its queue in this order). The night bands rank above
@@ -86,6 +98,7 @@ export const ALL_EFFECTS: readonly EffectName[] = [
   "glass",
   "relief",
   ...BAND_EFFECTS,
+  ...SHOWCASE_EFFECTS,
   "splash",
 ];
 
@@ -101,8 +114,8 @@ export const ALL_EFFECTS: readonly EffectName[] = [
 // view for 1.5 s gives its context back (EffectSlot's `releaseWhenAway`).
 // Glass opens one context while arming and loses it at once, under a lease,
 // so it holds none at rest. Ink, relief and splash fill the cap of three;
-// each night-band effect holds one context while its band is in view
-// (particletext is a 2D canvas).
+// each night-band effect and each showcase sheet holds one context while
+// its section is in view (particletext is a 2D canvas).
 export const CONTEXTS: Record<EffectName, number> = {
   ground: 0,
   ink: 1,
@@ -117,15 +130,19 @@ export const CONTEXTS: Record<EffectName, number> = {
   webthreads: 1,
   strands: 1,
   patternwaves: 1,
+  sheets: 1,
+  ripple: 1,
+  crumple: 1,
 };
 
 /**
- * Effects left out of the up-front sum below: the night bands sit far apart
+ * Effects left out of the up-front sum below: the night bands and the
+ * showcase's sheets sit far apart
  * down the landing and are never all in view together, so their slots'
  * leases (EffectSlot, contexts.ts) hold them to the cap while the page
  * scrolls. The always-present set is still summed here.
  */
-export const LEASED: ReadonlySet<EffectName> = new Set(BAND_EFFECTS);
+export const LEASED: ReadonlySet<EffectName> = new Set([...BAND_EFFECTS, ...SHOWCASE_EFFECTS]);
 
 export const WEBGL_CAP = 3;
 
@@ -142,6 +159,7 @@ export const DEFAULT_EFFECTS: readonly EffectName[] = [
   "glass",
   "relief",
   ...BAND_EFFECTS,
+  ...SHOWCASE_EFFECTS,
   "splash",
 ];
 
