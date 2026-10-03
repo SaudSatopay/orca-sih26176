@@ -1,0 +1,23 @@
+/* The splash: wet ink in the water under the landing (SplashInk.tsx).
+   The slot is one fixed sheet of water the size of the viewport, pinned in
+   the page's own stacking context (#root) at the ground's level: drawn after
+   the sheet ground, the living contours and the sea, so the ink lies on
+   them; below every panel, line of text and control, which all sit in the
+   normal flow above it. It never takes a pointer event. Its styles load with
+   the page (not with the effect's chunk) so the slot is in view, and so
+   armed, before the effect is ever fetched. */
+.splash-slot {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.splash-live {
+  position: absolute;
+  inset: 0;
+}
+.splash-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}

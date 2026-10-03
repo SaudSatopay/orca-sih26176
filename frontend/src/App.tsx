@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as api from "./api";
 import { locationAlreadyAllowed } from "./locate";
 import { useAmbientMotion } from "./ambient";
@@ -58,6 +58,11 @@ import { RISK_INK } from "./risk";
 import { SPEECH_LOCALE } from "./speech";
 import { initialLanguage, readBootParams } from "./boot";
 import { ink, risk } from "./tokens";
+import { EffectSlot } from "./effects/EffectSlot";
+import "./effects/splash.css";
+
+// The splash's own chunk, fetched only when the gate lets it run (effects/gate.ts).
+const SplashInk = lazy(() => import("./effects/SplashInk"));
 
 const SESSION = "demo";
 const RADIUS_KM = 100;
@@ -491,6 +496,8 @@ export default function App() {
           onTour={startTour}
           onScenario={runScenario}
         />
+        {/* wet ink in the water under the whole landing (effects/SplashInk.tsx) */}
+        <EffectSlot name="splash" Effect={SplashInk} poster={null} yieldable armOn="interaction" className="splash-slot" effectClassName="splash-live" />
       </>
     );
   }
