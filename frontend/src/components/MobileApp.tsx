@@ -105,6 +105,16 @@ const GEO_OPTIONS: PositionOptions = { enableHighAccuracy: true, timeout: 7000, 
 const loadMap = () => import("./MarineMap");
 const MarineMap = lazy(loadMap);
 
+// A ground row's swipe drawer (DOM + Motion, its stylesheet and its words) is
+// its own chunk too, fetched on the first touch of a row: the rows render
+// plain and are upgraded in place.
+const loadSwipeRow = () =>
+  Promise.all([import("../ui/reactbits/swipe-row"), import("../i18n/swipe")]).then(([row, words]) => ({
+    Row: row.SwipeRow,
+    words: words.SWIPE,
+  }));
+type SwipeKit = Awaited<ReturnType<typeof loadSwipeRow>>;
+
 /**
  * The reading whose entrance has played. A tab change remounts the verdict and
  * must not replay it; another harbour, or another verdict, is news.
@@ -826,6 +836,8 @@ export default function MobileApp() {
   const [zonesFailed, setZonesFailed] = useState(false);
   const [zonesAttempt, setZonesAttempt] = useState(0);
   const [focusRank, setFocusRank] = useState<number | null>(null);
+  const [swipe, setSwipe] = useState<SwipeKit | null>(null);
+  const swipeAsked = useRef(false);
 
   // ---- voice out ----
   const [canSpeak] = useState(speechSynthesisSupported);
@@ -1061,11 +1073,37 @@ export default function MobileApp() {
     toggleSay("plan", bits.join(" "), outlookLang);
   };
 
-  const speakArea = (a: FishingOutlook["areas"][number]) => {
+  const hearArea = (a: FishingOutlook["areas"][number]) => {
     const line = `${a.rank}. ${Math.round(a.distance_km)} ${t.km}. ${a.probability}%. ${speciesLine(a.likely_species, ", ")}`;
     say(`area-${a.rank}`, line, language);
+  };
+  const showArea = (a: FishingOutlook["areas"][number]) => {
     setFocusRank(a.rank);
     setTab("map");
+  };
+  // A tap does both, as it always has.
+  const speakArea = (a: FishingOutlook["areas"][number]) => {
+    hearArea(a);
+    showArea(a);
+  };
+
+  // The first touch of a ground asks for SwipeRow; the rows are upgraded once
+  // that gesture is over, so the tap that asked still lands on the plain row.
+  const armSwipe = () => {
+    if (swipeAsked.current) return;
+    swipeAsked.current = true;
+    const loading = loadSwipeRow();
+    const settle = () => {
+      ["pointerup", "pointercancel", "touchend"].forEach((k) => window.removeEventListener(k, settle));
+      window.setTimeout(() => {
+        loading
+          .then(setSwipe)
+          .catch(() => {
+            swipeAsked.current = false; // offline: the plain rows still work; try on the next touch
+          });
+      }, 0);
+    };
+    ["pointerup", "pointercancel", "touchend"].forEach((k) => window.addEventListener(k, settle));
   };
 
   // ---------------------------------------------------------------- ask
@@ -1316,13 +1354,9 @@ export default function MobileApp() {
                       <SpeakerGlyph size={13} /> {t.tapToHear}
                     </span>
                   </div>
-                  <ul>
-                    {outlook.areas.slice(0, 3).map((a) => (
-                      <li
-                        key={a.id}
-                        className="border-b last:border-b-0"
-                        style={{ borderColor: "var(--rule-faint)" }}
-                      >
+                  <ul onPointerDownCapture={armSwipe} onTouchStartCapture={armSwipe}>
+                    {outlook.areas.slice(0, 3).map((a) => {
+                      const row = (
                         <button
                           type="button"
                           onClick={() => speakArea(a)}
@@ -1353,8 +1387,43 @@ export default function MobileApp() {
                           <SpeakerGlyph size={18} className="shrink-0 text-chart-600" />
                           <span className="m-sr">{fill(t.hearArea, { n: a.rank })}</span>
                         </button>
-                      </li>
-                    ))}
+                      );
+                      return (
+                        <li
+                          key={a.id}
+                          className="border-b last:border-b-0"
+                          style={{ borderColor: "var(--rule-faint)" }}
+                        >
+                          {swipe ? (
+                            <swipe.Row
+                              label={fill(swipe.words[language].row, { n: a.rank })}
+                              toggleLabel={fill(swipe.words[language].more, { n: a.rank })}
+                              openedLabel={swipe.words[language].opened}
+                              actions={[
+                                {
+                                  id: "map",
+                                  label: swipe.words[language].showOnMap,
+                                  icon: <MapGlyph size={20} />,
+                                  className: "swipe-action--chart",
+                                  onSelect: () => showArea(a),
+                                },
+                                {
+                                  id: "hear",
+                                  label: swipe.words[language].hearIt,
+                                  icon: <SpeakerGlyph size={20} />,
+                                  className: "swipe-action--ink",
+                                  onSelect: () => hearArea(a),
+                                },
+                              ]}
+                            >
+                              {row}
+                            </swipe.Row>
+                          ) : (
+                            row
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </section>
               )}
