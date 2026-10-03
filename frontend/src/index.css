@@ -1094,3 +1094,204 @@ html {
     animation: none !important;
   }
 }
+
+/* ---- u4 night bands ----
+   The sea at night (components/landing/NightBands.tsx): full-bleed ink
+   interludes between the landing's paper sections, and one paper section
+   printed with a halftone sea. Every colour is a token; every poster is the
+   finished design with the effects off; the live canvas fades in over the
+   poster art only once it has drawn (EffectSlot's data-live), and under
+   reduced motion the fades collapse with every other transition. */
+.night-band {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  /* out of the 1240 px column to the window's edges, minus the scrollbar */
+  margin-inline: calc(50% - 50vw + var(--nb-bar, 0px) / 2);
+}
+.night-band--ink {
+  background: theme(colors.ink.900);
+  color: theme(colors.paper.50);
+}
+/* a neatline in paper at low alpha, set in from the band's edges */
+.night-band--ink::after,
+.night-band--paper::after {
+  content: "";
+  position: absolute;
+  inset: 12px 0;
+  z-index: 1;
+  pointer-events: none;
+  border-block: 1px solid theme(colors.paper.50 / 14%);
+}
+.night-band--paper::after {
+  border-color: var(--rule-faint);
+}
+.nb-inner {
+  position: relative;
+  z-index: 2;
+  margin-inline: auto;
+  max-width: 1240px;
+  padding-inline: theme(spacing.5);
+}
+.nb-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.nb-poster,
+.nb-fill {
+  position: absolute;
+  inset: 0;
+}
+.nb-fill canvas {
+  display: block;
+}
+.nb-slot .nb-fade,
+.nb-slot .nb-fill {
+  transition: opacity 0.7s var(--ease-out);
+}
+.nb-slot[data-live="1"] .nb-fade,
+.nb-slot[data-live="0"] .nb-fill {
+  opacity: 0;
+}
+.night-band--ink :focus-visible {
+  outline-color: theme(colors.chart.300);
+}
+
+/* Night watch: the swell under a hazy horizon, the sky left dark for the
+   copy. The live sea's canvas is centred on its horizon, so the sea is a box
+   pinned to the band's foot: its horizon always falls in the band's bottom
+   padding, below the copy and the word, whatever the width. */
+.nb-sea {
+  position: absolute;
+  inset: auto 0 0;
+  height: 22rem;
+}
+.nb-sea-poster {
+  width: 100%;
+  background:
+    radial-gradient(64% 14% at 50% 50%, theme(colors.chart.300 / 24%), transparent 75%),
+    linear-gradient(
+      180deg,
+      transparent 44%,
+      theme(colors.chart.300 / 10%) 50%,
+      theme(colors.chart.700 / 55%) 64%,
+      theme(colors.chart.700 / 30%) 100%
+    );
+}
+
+/* The halftone sea: a dot screen in chart teal, faint under the statement. */
+.nb-poster-halftone {
+  background-image: radial-gradient(circle at center, theme(colors.chart.500 / 34%) 0 1.4px, transparent 2px);
+  background-size: 9px 9px;
+  background-position: center;
+  mask-image:
+    radial-gradient(56% 66% at 50% 50%, transparent 30%, theme(colors.ink.900) 85%),
+    repeating-linear-gradient(170deg, theme(colors.ink.900) 0 34px, theme(colors.ink.900 / 30%) 52px, theme(colors.ink.900) 70px);
+  mask-composite: intersect;
+}
+
+/* The warning: light falling from the top-right corner. The rays are drawn
+   over the right three fifths only (a squarer box, the shape the shader was
+   made for), feathered in from the left, so no ray ever crosses the copy. */
+.nb-rays {
+  left: 40%;
+  mask-image: linear-gradient(90deg, transparent, theme(colors.ink.900) 35%);
+}
+.nb-poster-rays {
+  background:
+    radial-gradient(90% 80% at 100% 0%, theme(colors.sea / 16%), transparent 62%),
+    repeating-conic-gradient(from 200deg at 106% -14%, theme(colors.chart.300 / 10%) 0deg 2.4deg, transparent 2.4deg 7deg);
+  mask-image: radial-gradient(120% 110% at 100% 0%, theme(colors.ink.900) 10%, transparent 72%);
+}
+.nb-storm {
+  touch-action: manipulation;
+}
+/* Stacked, the call strip's heading sits where the wake runs: no wake there. */
+@media (max-width: 767px) {
+  .nb-call [data-effect="strands"] {
+    display: none;
+  }
+}
+.nb-rule {
+  border-top: 1px solid theme(colors.paper.50 / 20%);
+  padding-top: theme(spacing.4);
+}
+.nb-verdict {
+  display: inline-block;
+  border: 3px double theme(colors.paper.50);
+  border-radius: 2px;
+  background: theme(colors.risk.extreme);
+  color: theme(colors.paper.50);
+  padding: theme(spacing.1) theme(spacing.2);
+  transform: rotate(-2deg);
+}
+
+/* The crew: the threads' field feathers out at its top and foot (a glow
+   never quite reaches zero, and a hard edge would show the box). */
+.nb-threads-field {
+  mask-image: linear-gradient(
+    180deg,
+    transparent,
+    theme(colors.ink.900) 18%,
+    theme(colors.ink.900) 82%,
+    transparent
+  );
+}
+/* The knot where ten threads become one decision. */
+.nb-knot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  border: 2px solid theme(colors.chart.300);
+  background: theme(colors.ink.900);
+}
+
+/* The call strip's two ways in, set for an ink ground. */
+.nb-btn,
+.nb-btn-line {
+  display: inline-flex;
+  align-items: center;
+  gap: theme(spacing.2);
+  border-radius: 2px;
+  padding: theme(spacing.3) theme(spacing.5);
+  font-family: theme(fontFamily.mono);
+  font-size: theme(fontSize.label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  transition:
+    background-color var(--hover) ease,
+    color var(--hover) ease,
+    border-color var(--hover) ease,
+    transform var(--hover) var(--ease-out);
+}
+.nb-btn {
+  background: theme(colors.paper.50);
+  color: theme(colors.ink.900);
+}
+.nb-btn-line {
+  border: 1px solid theme(colors.paper.50 / 55%);
+  color: theme(colors.paper.50);
+  background: theme(colors.ink.900);
+}
+@media (hover: hover) and (pointer: fine) {
+  .nb-btn:hover {
+    background: theme(colors.chart.100);
+  }
+  .nb-btn-line:hover {
+    border-color: theme(colors.paper.50);
+    background: theme(colors.ink.800);
+  }
+}
+.nb-btn:active,
+.nb-btn-line:active {
+  transform: scale(0.97);
+  transition-duration: var(--press);
+}
+:lang(hi) :is(.nb-btn, .nb-btn-line),
+:lang(mr) :is(.nb-btn, .nb-btn-line) {
+  letter-spacing: 0.02em;
+}
