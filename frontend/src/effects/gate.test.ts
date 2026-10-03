@@ -33,8 +33,23 @@ describe("which landing effects may run", () => {
   it("gives a narrow or touch window the poster by default, but an explicit ?fx= is a demand", () => {
     expect(allowedEffects({ ...desktop, search: "", wide: false })).toEqual([]);
     expect(allowedEffects({ ...desktop, search: "", finePointer: false })).toEqual([]);
-    expect(allowedEffects({ ...desktop, wide: false })).toEqual(ALL_EFFECTS);
-    expect(allowedEffects({ ...desktop, finePointer: false })).toEqual(ALL_EFFECTS);
+    // the same set a wide desktop with a mouse gets for the same demand
+    expect(allowedEffects({ ...desktop, wide: false })).toEqual(allowedEffects(desktop));
+    expect(allowedEffects({ ...desktop, finePointer: false })).toEqual(allowedEffects(desktop));
+    expect(allowedEffects(desktop).length).toBeGreaterThan(0);
+  });
+
+  it("knows the showcase's three WebGL sheets, one context each", () => {
+    for (const name of ["sheets", "ripple", "crumple"] as const) {
+      expect(ALL_EFFECTS).toContain(name);
+      expect(CONTEXTS[name]).toBe(1);
+    }
+    // the three together sit exactly on the cap
+    expect(allowedEffects({ ...desktop, search: "?fx=sheets,ripple,crumple" })).toEqual([
+      "sheets",
+      "ripple",
+      "crumple",
+    ]);
   });
 
   it("gives reduced motion, data saver and no-WebGL the poster", () => {

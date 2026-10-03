@@ -26,21 +26,44 @@
  *   action (liquid-glass-js). A lens draws once and releases its context, so
  *   it holds none at rest;
  * - `relief`: the sea bed below the hero as a 3D paper sheet (React Three
- *   Fiber), one canvas, drawn on demand.
+ *   Fiber), one canvas, drawn on demand;
+ * - `sheets`: ORCA's own screens as a flowing row (React Bits FlexCarousel,
+ *   ogl), one canvas;
+ * - `ripple`: water displacement over the Ask sheet under the pointer (React
+ *   Bits RippleDistortion, ogl), one canvas, no frames once the water is still;
+ * - `crumple`: the officers' bulletin crumpled into a paper ball (React Bits
+ *   PaperCrumple, three), one canvas, drawn on demand.
  *
  * The ShaderGradient sea was tried and removed: the
  * CSS swell at the foot of the sheet is the sea.
  */
-export type EffectName = "ground" | "ink" | "glass" | "relief";
+export type EffectName = "ground" | "ink" | "glass" | "relief" | "sheets" | "ripple" | "crumple";
 
 /** In priority order: when the context cap bites, later ones lose. */
-export const ALL_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief"];
+export const ALL_EFFECTS: readonly EffectName[] = [
+  "ground",
+  "ink",
+  "glass",
+  "relief",
+  "sheets",
+  "ripple",
+  "crumple",
+];
 
 /** Live WebGL contexts each effect holds at rest. */
 // ink is 2: the mark flies twice, at the masthead and in the closing
 // cartouche, and each holds its canvas while mounted. With relief's one and
 // glass's zero at rest the landing sits exactly on the cap of three.
-export const CONTEXTS: Record<EffectName, number> = { ground: 0, ink: 2, glass: 0, relief: 1 };
+// The showcase's three hold one each, released on unmount.
+export const CONTEXTS: Record<EffectName, number> = {
+  ground: 0,
+  ink: 2,
+  glass: 0,
+  relief: 1,
+  sheets: 1,
+  ripple: 1,
+  crumple: 1,
+};
 
 export const WEBGL_CAP = 3;
 
