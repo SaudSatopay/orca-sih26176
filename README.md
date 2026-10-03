@@ -85,7 +85,7 @@ the safety law → a live feed reading the coast port by port, with provenance o
 
 ## Quickstart
 
-**One double-click:** `RUN-ORCA.bat` — starts the backend and opens the app.
+**One double-click:** `RUN-ORCA.bat` — starts the backend and opens ORCA's landing page.
 
 Or from a terminal:
 

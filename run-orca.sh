@@ -77,8 +77,8 @@ ORCA_DATA_MODE="${ORCA_DATA_MODE:-DEMO}"
 export ORCA_DATA_MODE
 
 ( sleep 4
-  if command -v open >/dev/null 2>&1; then open "http://127.0.0.1:$PORT/?tour=1"
-  elif command -v xdg-open >/dev/null 2>&1; then xdg-open "http://127.0.0.1:$PORT/?tour=1"
+  if command -v open >/dev/null 2>&1; then open "http://127.0.0.1:$PORT/"
+  elif command -v xdg-open >/dev/null 2>&1; then xdg-open "http://127.0.0.1:$PORT/"
   fi ) &
 
 cd backend && exec "$PY" -m uvicorn app.main:app --host 127.0.0.1 --port "$PORT"
