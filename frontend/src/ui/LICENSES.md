@@ -35,6 +35,12 @@ https://reactbits.dev · https://github.com/DavidHDev/react-bits
 
 MIT + Commons Clause License Condition v1.0. Copyright (c) 2026 David Haz.
 
+Adapted here: `reactbits/pixel-swap.tsx` (PixelSwap), `reactbits/swipe-row.tsx`
+(SwipeRow), and three WebGL effect modules outside this folder,
+`src/effects/FlexCarousel.tsx`, `src/effects/RippleDistortion.tsx` and
+`src/effects/PaperCrumple.tsx`. Each names its source and what was changed in
+a header comment.
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
