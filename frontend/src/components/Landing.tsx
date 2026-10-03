@@ -25,6 +25,7 @@ import SpotlightCard from "../ui/reactbits/spotlight-card";
 import CircularText from "../ui/reactbits/circular-text";
 import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
+import { CallBand, HalftoneSea, NightWatchBand, ThreadsBand, WarningBand } from "./landing/NightBands";
 import GlassLoupe from "../effects/GlassLoupe";
 import { InkMark } from "../effects/InkWordmark";
 import { EffectSlot } from "../effects/EffectSlot";
@@ -628,10 +629,20 @@ export default function Landing({
         </div>
       </Reveal>
 
+      {/* the sea at night: the crew is already reading it before dawn */}
+      <div className="mt-14">
+        <NightWatchBand language={language} />
+      </div>
+
       {/* a reading lamp over the relief sheet under a fine pointer (React Bits SpotlightCard) */}
       <SpotlightCard className="mt-5 rounded-[3px] [&>section]:mt-0">
         <ReliefSection language={language} />
       </SpotlightCard>
+
+      {/* provenance on a halftone sea */}
+      <div className="mt-5">
+        <HalftoneSea language={language} />
+      </div>
 
       {/* the index of sheets — four ways in, set like a chart catalogue */}
       <Reveal delay={420}>
@@ -688,6 +699,11 @@ export default function Landing({
         </nav>
       </Reveal>
 
+      {/* the one rule above the model: official warnings override everything */}
+      <div className="mt-5">
+        <WarningBand language={language} />
+      </div>
+
       {/* how it decides — the differentiator */}
       <Reveal delay={880}>
         <div className="panel mt-5 overflow-hidden">
@@ -734,6 +750,11 @@ export default function Landing({
         </div>
       </Reveal>
 
+      {/* ten agents, one thread */}
+      <div className="mt-5">
+        <ThreadsBand language={language} />
+      </div>
+
       {/* the closing cartouche — the folio's title block, wet ink behind the gate */}
       <Reveal delay={940}>
         <div className="relative">
@@ -753,6 +774,11 @@ export default function Landing({
           </div>
         </div>
       </Reveal>
+
+      {/* the closing call, over the night wake */}
+      <div className="mt-8">
+        <CallBand language={language} onEnter={onEnter} onTour={onTour} />
+      </div>
 
       {/* footer */}
       <Reveal delay={980}>

@@ -124,6 +124,8 @@ export function EffectSlot({
   const [cameNear, setCameNear] = useState(eager);
   const [away, setAway] = useState(false);
   const [inView, setInView] = useState(false);
+  /** Has come into view since it was last let go: a WebGL slot may hold a context. */
+  const [engaged, setEngaged] = useState(eager || !leased);
   const [tabVisible, setTabVisible] = useState(() => typeof document === "undefined" || !document.hidden);
   const [live, setLive] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -174,7 +176,10 @@ export function EffectSlot({
       },
       { rootMargin: NEAR_MARGIN },
     );
-    const viewIo = new IntersectionObserver(([e]) => setInView(e.isIntersecting));
+    const viewIo = new IntersectionObserver(([e]) => {
+      setInView(e.isIntersecting);
+      if (e.isIntersecting) setEngaged(true);
+    });
     nearIo.observe(el);
     viewIo.observe(el);
     const onVis = () => setTabVisible(!document.hidden);
@@ -189,11 +194,20 @@ export function EffectSlot({
   // Out of the near zone for a while: let the effect go (the poster is the design).
   useEffect(() => {
     if (!may || !releaseAway || near) return;
-    const timer = window.setTimeout(() => setAway(true), AWAY_MS);
+    const timer = window.setTimeout(() => {
+      setAway(true);
+      if (leased && !eager) setEngaged(false);
+    }, AWAY_MS);
     return () => window.clearTimeout(timer);
-  }, [may, releaseAway, near]);
+  }, [may, releaseAway, near, leased, eager]);
 
-  const wanted = may && idle && cameNear && !away && !failed && !stepAside;
+  // A WebGL slot asks for its context only once it is actually IN view, and
+  // keeps it until it has been let go (away). Merely being near is not
+  // enough: with sections stacked down the landing, a band just below the
+  // fold would otherwise hold contexts the visible effects need.
+  // (set in the view observer and the away timer above)
+
+  const wanted = may && idle && cameNear && engaged && !away && !failed && !stepAside;
 
   // The lease: asked for when the effect is wanted, handed back once its
   // context is really gone. Effects without a context skip this.
