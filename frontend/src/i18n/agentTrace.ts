@@ -18,6 +18,46 @@ export const LABEL: Record<Language, Record<string, string>> = {
   },
 };
 
+/** What each agent does, in one line: the tooltip on its name in the crew trace. */
+export const ROLE: Record<Language, Record<string, string>> = {
+  en: {
+    intent: "Reads the question: language, place and time, by rules, with no LLM.",
+    planner: "Picks the specialists a question needs and runs the independent ones together.",
+    weather: "Fetches wind, rain, visibility and air temperature for the position.",
+    ocean: "Fetches wave height, wave period, sea temperature and currents.",
+    pfz: "Ranks the likely fishing grounds from sea temperature and chlorophyll.",
+    cyclone: "Checks IMD and INCOIS warnings and cyclone tracks near the coast.",
+    gis: "Measures the distance from shore and checks restricted and protected zones.",
+    risk: "Weighs every reading into a 0–100 score; the safety floors can only raise it.",
+    route: "Plots the safest course (A*) around restricted waters, not the shortest.",
+    explanation: "Writes the answer in plain English, Hindi or Marathi, ready to be spoken.",
+  },
+  hi: {
+    intent: "सवाल पढ़ता है: भाषा, जगह और समय, नियमों से, बिना LLM के।",
+    planner: "तय करता है कि सवाल को कौन से विशेषज्ञ चाहिए, और स्वतंत्र एजेंटों को एक साथ चलाता है।",
+    weather: "उस जगह के लिए हवा, बारिश, दृश्यता और हवा का तापमान लाता है।",
+    ocean: "लहर की ऊँचाई, लहर की अवधि, समुद्री तापमान और धाराएँ लाता है।",
+    pfz: "समुद्री तापमान और क्लोरोफिल से मछली की संभावित जगहें क्रम में रखता है।",
+    cyclone: "तट के पास IMD और INCOIS की चेतावनियाँ और चक्रवात के रास्ते जाँचता है।",
+    gis: "किनारे से दूरी नापता है और प्रतिबंधित व संरक्षित क्षेत्र जाँचता है।",
+    risk: "हर रीडिंग को 0–100 के स्कोर में तौलता है; सुरक्षा नियम उसे सिर्फ़ बढ़ा सकते हैं।",
+    route: "प्रतिबंधित पानी से बचकर सबसे सुरक्षित मार्ग (A*) बनाता है, सबसे छोटा नहीं।",
+    explanation: "जवाब सीधी हिंदी, अंग्रेज़ी या मराठी में लिखता है, बोलकर सुनाने लायक।",
+  },
+  mr: {
+    intent: "प्रश्न वाचतो: भाषा, ठिकाण आणि वेळ, नियमांनी, LLM शिवाय.",
+    planner: "प्रश्नाला कोणते तज्ज्ञ हवेत ते ठरवतो, आणि स्वतंत्र एजंट एकाच वेळी चालवतो.",
+    weather: "त्या ठिकाणचा वारा, पाऊस, दृश्यमानता आणि हवेचे तापमान आणतो.",
+    ocean: "लाटेची उंची, लाटेचा कालावधी, समुद्राचे तापमान आणि प्रवाह आणतो.",
+    pfz: "समुद्र तापमान आणि क्लोरोफिलवरून माशांच्या संभाव्य जागा क्रमाने लावतो.",
+    cyclone: "किनाऱ्याजवळचे IMD व INCOIS इशारे आणि चक्रीवादळांचे मार्ग तपासतो.",
+    gis: "किनाऱ्यापासूनचे अंतर मोजतो आणि प्रतिबंधित व संरक्षित क्षेत्रे तपासतो.",
+    risk: "प्रत्येक वाचन 0–100 गुणांत तोलतो; सुरक्षा नियम ते फक्त वाढवू शकतात.",
+    route: "प्रतिबंधित पाणी टाळून सर्वात सुरक्षित मार्ग (A*) आखतो, सर्वात लहान नाही.",
+    explanation: "उत्तर सोप्या मराठी, हिंदी किंवा इंग्रजीत लिहितो, बोलून सांगण्याजोगे.",
+  },
+};
+
 export const T: Record<Language, Record<string, string>> = {
   en: {
     crew: "Agent crew",

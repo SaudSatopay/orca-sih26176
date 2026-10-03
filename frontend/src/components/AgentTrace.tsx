@@ -1,6 +1,7 @@
 import type { AgentTrace as Trace, Language } from "../types";
 import { useFirstSight } from "../firstSight";
-import { LABEL, T } from "../i18n/agentTrace";
+import { LABEL, ROLE, T } from "../i18n/agentTrace";
+import { TooltipProvider, TooltipTrigger } from "../ui/unlumen/floating-tooltip";
 import { CREW_SIZE, PHASES, pairs } from "../crew";
 import { alpha, ink, risk } from "../tokens";
 
@@ -41,6 +42,7 @@ export default function AgentTracePanel({
   if (!trace.length) return null;
   const t = T[language] ?? T.en;
   const labels = LABEL[language] ?? LABEL.en;
+  const roles = ROLE[language] ?? ROLE.en;
   const statusName = pairs(t.status);
   const total = elapsed ?? trace.reduce((s, x) => s + x.latency_ms, 0);
 
@@ -70,6 +72,7 @@ export default function AgentTracePanel({
   }));
 
   return (
+    <TooltipProvider>
     <section id="crew-trace" className="panel overflow-hidden">
       <div className="hd">
         <h2 className="label">{t.crew}</h2>
@@ -122,13 +125,16 @@ export default function AgentTracePanel({
                         style={{ background: STATUS_DOT[r.status] }}
                       />
                       <span className="sr-only">{statusName[r.status] ?? r.status}:</span>
-                      <span
-                        className={`w-[96px] shrink-0 font-semibold ${
-                          r.status === "skipped" ? "text-ink-500" : "text-ink-900"
+                      {/* the name explains its agent: hover or focus it */}
+                      <TooltipTrigger
+                        title={labels[r.agent] ?? r.agent}
+                        line={roles[r.agent] ?? ""}
+                        className={`w-[96px] shrink-0 font-semibold underline decoration-dotted decoration-1 underline-offset-2 ${
+                          r.status === "skipped" ? "text-ink-500 decoration-ink-300" : "text-ink-900 decoration-chart-300"
                         }`}
                       >
                         {labels[r.agent] ?? r.agent}
-                      </span>
+                      </TooltipTrigger>
                       <span
                         className="min-w-0 flex-1 truncate text-ink-500"
                         title={r.summary || undefined}
@@ -163,5 +169,6 @@ export default function AgentTracePanel({
         <span className="block max-w-[78ch]">{t.note}</span>
       </p>
     </section>
+    </TooltipProvider>
   );
 }
