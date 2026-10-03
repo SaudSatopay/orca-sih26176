@@ -239,3 +239,10 @@ export const L10N: Record<
       "नमुना/डेमो डेटावर नेहमी लेबल · ORCA निर्णय-सहाय्यक आहे — अधिकृत सल्ल्याचा पर्याय कधीही नाही",
   },
 };
+
+/**
+ * The brand line lettered round the compass beside the closing cartouche.
+ * It is the project's name and number, the same in every language, so it is
+ * never translated; the cartouche's tagline says it in the reader's language.
+ */
+export const BRAND_RING = "MARINE ECOSYSTEM REASONING · COLLABORATIVE AGENTS · SIH26176 · ";

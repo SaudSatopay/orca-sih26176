@@ -12,7 +12,7 @@ import {
 import * as api from "../api";
 import type { AuthorityRow, Language, RiskCategory } from "../types";
 import { CompassMark, CourseArrow, FishGlyph, PhoneGlyph, PlayGlyph, WarnGlyph } from "./glyphs";
-import { L10N } from "../i18n/landing";
+import { BRAND_RING, L10N } from "../i18n/landing";
 import { HERO } from "../i18n/hero";
 import { LABEL as AGENT } from "../i18n/agentTrace";
 import { PHASES } from "../crew";
@@ -22,6 +22,7 @@ import { Marquee } from "../ui/magicui/marquee";
 import type { AnimatedBeamProps } from "../ui/magicui/animated-beam";
 import DecryptedText from "../ui/reactbits/decrypted-text";
 import SpotlightCard from "../ui/reactbits/spotlight-card";
+import CircularText from "../ui/reactbits/circular-text";
 import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
 import GlassLoupe from "../effects/GlassLoupe";
@@ -709,7 +710,22 @@ export default function Landing({
 
       {/* the closing cartouche — the folio's title block, wet ink behind the gate */}
       <Reveal delay={940}>
-        <InkCartouche language={language} />
+        <div className="relative">
+          <InkCartouche language={language} />
+          {/* the compass rose of the title block: the brand line lettered round
+              a compass, turning once every forty seconds (React Bits
+              CircularText); beside the mark on wide sheets, under it below lg */}
+          <div className="brand-ring mx-auto mt-8 w-fit lg:absolute lg:right-0 lg:top-1/2 lg:mt-0 lg:-translate-y-1/2">
+            <CircularText
+              text={BRAND_RING}
+              spinDuration={40}
+              size={176}
+              letterClassName="font-mono text-label font-semibold leading-none text-ink-500"
+            >
+              <CompassMark size={60} className="text-ink-900" />
+            </CircularText>
+          </div>
+        </div>
       </Reveal>
 
       {/* footer */}

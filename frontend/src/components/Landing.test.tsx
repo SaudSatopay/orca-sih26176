@@ -1,7 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthorityDashboard } from "../types";
-import { L10N } from "../i18n/landing";
+import { BRAND_RING, L10N } from "../i18n/landing";
 
 // The landing's heavy neighbours are not under test here.
 vi.mock("../api");
@@ -83,6 +83,19 @@ describe("how ORCA decides, as a live pipeline", () => {
     const live = container.querySelector(".pipeline-live")!;
     expect(live.querySelector('[data-specialist="मासेमारी क्षेत्रे"]')).not.toBeNull();
     expect(live).toHaveTextContent(L10N.mr.fanNote);
+  });
+});
+
+describe("the compass ring beside the cartouche", () => {
+  it.each(["en", "mr"] as const)("letters the brand line round a compass, untranslated, as decoration (%s)", async (lang) => {
+    const { container } = await openLanding("pending", lang);
+    const ring = container.querySelector(".brand-ring [translate='no']")!;
+    expect(ring).toHaveAttribute("aria-hidden", "true");
+    expect(ring.textContent!.startsWith(BRAND_RING)).toBe(true);
+    expect(ring.querySelector(".border-beam-spin")).not.toBeNull();
+    expect(ring.querySelector("svg")).not.toBeNull(); // the compass in its centre
+    // the line is also there as text in the reader's language: the cartouche's tagline
+    expect(container.querySelector(".ink-cartouche")).toHaveTextContent(L10N[lang].folioTagline);
   });
 });
 
