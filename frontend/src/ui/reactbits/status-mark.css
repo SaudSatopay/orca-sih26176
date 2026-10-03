@@ -1,0 +1,68 @@
+/* Status Mark (React Bits, adapted for ORCA): the original's arbitrary
+   Tailwind classes, written as plain rules on the mark's data-status.
+   Transitions only; the tick draws by stroke-dashoffset. */
+.status-mark {
+  display: inline-flex;
+  flex-shrink: 0;
+  line-height: 0;
+}
+.status-mark svg {
+  overflow: visible;
+  color: var(--sm-color);
+  transition: color 200ms ease;
+}
+.status-mark[data-status="done"] svg {
+  color: var(--sm-done);
+}
+.status-mark-track {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: var(--sm-stroke);
+  fill-opacity: 0;
+  stroke-opacity: 0;
+  transition:
+    fill-opacity 180ms ease,
+    stroke-opacity 200ms ease;
+}
+.status-mark[data-status="running"] .status-mark-track {
+  stroke-opacity: 0.2;
+}
+.status-mark[data-status="done"] .status-mark-track {
+  fill-opacity: 0.1;
+}
+.status-mark-ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--sm-stroke);
+  stroke-linecap: round;
+  opacity: 0.55;
+  transition: opacity 200ms ease;
+}
+.status-mark:is([data-status="running"], [data-status="done"]) .status-mark-ring {
+  opacity: 1;
+}
+.status-mark-tick {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--sm-stroke);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1 2;
+  stroke-dashoffset: 1.05;
+  opacity: 0;
+  transition:
+    stroke-dashoffset 160ms var(--ease-out),
+    opacity 0ms linear 160ms;
+}
+.status-mark[data-status="done"] .status-mark-tick {
+  stroke-dashoffset: 0;
+  opacity: 1;
+  transition:
+    stroke-dashoffset 240ms var(--ease-out) 120ms,
+    opacity 0ms linear 120ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-mark-tick {
+    stroke-dashoffset: 0;
+  }
+}
