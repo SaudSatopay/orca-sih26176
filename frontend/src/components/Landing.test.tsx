@@ -62,6 +62,30 @@ afterEach(() => {
   window.matchMedia = original;
 });
 
+describe("the reading lamp (spotlight)", () => {
+  it("follows a fine pointer over every index row and the relief panel; the rows stay links", async () => {
+    window.matchMedia = ((q: string) => ({
+      matches: q.includes("pointer: fine"),
+      media: q,
+      addEventListener() {},
+      removeEventListener() {},
+    })) as unknown as typeof window.matchMedia;
+    const { container } = await openLanding("pending");
+    const rows = container.querySelectorAll("nav li");
+    expect(rows).toHaveLength(4);
+    for (const row of rows) {
+      expect(row.querySelector(".spotlight-pool")).not.toBeNull();
+      expect(row.querySelector("a.sheet-row")).not.toBeNull();
+    }
+    expect(container.querySelectorAll(".spotlight")).toHaveLength(5);
+  });
+
+  it("is not lit on a touch screen", async () => {
+    const { container } = await openLanding("pending");
+    expect(container.querySelector(".spotlight-pool")).toBeNull();
+  });
+});
+
 describe("decoded labels", () => {
   it("the masthead kicker and the two panel labels decode, each read once by assistive tech", async () => {
     const { container } = await openLanding("pending");

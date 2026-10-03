@@ -8,6 +8,7 @@ import { RISK_COLOR } from "../risk";
 import { chart } from "../tokens";
 import { Marquee } from "../ui/magicui/marquee";
 import DecryptedText from "../ui/reactbits/decrypted-text";
+import SpotlightCard from "../ui/reactbits/spotlight-card";
 import HeroChart from "./HeroChart";
 import ReliefSection from "./ReliefSection";
 import GlassLoupe from "../effects/GlassLoupe";
@@ -433,7 +434,10 @@ export default function Landing({
         </div>
       </Reveal>
 
-      <ReliefSection language={language} />
+      {/* a reading lamp over the relief sheet under a fine pointer (React Bits SpotlightCard) */}
+      <SpotlightCard className="mt-5 rounded-[3px] [&>section]:mt-0">
+        <ReliefSection language={language} />
+      </SpotlightCard>
 
       {/* the index of sheets — four ways in, set like a chart catalogue */}
       <Reveal delay={420}>
@@ -446,6 +450,8 @@ export default function Landing({
           <ul>
             {t.cards.map((c, i) => (
               <li key={cardTabs[i]} className={i > 0 ? "border-t" : ""} style={{ borderColor: "var(--rule-faint)" }}>
+                {/* a reading lamp follows a fine pointer along the row (React Bits SpotlightCard) */}
+                <SpotlightCard>
                 <a
                   href={`?tab=${cardTabs[i]}&lang=${language}`}
                   onClick={(e) => {
@@ -481,6 +487,7 @@ export default function Landing({
                     <CourseArrow size={13} className="sheet-row-arrow" />
                   </span>
                 </a>
+                </SpotlightCard>
               </li>
             ))}
           </ul>
