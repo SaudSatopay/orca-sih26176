@@ -30,17 +30,75 @@
  *
  * The ShaderGradient sea was tried and removed: the
  * CSS swell at the foot of the sheet is the sea.
+ *
+ * The night bands (components/landing/NightBands.tsx): the sea at night,
+ * full-bleed ink interludes between the paper sections of the landing only.
+ * - `gradientwaves`: the swell rolling to a hazy horizon (Night watch);
+ * - `glowcursor`: a plankton-light trail inside the Night watch band only;
+ * - `particletext`: the word assembling from drifting motes (2D canvas);
+ * - `siderays`: light falling from one side over the warning band;
+ * - `electriclogo`: the storm symbol as a living lightning outline;
+ * - `webthreads`: ten threads woven into one (the crew band);
+ * - `strands`: the quiet wake under the closing call strip;
+ * - `patternwaves`: a halftone sea printed on the paper section.
+ * At most two WebGL effects per band.
  */
-export type EffectName = "ground" | "ink" | "glass" | "relief";
+export type EffectName =
+  | "ground"
+  | "ink"
+  | "glass"
+  | "relief"
+  | "gradientwaves"
+  | "glowcursor"
+  | "particletext"
+  | "siderays"
+  | "electriclogo"
+  | "webthreads"
+  | "strands"
+  | "patternwaves";
+
+/** The night bands' effects, in page order. */
+export const BAND_EFFECTS: readonly EffectName[] = [
+  "gradientwaves",
+  "glowcursor",
+  "particletext",
+  "patternwaves",
+  "siderays",
+  "electriclogo",
+  "webthreads",
+  "strands",
+];
 
 /** In priority order: when the context cap bites, later ones lose. */
-export const ALL_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief"];
+export const ALL_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief", ...BAND_EFFECTS];
 
-/** Live WebGL contexts each effect holds at rest. */
+/** Live WebGL contexts each effect holds while it is mounted. */
 // ink is 2: the mark flies twice, at the masthead and in the closing
 // cartouche, and each holds its canvas while mounted. With relief's one and
 // glass's zero at rest the landing sits exactly on the cap of three.
-export const CONTEXTS: Record<EffectName, number> = { ground: 0, ink: 2, glass: 0, relief: 1 };
+// Each night-band effect holds one context (particletext is a 2D canvas).
+export const CONTEXTS: Record<EffectName, number> = {
+  ground: 0,
+  ink: 2,
+  glass: 0,
+  relief: 1,
+  gradientwaves: 1,
+  glowcursor: 1,
+  particletext: 0,
+  siderays: 1,
+  electriclogo: 1,
+  webthreads: 1,
+  strands: 1,
+  patternwaves: 1,
+};
+
+/**
+ * Effects whose contexts are counted at the instant they mount rather than
+ * summed up front: the night bands sit far apart down the landing and are
+ * never all in view together, so the slot's lease (EffectSlot) holds them to
+ * the cap while the page scrolls. Every other effect is still summed here.
+ */
+export const LEASED: ReadonlySet<EffectName> = new Set(BAND_EFFECTS);
 
 export const WEBGL_CAP = 3;
 
@@ -51,7 +109,7 @@ export const WEBGL_CAP = 3;
  * Relief: 98–99, one context, zero frames at rest. Glass joins when its
  * rebuild lands and measures. `?fx=none` is the switch-off.
  */
-export const DEFAULT_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief"];
+export const DEFAULT_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief", ...BAND_EFFECTS];
 
 export interface EffectEnv {
   /** `location.search` */
@@ -97,8 +155,10 @@ export function allowedEffects(env: EffectEnv): EffectName[] {
     if (!wanted.includes(name)) continue;
     // Glass over an opaque fallback is the reduced-transparency answer.
     if (name === "glass" && env.reducedTransparency) continue;
-    if (contexts + CONTEXTS[name] > WEBGL_CAP) continue;
-    contexts += CONTEXTS[name];
+    if (!LEASED.has(name)) {
+      if (contexts + CONTEXTS[name] > WEBGL_CAP) continue;
+      contexts += CONTEXTS[name];
+    }
     out.push(name);
   }
   return out;

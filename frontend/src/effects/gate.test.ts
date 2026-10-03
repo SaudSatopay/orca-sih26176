@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   ALL_EFFECTS,
+  BAND_EFFECTS,
   CONTEXTS,
+  LEASED,
   DEFAULT_EFFECTS,
   WEBGL_CAP,
   allowedEffects,
@@ -51,9 +53,37 @@ describe("which landing effects may run", () => {
 
   it("never exceeds the WebGL context cap, whatever is asked for", () => {
     const got = allowedEffects(desktop);
-    const contexts = got.reduce((n, name) => n + CONTEXTS[name], 0);
+    // the leased band effects are held to the cap by the slot as they mount
+    const contexts = got.filter((name) => !LEASED.has(name)).reduce((n, name) => n + CONTEXTS[name], 0);
     expect(contexts).toBeLessThanOrEqual(WEBGL_CAP);
     expect(WEBGL_CAP).toBe(3);
+  });
+
+  it("names the night bands' effects, one context each, on by default", () => {
+    expect(BAND_EFFECTS).toEqual([
+      "gradientwaves", "glowcursor", "particletext", "patternwaves",
+      "siderays", "electriclogo", "webthreads", "strands",
+    ]);
+    for (const name of BAND_EFFECTS) {
+      expect(LEASED.has(name), name).toBe(true);
+      expect(CONTEXTS[name], name).toBe(name === "particletext" ? 0 : 1);
+      expect(DEFAULT_EFFECTS).toContain(name);
+    }
+    // a lone lease never needs more than the cap
+    expect(Math.max(...BAND_EFFECTS.map((n) => CONTEXTS[n]))).toBeLessThanOrEqual(WEBGL_CAP);
+  });
+
+  it("gives the night bands the same refusals as every other effect", () => {
+    for (const env of [
+      { ...desktop, search: "", reducedMotion: true },
+      { ...desktop, search: "", saveData: true },
+      { ...desktop, search: "", wide: false },
+      { ...desktop, search: "", finePointer: false },
+      { ...desktop, search: "?fx=none" },
+    ])
+      for (const name of BAND_EFFECTS) expect(allowedEffects(env)).not.toContain(name);
+    expect(allowedEffects({ ...desktop, search: "" })).toEqual(expect.arrayContaining([...BAND_EFFECTS]));
+    expect(allowedEffects({ ...desktop, search: "?fx=webthreads" })).toEqual(["webthreads"]);
   });
 
   it("runs only what was asked for, in priority order", () => {
@@ -68,7 +98,7 @@ describe("which landing effects may run", () => {
   });
 
   it("ships nothing that would break the cap on its own", () => {
-    const shipped = DEFAULT_EFFECTS.reduce((n, name) => n + CONTEXTS[name], 0);
+    const shipped = DEFAULT_EFFECTS.filter((name) => !LEASED.has(name)).reduce((n, name) => n + CONTEXTS[name], 0);
     expect(shipped).toBeLessThanOrEqual(WEBGL_CAP);
   });
 });
