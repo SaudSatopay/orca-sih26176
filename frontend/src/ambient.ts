@@ -35,6 +35,11 @@ export const AMBIENT_SELECTOR = [
   ".roll",
   "path.route-live",
   "path.radius-drift",
+  // the vendored UI kit (src/ui)
+  ".animate-marquee",
+  ".animate-marquee-vertical",
+  ".animate-ripple",
+  ".border-beam-spin",
 ].join(",");
 
 /**

@@ -39,6 +39,19 @@ export default {
       // Transform-only entrances with no fill-mode: if an animation never
       // runs, the element is simply at rest, fully visible.
       keyframes: {
+        // The vendored UI kit (src/ui): transform-only loops, no fill-mode.
+        marquee: {
+          from: { transform: "translateX(0)" },
+          to: { transform: "translateX(calc(-100% - var(--gap)))" },
+        },
+        "marquee-vertical": {
+          from: { transform: "translateY(0)" },
+          to: { transform: "translateY(calc(-100% - var(--gap)))" },
+        },
+        ripple: {
+          "0%, 100%": { transform: "translate(-50%, -50%) scale(1)" },
+          "50%": { transform: "translate(-50%, -50%) scale(0.9)" },
+        },
         rise: {
           "0%": { transform: "translateY(8px)" },
           "100%": { transform: "translateY(0)" },
@@ -50,6 +63,9 @@ export default {
         },
       },
       animation: {
+        marquee: "marquee var(--duration) infinite linear",
+        "marquee-vertical": "marquee-vertical var(--duration) linear infinite",
+        ripple: "ripple var(--duration, 2.4s) ease calc(var(--i, 0) * 0.2s) infinite",
         rise: "rise .26s ease-out",
         stampIn: "stampIn .45s cubic-bezier(.2,.9,.3,1.2)",
       },

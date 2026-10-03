@@ -1071,3 +1071,26 @@ html {
     font-variant-numeric: lining-nums tabular-nums;
   }
 }
+
+/* ------------------------------------------------ the vendored UI kit (src/ui)
+   The border beam is a conic sweep turning behind a mask cut to the border
+   ring: rotate only, composited; it pauses off-screen with the other loops.
+   Under reduced motion the marquee stands still at its start and the sonar
+   rings rest (the global rule would otherwise finish them at their last
+   frame). */
+.border-beam-spin {
+  animation: border-beam-spin linear infinite;
+}
+@keyframes border-beam-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-marquee-vertical,
+  .animate-ripple,
+  .border-beam-spin {
+    animation: none !important;
+  }
+}
