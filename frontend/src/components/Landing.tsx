@@ -139,6 +139,12 @@ function Count({ to, delay = 0 }: { to: number | null; delay?: number }) {
   );
 }
 
+/**
+ * When the masthead kicker starts decoding: once the claim has painted, so
+ * the decode's frames never compete with the page's largest paint.
+ */
+const KICKER_DECODE_MS = 900;
+
 /** When the hand-drawn mark goes down under the teal word: after the hero has settled. */
 const MARK_AFTER_MS = 1100;
 
@@ -506,8 +512,8 @@ export default function Landing({
             <DecryptedText
               text="SIH26176 · ISRO · Smart India Hackathon 2026"
               animateOn="mount"
-              speed={28}
-              delay={250}
+              speed={30}
+              delay={KICKER_DECODE_MS}
               encryptedClassName="text-chart-500"
             />
           </span>

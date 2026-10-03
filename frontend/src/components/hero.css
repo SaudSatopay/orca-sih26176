@@ -244,19 +244,6 @@
   }
 }
 
-/* The border beam's layer (HeroChart.tsx). The kit's ring clips its sweep
-   with overflow: hidden, and overflow clips at the PADDING edge, which is
-   exactly the part its mask throws away, so the light would never show.
-   Here the ring lets the sweep reach its border, and this layer, which is
-   the sheet's own box, does the clipping instead (so the sweep, which is as
-   wide as the sheet's diagonal, never widens the page). */
-.hero-beam {
-  overflow: hidden;
-}
-.hero-beam > div {
-  overflow: visible;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .hero-pop-in,
   .hero-rise-in,

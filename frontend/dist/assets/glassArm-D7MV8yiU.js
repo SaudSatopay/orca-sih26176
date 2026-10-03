@@ -1,4 +1,4 @@
-var S=e=>{throw TypeError(e)};var N=(e,r,t)=>r.has(e)||S("Cannot "+t);var E=(e,r,t)=>r.has(e)?S("Cannot add the same private member more than once"):r instanceof WeakSet?r.add(e):r.set(e,t);var T=(e,r,t)=>(N(e,r,"access private method"),t);import{e as P,f as L}from"./App-CD1rkhgo.js";import{p as M}from"./index-DXyHdgC5.js";import"./locate-7VAUdqdI.js";import"./MarineMap-ZQfq6A8g.js";const z=`
+var S=e=>{throw TypeError(e)};var N=(e,r,t)=>r.has(e)||S("Cannot "+t);var E=(e,r,t)=>r.has(e)?S("Cannot add the same private member more than once"):r instanceof WeakSet?r.add(e):r.set(e,t);var T=(e,r,t)=>(N(e,r,"access private method"),t);import{e as P,f as L}from"./App-CR4koz-0.js";import{p as M}from"./index-Dq6g79z-.js";import"./locate-CHE2P1dv.js";import"./MarineMap-ByKkJxm4.js";const z=`
 attribute vec2 a_position;
 attribute vec2 a_texcoord;
 varying vec2 v_texcoord;

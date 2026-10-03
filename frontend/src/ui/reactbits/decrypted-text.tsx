@@ -56,6 +56,21 @@ function revealOrder(len: number, from: "start" | "end" | "center"): number[] {
   return order;
 }
 
+/**
+ * Neighbouring glyphs in the same state share one span (the original drew a
+ * span per glyph): a sequential decode is two or three text runs per frame,
+ * not one element per letter.
+ */
+function runs(glyphs: string[], settled: boolean[]): { text: string; settled: boolean }[] {
+  const out: { text: string; settled: boolean }[] = [];
+  glyphs.forEach((c, i) => {
+    const last = out[out.length - 1];
+    if (last && last.settled === settled[i]) last.text += c;
+    else out.push({ text: c, settled: settled[i] });
+  });
+  return out;
+}
+
 /** True when this text may be scrambled at all. */
 function canDecrypt(text: string): boolean {
   return !DEVANAGARI.test(text) && !prefersReducedMotion();
@@ -158,13 +173,15 @@ export default function DecryptedText({
     <span ref={ref} className={cn("inline-block whitespace-pre-wrap", parentClassName)}>
       <span className="sr-only">{text}</span>
       <span aria-hidden="true" data-decrypting={shown ? "" : undefined}>
-        {shown
-          ? shown.glyphs.map((c, i) => (
-              <span key={i} className={shown.settled[i] ? className : encryptedClassName}>
-                {c}
-              </span>
-            ))
-          : <span className={className}>{text}</span>}
+        {shown ? (
+          runs(shown.glyphs, shown.settled).map((r, i) => (
+            <span key={i} className={r.settled ? className : encryptedClassName}>
+              {r.text}
+            </span>
+          ))
+        ) : (
+          <span className={className}>{text}</span>
+        )}
       </span>
     </span>
   );

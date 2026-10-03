@@ -153,6 +153,9 @@ const POSTERS: Record<SceneId, Poster> = {
 
 const SCENES: SceneId[] = ["route", "danger", "cyclone"];
 
+/** When the border beam starts lapping the sheet: after the hero's first sequence (about 2.3 s). */
+export const BEAM_AFTER_MS = 2400;
+
 const RISK_TEXT: Record<RiskCategory, string> = {
   LOW: "text-risk-low",
   MODERATE: "text-risk-moderate",
@@ -689,6 +692,14 @@ export default function HeroChart({
     const env = readEffectEnv();
     return env.wide && env.finePointer && !env.reducedMotion && !env.saveData;
   }, []);
+  // The light starts its laps once the first answer is on the sheet, so it
+  // never competes with the page's first paint or the hero's sequence.
+  const [beamOn, setBeamOn] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setBeamOn(true), BEAM_AFTER_MS);
+    return () => window.clearTimeout(id);
+  }, []);
+
   useEffect(() => {
     if (!seaAllowed) return;
     const id = window.setTimeout(() => setSeaOn(true), 900);
@@ -819,7 +830,9 @@ export default function HeroChart({
           from the sheet's paper, so the light never enters it. Not drawn
           under reduced motion. */}
       <div aria-hidden className="hero-beam pointer-events-none absolute inset-0 z-[3] rounded-[3px]">
-        <BorderBeam duration={10} arc={96} borderWidth={3} colorFrom={chart[600]} colorTo={chart[300]} />
+        {beamOn && (
+          <BorderBeam duration={10} arc={96} borderWidth={3} colorFrom={chart[600]} colorTo={chart[300]} />
+        )}
       </div>
 
       <figcaption

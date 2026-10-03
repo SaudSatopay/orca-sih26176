@@ -1,4 +1,4 @@
-import{r as x,j as M,o as g}from"./index-DXyHdgC5.js";import{G as B,r as y,a as D}from"./App-CD1rkhgo.js";import{R as z,P as F,M as S,T}from"./Triangle-CvCRX4L3.js";import"./locate-7VAUdqdI.js";import"./MarineMap-ZQfq6A8g.js";const k=`#version 300 es
+import{r as x,j as M,o as g}from"./index-Dq6g79z-.js";import{G as B,r as y,a as D}from"./App-CR4koz-0.js";import{R as z,P as F,M as S,T}from"./Triangle-CvCRX4L3.js";import"./locate-CHE2P1dv.js";import"./MarineMap-ByKkJxm4.js";const k=`#version 300 es
 in vec2 position;
 void main() {
   gl_Position = vec4(position, 0.0, 1.0);

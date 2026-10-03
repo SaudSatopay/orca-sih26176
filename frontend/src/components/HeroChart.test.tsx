@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../api");
@@ -33,6 +33,11 @@ describe("the hero sheet's border beam", () => {
     reducedMotion(false);
     const { container } = await openHero();
     const sheet = container.querySelector("figure.hero-chart")!;
+    // not during the first paint and the hero's sequence…
+    expect(sheet.querySelector(".border-beam-spin")).toBeNull();
+    const { BEAM_AFTER_MS } = await import("./HeroChart");
+    await act(() => new Promise<void>((r) => setTimeout(r, BEAM_AFTER_MS + 50)));
+    // …then on, for good
     const lap = sheet.querySelector(".border-beam-spin") as HTMLElement;
     expect(lap).not.toBeNull();
     expect(lap.style.animationDuration).toBe("10s");
@@ -48,6 +53,8 @@ describe("the hero sheet's border beam", () => {
   it("is not drawn under reduced motion", async () => {
     reducedMotion(true);
     const { container } = await openHero();
+    const { BEAM_AFTER_MS } = await import("./HeroChart");
+    await act(() => new Promise<void>((r) => setTimeout(r, BEAM_AFTER_MS + 50)));
     expect(container.querySelector(".border-beam-spin")).toBeNull();
   });
 });
