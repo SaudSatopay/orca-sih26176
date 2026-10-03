@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { FishingOutlook } from "../types";
 import { forgetSights } from "../firstSight";
 import FishingPanel from "./FishingPanel";
@@ -211,6 +211,49 @@ describe("baselines and tags (taste T6)", () => {
     render(<FishingPanel data={goDay} language="en" />);
     expect(screen.getByText("always closed")).toBeInTheDocument();
     expect(screen.getByText("closed now")).toBeInTheDocument();
+  });
+});
+
+describe("the chart gets marked by hand", () => {
+  it("boxes STAY OUT OF THESE AREAS in extreme red, once, when it comes into view", async () => {
+    const shown: { type: string; color: string; animationDuration: number }[] = [];
+    vi.doMock("rough-notation", () => ({
+      annotate: (_: Element, o: { type: string; color: string; animationDuration: number }) => {
+        shown.push(o);
+        return { show() {}, hide() {}, remove() {} };
+      },
+    }));
+    // a viewport in which everything is on screen
+    const Seen = class {
+      constructor(private cb: IntersectionObserverCallback) {}
+      observe(el: Element) {
+        this.cb([{ isIntersecting: true, target: el } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+      }
+      unobserve() {}
+      disconnect() {}
+      takeRecords() {
+        return [];
+      }
+    };
+    vi.stubGlobal("IntersectionObserver", Seen);
+    try {
+      vi.resetModules();
+      const { default: Panel } = await import("./FishingPanel");
+      const { risk } = await import("../tokens");
+      const first = render(<Panel data={goDay} language="en" />);
+      const heading = screen.getByRole("heading", { name: /Stay out of these areas/i });
+      expect(heading.querySelector("[data-mark]")).not.toBeNull();
+      expect(shown[shown.length - 1]).toMatchObject({ type: "box", color: risk.extreme });
+      expect(shown[shown.length - 1].animationDuration).toBeGreaterThan(0);
+      // the same reading opened again: the box is there at once, not drawn again
+      first.unmount();
+      render(<Panel data={goDay} language="en" />);
+      expect(shown[shown.length - 1].animationDuration).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.doUnmock("rough-notation");
+      vi.resetModules();
+    }
   });
 });
 

@@ -1,0 +1,121 @@
+/* Split Flap Text (React Bits, adapted for ORCA): paper tiles, ink letters,
+   a hairline hinge. Each half rests in its final position, so a flap that
+   never animates (reduced motion, a frame that never comes) leaves the
+   board reading correctly. Transform-only keyframes, no fill-mode. */
+.split-flap {
+  display: inline-flex;
+  font-family: theme(fontFamily.mono);
+  font-size: theme(fontSize.body);
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+}
+.split-flap-row {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.split-flap-gap {
+  width: 0.5em;
+}
+.split-flap-tile {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.05em;
+  height: 1.55em;
+  padding: 0 0.18em;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  background: theme(colors.paper.50);
+  color: theme(colors.ink.900);
+  letter-spacing: 0;
+  perspective: 240px;
+  overflow: hidden;
+}
+/* the hinge */
+.split-flap-tile::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--rule-faint);
+  z-index: 3;
+}
+.split-flap-sizer {
+  visibility: hidden;
+}
+.split-flap-half,
+.split-flap-flap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  background: theme(colors.paper.50);
+  backface-visibility: hidden;
+}
+.split-flap-half--top,
+.split-flap-flap--front {
+  top: 0;
+}
+.split-flap-half--bottom,
+.split-flap-flap--back {
+  bottom: 0;
+}
+.split-flap-char {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 200%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.split-flap-half--top .split-flap-char,
+.split-flap-flap--front .split-flap-char {
+  top: 0;
+}
+.split-flap-half--bottom .split-flap-char,
+.split-flap-flap--back .split-flap-char {
+  bottom: 0;
+}
+/* the front flap falls away and rests out of sight; the back flap lands and
+   rests in place */
+.split-flap-flap {
+  z-index: 2;
+}
+.split-flap-flap--front {
+  transform-origin: center bottom;
+  transform: rotateX(-90deg);
+  animation: split-flap-front var(--flip-ms, 80ms) cubic-bezier(0.55, 0, 1, 0.45);
+}
+.split-flap-flap--back {
+  transform-origin: center top;
+  transform: rotateX(0deg);
+  animation: split-flap-back var(--flip-ms, 80ms) var(--ease-out);
+}
+@keyframes split-flap-front {
+  from {
+    transform: rotateX(0deg);
+  }
+  to {
+    transform: rotateX(-90deg);
+  }
+}
+@keyframes split-flap-back {
+  0%,
+  50% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .split-flap-flap {
+    animation: none;
+  }
+}

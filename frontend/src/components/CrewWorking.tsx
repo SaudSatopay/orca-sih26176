@@ -1,10 +1,21 @@
-import { useEffect, useState } from "react";
+import { lazy, useEffect, useState } from "react";
 import { PHASES } from "../crew";
 import { LABEL, T } from "../i18n/agentTrace";
 import type { Language } from "../types";
+import { GlSlot } from "../ui/console/GlSlot";
+import { StatusMark, type StatusMarkStatus } from "../ui/reactbits/status-mark";
+
+/** The radar's chunk (and ogl) is fetched only where GlSlot allows it. */
+const Radar = lazy(() => import("../ui/reactbits/radar"));
 
 /** How long each phase holds the watch before the next is called. */
 const PHASE_MS = 600;
+
+const MARK: Record<"done" | "now" | "next", StatusMarkStatus> = {
+  next: "pending",
+  now: "running",
+  done: "done",
+};
 
 /**
  * What the answer column shows while a question is out with the crew: the
@@ -38,46 +49,48 @@ export default function CrewWorking({ language = "en" }: { language?: Language }
         <div className="wave-rule w-16 shrink-0" aria-hidden />
       </div>
 
-      <ol className="crew-grid">
-        {PHASES.map((phase, i) => {
-          const state = i < called ? "done" : i === called ? "now" : "next";
-          return (
-            <li key={phase.key} className="px-4 py-3" aria-current={state === "now" ? "step" : undefined}>
-              <div className="flex items-baseline gap-2">
-                <span
-                  className={`font-display text-body font-bold ${
-                    state === "next" ? "text-ink-500" : "text-ink-900"
-                  }`}
-                >
-                  {t[phase.key]}
-                </span>
-                <span className="ml-auto font-mono text-label font-semibold uppercase tracking-[0.14em] text-ink-400">
-                  {state === "next" ? t.waiting : t.called}
-                </span>
-              </div>
-              <div className="mt-1.5 h-px bg-ink-900/10">
-                {state !== "next" && <div className="grow-x h-px bg-chart-500" />}
-              </div>
-              <ul className="mt-2 space-y-1">
-                {phase.agents.map((a) => (
-                  <li key={a} className="flex items-center gap-2 text-label text-ink-700">
-                    <span
-                      aria-hidden
-                      className={`h-1.5 w-1.5 shrink-0 rotate-45 border border-chart-600 ${
-                        state === "next" ? "" : "bg-chart-500"
-                      }`}
-                      style={
-                        state === "now" ? { animation: "inkblink 1.2s ease-in-out infinite" } : undefined
-                      }
-                    />
-                    {labels[a] ?? a}
-                  </li>
-                ))}
-              </ul>
-            </li>
-          );
-        })}
-      </ol>
+      <div className="relative">
+        {/* the sweep: chart-teal range rings and a turning beam on the paper
+            behind the manifest, desktop only (GlSlot); it goes with this sheet
+            the moment the answer lands */}
+        <GlSlot className="pointer-events-none absolute inset-0">
+          <Radar />
+        </GlSlot>
+        <ol className="crew-grid relative">
+          {PHASES.map((phase, i) => {
+            const state = i < called ? "done" : i === called ? "now" : "next";
+            return (
+              <li key={phase.key} className="px-4 py-3" aria-current={state === "now" ? "step" : undefined}>
+                <div className="flex items-baseline gap-2">
+                  <span
+                    className={`font-display text-body font-bold ${
+                      state === "next" ? "text-ink-500" : "text-ink-900"
+                    }`}
+                  >
+                    {t[phase.key]}
+                  </span>
+                  <span className="ml-auto font-mono text-label font-semibold uppercase tracking-[0.14em] text-ink-400">
+                    {state === "next" ? t.waiting : t.called}
+                  </span>
+                </div>
+                <div className="mt-1.5 h-px bg-ink-900/10">
+                  {state !== "next" && <div className="grow-x h-px bg-chart-500" />}
+                </div>
+                <ul className="mt-2 space-y-1">
+                  {phase.agents.map((a) => (
+                    <li key={a} className="flex items-center gap-2 text-label text-ink-700">
+                      {/* standing by: a dashed ring; called: a turning arc;
+                          its phase passed: a closed ring with a tick */}
+                      <StatusMark status={MARK[state]} size={13} />
+                      {labels[a] ?? a}
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
     </section>
   );
 }

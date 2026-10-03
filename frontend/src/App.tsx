@@ -58,6 +58,7 @@ import { RISK_INK } from "./risk";
 import { SPEECH_LOCALE } from "./speech";
 import { initialLanguage, readBootParams } from "./boot";
 import { ink, risk } from "./tokens";
+import { GlowingBadge } from "./ui/unlumen/glowing-badge";
 
 const SESSION = "demo";
 const RADIUS_KM = 100;
@@ -580,12 +581,17 @@ export default function App() {
               style={cellRule}
             >
               <span className="label">{ui.dataEdition}</span>
-              <span
-                className={`mt-1 flex items-center gap-1.5 font-mono text-body font-bold ${
-                  mode === "LIVE" ? "text-risk-low" : "text-risk-high"
-                }`}
-              >
-                {switching ? ui.modeSwitching : modeLabel}
+              {/* the edition in force glows in its status colour and pings:
+                  green for live sources, orange for the demo store */}
+              <span className="mt-1 flex items-center gap-1.5">
+                <GlowingBadge
+                  tone={mode === "LIVE" ? risk.low : risk.high}
+                  pulse={!switching}
+                  className="!text-body !tracking-normal"
+                  textClassName={mode === "LIVE" ? "text-risk-low" : "text-risk-high"}
+                >
+                  {switching ? ui.modeSwitching : modeLabel}
+                </GlowingBadge>
                 <svg width="14" height="12" viewBox="0 0 14 12" className="text-ink-400" aria-hidden>
                   <path
                     d="M1 3.5 H12 M9.5 1 L12 3.5 L9.5 6 M13 8.5 H2 M4.5 6 L2 8.5 L4.5 11"

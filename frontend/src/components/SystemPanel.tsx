@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
+import { Fragment, lazy, useEffect, useRef, useState } from "react";
 import * as api from "../api";
 import type { Language } from "../types";
 import { CourseArrow, FishGlyph, LockGlyph, WarnGlyph } from "./glyphs";
@@ -9,6 +9,14 @@ import { PORTS } from "../ports";
 import { chart, ink, risk } from "../tokens";
 import { measurement } from "../format";
 import { fill } from "./todayModel";
+import { useMediaQuery } from "../layout";
+import { BeamGap } from "../ui/console/BeamGap";
+import { AnimatedList } from "../ui/unlumen/animated-list";
+import { GlowingBadge } from "../ui/unlumen/glowing-badge";
+import { GlSlot } from "../ui/console/GlSlot";
+
+/** The contour band's chunk (and ogl) is fetched only where GlSlot allows it. */
+const Topography = lazy(() => import("../ui/reactbits/topography"));
 import "./views.css";
 
 /**
@@ -36,25 +44,18 @@ type FeedRow = {
 };
 
 const POLL_MS = 7000;
+/** How long the reading that has just entered the log stays marked. */
+const NEWEST_MS = 1800;
+
+const rowKey = (r: FeedRow) => `${r.port}-${r.at}`;
 
 function fmt(m?: api.Measurement | null): string {
   // The one format for every quantity: "deg C" prints as "°C" (S5, X5).
   return measurement(m?.value, m?.unit);
 }
 
-/** Three signals riding a connector between two things in the pipeline. */
-function Connector({ className = "", style }: { className?: string; style?: CSSProperties }) {
-  return (
-    <div className={`v-connector ${className}`} style={style} aria-hidden>
-      <i />
-      <i />
-      <i />
-    </div>
-  );
-}
-
 /** The crew's pipeline at desktop width: phase, gap, phase, gap… */
-const CREW_COLUMNS = "minmax(0,1fr) 56px minmax(0,1.7fr) 56px minmax(0,1.2fr) 56px minmax(0,1fr)";
+const CREW_COLUMNS = "minmax(0,1fr) 72px minmax(0,1.7fr) 72px minmax(0,1.2fr) 72px minmax(0,1fr)";
 
 export default function SystemPanel({
   mode,
@@ -77,6 +78,12 @@ export default function SystemPanel({
   // Seconds until the next try, shown while the feed is not answering.
   const [retryIn, setRetryIn] = useState(POLL_MS / 1000);
   const portIdx = useRef(0);
+  const shownRef = useRef<FeedRow | null>(null);
+  // The reading that has just entered the log: washed in teal for a moment.
+  const [newestKey, setNewestKey] = useState<string | null>(null);
+  // The pipeline's beams run at desktop width, where the flow is a row; the
+  // stacked flow below it keeps its drop lines.
+  const wide = useMediaQuery("(min-width: 1024px)");
 
   // Cycle the coastline: one port per poll, newest reading on top. The tick
   // rests while the sheet is held or the tab is hidden.
@@ -101,7 +108,11 @@ export default function SystemPanel({
           vis: fmt(f.weather.measurements?.visibility),
           at: new Date().toLocaleTimeString("en-IN", { hour12: false }),
         };
+        // The reading on show steps down into the log, marked as its newest.
+        const previous = shownRef.current;
+        shownRef.current = row;
         setRows((r) => [row, ...r].slice(0, 6));
+        if (previous) setNewestKey(rowKey(previous));
         setTick((n) => n + 1);
         setScanning(true);
       } catch {
@@ -130,6 +141,12 @@ export default function SystemPanel({
   }, [scanning]);
 
   const latest = rows[0];
+  // The mark on the reading that has just entered the log lasts a moment.
+  useEffect(() => {
+    if (!newestKey) return;
+    const id = window.setTimeout(() => setNewestKey(null), NEWEST_MS);
+    return () => window.clearTimeout(id);
+  }, [newestKey]);
   const sourceName = (id: string) => (id === "OPEN_METEO" ? "Open-Meteo" : t.demoStore);
 
   // Provider status follows the data edition (S1): in DEMO the live providers
@@ -157,11 +174,16 @@ export default function SystemPanel({
           <span className="label">{t.engineRoom}</span>
           <span className="font-mono text-label text-chart-700">{t.configNote}</span>
         </div>
-        <div className="px-5 py-4">
-          <h2 className="font-display text-headline font-bold leading-snug text-ink-900 [text-wrap:balance]">
+        <div className="relative px-5 py-4">
+          {/* a living bathymetric chart under the title: depth contours in
+              chart teal drifting on the paper, desktop only (GlSlot) */}
+          <GlSlot className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_right,transparent_22%,black_68%)]">
+            <Topography />
+          </GlSlot>
+          <h2 className="relative font-display text-headline font-bold leading-snug text-ink-900 [text-wrap:balance]">
             {t.title}
           </h2>
-          <p className="mt-1.5 max-w-[62ch] text-body leading-relaxed text-ink-700">{t.intro}</p>
+          <p className="relative mt-1.5 max-w-[62ch] text-body leading-relaxed text-ink-700">{t.intro}</p>
         </div>
       </section>
 
@@ -187,12 +209,12 @@ export default function SystemPanel({
                   {p.name}
                 </h4>
               </div>
-              {/* the dot and the rule carry the status colour; the words stay in ink */}
-              <div
-                className="mt-2 inline-block border px-1.5 py-px font-mono text-label font-bold uppercase tracking-[0.12em] text-ink-800"
-                style={{ borderColor: p.color }}
-              >
-                {p.status}
+              {/* the dot, the rule and the glow carry the status colour; the
+                  words stay in ink. The provider in use pings. */}
+              <div className="mt-2">
+                <GlowingBadge tone={p.color} pulse={p.live}>
+                  {p.status}
+                </GlowingBadge>
               </div>
               <p className="mt-2 text-label leading-relaxed text-ink-700">{p.gives}</p>
               <p className="mt-1 text-label italic leading-snug text-ink-500">{p.note}</p>
@@ -200,14 +222,15 @@ export default function SystemPanel({
           ))}
         </div>
 
-        {/* the flow into the cache: each connector spans the gap it joins */}
-        <div className="flex flex-col items-center gap-1.5 px-4 pb-4 lg:flex-row lg:gap-3">
-          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 lg:text-right">
+        {/* the flow into the cache: each beam spans the gap it joins, the
+            second a beat after the first — fetch, cache, then the crew */}
+        <div className="flex flex-col items-center gap-1.5 px-4 pb-4 lg:flex-row lg:gap-0">
+          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 lg:pr-3 lg:text-right">
             {t.oneFetch}
             <br />
             <span className="text-ink-500">{t.perProvider}</span>
           </div>
-          <Connector className="hidden lg:block" />
+          <BeamGap on={wide} className="hidden flex-1 lg:flex" />
           <span className="v-connector-down !m-0 lg:hidden" aria-hidden />
           <div className="min-w-0 rounded-[2px] border-2 border-chart-600 bg-chart-100/40 px-4 py-3 text-center lg:max-w-[520px] lg:flex-[3_1_0]">
             <h4 className="font-display text-lead font-bold text-ink-900">{t.cacheTitle}</h4>
@@ -216,9 +239,9 @@ export default function SystemPanel({
               {t.cacheMeta}
             </p>
           </div>
-          <Connector className="hidden lg:block" />
+          <BeamGap on={wide} delay={0.9} className="hidden flex-1 lg:flex" />
           <span className="v-connector-down !m-0 lg:hidden" aria-hidden />
-          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 lg:text-left">
+          <div className="shrink-0 text-center font-mono text-label uppercase tracking-[0.12em] text-ink-700 lg:pl-3 lg:text-left">
             {t.everyAgent}
             <br />
             <span className="text-ink-500">{t.fromMemory}</span>
@@ -240,8 +263,8 @@ export default function SystemPanel({
           <span className="font-mono text-label text-ink-500">{t.s2note}</span>
         </div>
         {/* One DOM, two layouts: stacked with drop lines when narrow; at desktop
-            a grid whose middle row holds the agents and the connectors between
-            them, so every signal runs chip to chip. */}
+            a grid whose middle row holds the agents and the beams between
+            them, so the signal runs phase to phase in the order of the work. */}
         <div
           className="flex flex-col px-4 py-4 lg:grid lg:gap-y-2"
           style={{ gridTemplateColumns: CREW_COLUMNS }}
@@ -251,8 +274,10 @@ export default function SystemPanel({
               {i > 0 && (
                 <>
                   <span className="v-connector-down lg:hidden" aria-hidden />
-                  <Connector
-                    className="mx-2 hidden self-center lg:block"
+                  <BeamGap
+                    on={wide}
+                    delay={(i - 1) * 0.5}
+                    className="mx-1 hidden lg:flex"
                     style={{ gridColumn: i * 2, gridRow: 2 }}
                   />
                 </>
@@ -450,13 +475,21 @@ export default function SystemPanel({
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {rows.slice(1).map((r, i) => (
-                  <tr
-                    key={`${r.port}-${r.at}`}
-                    className={`border-b last:border-0 ${i === 0 ? "v-row-enter bg-chart-100/40" : ""}`}
-                    style={{ borderColor: "var(--rule-faint)" }}
-                  >
+              {/* each reading pushes in at the top on a short spring and the
+                  log makes room; the newest is washed in teal for a moment */}
+              <AnimatedList
+                as="tbody"
+                items={rows.slice(1)}
+                itemKey={rowKey}
+                itemProps={(r) => ({
+                  className: `border-b transition-colors duration-700 last:border-0 ${
+                    rowKey(r) === newestKey ? "bg-chart-100/70" : ""
+                  }`,
+                  style: { borderColor: "var(--rule-faint)" },
+                  "data-newest": rowKey(r) === newestKey ? "" : undefined,
+                })}
+                renderItem={(r) => (
+                  <>
                     <th scope="row" className="py-2 pl-4 pr-3 text-left font-sans font-bold text-ink-900">
                       {r.port}
                     </th>
@@ -475,9 +508,9 @@ export default function SystemPanel({
                     </td>
                     <td className="px-3 py-2 tabular-nums text-ink-700">{r.latency} ms</td>
                     <td className="px-3 py-2 tabular-nums text-ink-700">{r.at}</td>
-                  </tr>
-                ))}
-              </tbody>
+                  </>
+                )}
+              />
             </table>
           </div>
         )}
