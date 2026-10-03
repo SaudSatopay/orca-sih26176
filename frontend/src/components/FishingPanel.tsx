@@ -1,5 +1,5 @@
-import { useId, useState, type ReactNode } from "react";
-import { Highlighter } from "../ui/magicui/highlighter";
+import { lazy, Suspense, useId, useState, type ReactNode } from "react";
+
 import { risk } from "../tokens";
 import type { AvoidZone, FishingArea, FishingOutlook, Language } from "../types";
 import { useFirstSight } from "../firstSight";
@@ -25,6 +25,14 @@ import {
 } from "./todayModel";
 import "./views.css";
 
+/**
+ * The hand-drawn mark (and rough-notation) load with the first closed area,
+ * not with the sheet. Its own chunk also keeps the kit's token defaults out
+ * of the console chunk's imports, so the shared entry chunk, and with it the
+ * phone's chunks, stay byte-identical.
+ */
+const Highlighter = lazy(() => import("../ui/magicui/highlighter").then((m) => ({ default: m.Highlighter })));
+
 type Strings = Record<string, string>;
 
 /**
@@ -38,9 +46,19 @@ function AvoidMark({ reading, children }: { reading: string; children: ReactNode
   const [drawMs] = useState(() => (fresh ? 900 : 0));
   return (
     <span data-mark="avoid">
-      <Highlighter action="box" color={risk.extreme} animationDuration={drawMs} padding={4} strokeWidth={1.5} multiline={false}>
-        {children}
-      </Highlighter>
+      {/* the words, unmarked, until the mark's chunk is in */}
+      <Suspense fallback={children}>
+        <Highlighter
+          action="box"
+          color={risk.extreme}
+          animationDuration={drawMs}
+          padding={4}
+          strokeWidth={1.5}
+          multiline={false}
+        >
+          {children}
+        </Highlighter>
+      </Suspense>
     </span>
   );
 }

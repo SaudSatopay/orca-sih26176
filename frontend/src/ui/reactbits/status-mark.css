@@ -8,11 +8,11 @@
 }
 .status-mark svg {
   overflow: visible;
-  color: var(--sm-color);
+  color: var(--sm-color, theme(colors.chart.600));
   transition: color 200ms ease;
 }
 .status-mark[data-status="done"] svg {
-  color: var(--sm-done);
+  color: var(--sm-done, theme(colors.chart.700));
 }
 .status-mark-track {
   fill: currentColor;

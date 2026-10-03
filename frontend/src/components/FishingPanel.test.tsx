@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { FishingOutlook } from "../types";
 import { forgetSights } from "../firstSight";
@@ -243,7 +243,8 @@ describe("the chart gets marked by hand", () => {
       const first = render(<Panel data={goDay} language="en" />);
       const heading = screen.getByRole("heading", { name: /Stay out of these areas/i });
       expect(heading.querySelector("[data-mark]")).not.toBeNull();
-      expect(shown[shown.length - 1]).toMatchObject({ type: "box", color: risk.extreme });
+      // the mark loads in its own chunk; the words are there before it
+      await waitFor(() => expect(shown[shown.length - 1]).toMatchObject({ type: "box", color: risk.extreme }));
       expect(shown[shown.length - 1].animationDuration).toBeGreaterThan(0);
       // the same reading opened again: the box is there at once, not drawn again
       first.unmount();
