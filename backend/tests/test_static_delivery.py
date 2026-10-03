@@ -59,3 +59,22 @@ def test_api_json_is_compressed_but_not_given_a_long_cache(client):
     assert res.status_code == 200
     assert res.headers["content-encoding"] == "gzip"
     assert "immutable" not in res.headers.get("cache-control", "")
+
+
+@pytest.mark.parametrize(
+    ("suffix", "kind"),
+    [(".js", "text/javascript"), (".css", "text/css"), (".woff2", "font/woff2")],
+)
+def test_assets_carry_their_own_type_whatever_the_machine_says(client, suffix, kind):
+    # Python reads file types from the Windows registry, which can call .js
+    # plain text (a blank page: browsers will not run it) or not know .woff2.
+    res = client.get(f"/assets/{_asset(suffix)}")
+    assert res.status_code == 200
+    assert res.headers["content-type"].startswith(kind)
+
+
+def test_the_showcase_screens_are_served_as_webp(client):
+    sheet = next((DIST / "sheets").glob("*.webp"))
+    res = client.get(f"/sheets/{sheet.name}")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "image/webp"

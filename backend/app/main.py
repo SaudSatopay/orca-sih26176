@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import mimetypes
 import os
 from pathlib import Path
 
@@ -59,6 +60,26 @@ def health() -> dict:
 
 # --- serve the built frontend if it exists --------------------------------
 _DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+
+# The built frontend's file types, fixed here rather than read from the
+# machine: on Windows, Python takes them from the registry, where `.js` can
+# be text/plain (browsers then refuse to run the app's modules and the page
+# stays blank) and `.webp` or `.woff2` can be missing.
+for _type, _ext in (
+    ("text/javascript", ".js"),
+    ("text/javascript", ".mjs"),
+    ("text/css", ".css"),
+    ("text/html", ".html"),
+    ("application/json", ".json"),
+    ("application/manifest+json", ".webmanifest"),
+    ("image/svg+xml", ".svg"),
+    ("image/png", ".png"),
+    ("image/webp", ".webp"),
+    ("image/x-icon", ".ico"),
+    ("font/woff2", ".woff2"),
+    ("font/woff", ".woff"),
+):
+    mimetypes.add_type(_type, _ext)
 
 
 class _HashedAssets(StaticFiles):
