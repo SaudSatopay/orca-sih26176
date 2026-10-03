@@ -26,21 +26,37 @@
  *   action (liquid-glass-js). A lens draws once and releases its context, so
  *   it holds none at rest;
  * - `relief`: the sea bed below the hero as a 3D paper sheet (React Three
- *   Fiber), one canvas, drawn on demand.
+ *   Fiber), one canvas, drawn on demand;
+ * - `splash`: wet ink blooming in the water under the landing where the
+ *   pointer moves (React Bits SplashCursor, SplashInk.tsx), one canvas,
+ *   no frames at rest. It follows a pointer, so it needs a fine one even
+ *   when `?fx=` asks for it.
  *
  * The ShaderGradient sea was tried and removed: the
  * CSS swell at the foot of the sheet is the sea.
  */
-export type EffectName = "ground" | "ink" | "glass" | "relief";
+export type EffectName = "ground" | "ink" | "glass" | "relief" | "splash";
 
-/** In priority order: when the context cap bites, later ones lose. */
-export const ALL_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief"];
+/**
+ * In priority order: when the context cap bites, later ones wait
+ * (contexts.ts serves its queue in this order).
+ */
+export const ALL_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief", "splash"];
 
-/** Live WebGL contexts each effect holds at rest. */
-// ink is 2: the mark flies twice, at the masthead and in the closing
-// cartouche, and each holds its canvas while mounted. With relief's one and
-// glass's zero at rest the landing sits exactly on the cap of three.
-export const CONTEXTS: Record<EffectName, number> = { ground: 0, ink: 2, glass: 0, relief: 1 };
+/**
+ * Live WebGL contexts each effect holds at once, at most.
+ *
+ * The cap itself is enforced at run time by contexts.ts: every context is
+ * opened under a lease and three leases exist. These numbers are the
+ * static half of the promise: what the shipped set needs at its fullest.
+ */
+// ink is 1: the mark flies twice, at the masthead and in the closing
+// cartouche, but the two are never on screen together and a slot that has
+// been out of view for 1.5 s gives its context back (EffectSlot's
+// `releaseWhenAway`). Glass opens one context while arming and loses it at
+// once, under a lease, so it holds none at rest. Ink, relief and splash
+// fill the cap of three; the glass waits its turn (the splash steps aside).
+export const CONTEXTS: Record<EffectName, number> = { ground: 0, ink: 1, glass: 0, relief: 1, splash: 1 };
 
 export const WEBGL_CAP = 3;
 
@@ -48,10 +64,10 @@ export const WEBGL_CAP = 3;
  * The effects that passed their trial and ship switched on. An effect that
  * is not listed here only runs when a `?fx=` query asks for it by name.
  * Ink: Lighthouse 99 with it on, one context in view, zero at rest.
- * Relief: 98–99, one context, zero frames at rest. Glass joins when its
- * rebuild lands and measures. `?fx=none` is the switch-off.
+ * Relief: 98–99, one context, zero frames at rest. Splash: zero frames and
+ * no lease contention at rest. `?fx=none` is the switch-off.
  */
-export const DEFAULT_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief"];
+export const DEFAULT_EFFECTS: readonly EffectName[] = ["ground", "ink", "glass", "relief", "splash"];
 
 export interface EffectEnv {
   /** `location.search` */
@@ -97,6 +113,8 @@ export function allowedEffects(env: EffectEnv): EffectName[] {
     if (!wanted.includes(name)) continue;
     // Glass over an opaque fallback is the reduced-transparency answer.
     if (name === "glass" && env.reducedTransparency) continue;
+    // The splash answers a mouse; a touch screen would only ever see the poster.
+    if (name === "splash" && !env.finePointer) continue;
     if (contexts + CONTEXTS[name] > WEBGL_CAP) continue;
     contexts += CONTEXTS[name];
     out.push(name);

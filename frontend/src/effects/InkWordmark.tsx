@@ -52,6 +52,10 @@ export function InkMark({ className = "ink-word" }: { className?: string }) {
         className={className}
         style={BOX}
         effectClassName="ink-live"
+        // The shader's start-up is two long tasks; above the fold they
+        // would land in the load window. The printed mark is the design
+        // until the visitor first moves, scrolls, touches or types.
+        armOn="interaction"
         poster={<InkPoster />}
       />
     </div>
