@@ -1,4 +1,6 @@
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
+import { Highlighter } from "../ui/magicui/highlighter";
+import { risk } from "../tokens";
 import type { AvoidZone, FishingArea, FishingOutlook, Language } from "../types";
 import { useFirstSight } from "../firstSight";
 import { FishGlyph, SchoolGlyph, WarnGlyph } from "./glyphs";
@@ -24,6 +26,24 @@ import {
 import "./views.css";
 
 type Strings = Record<string, string>;
+
+/**
+ * The closed areas' heading, boxed by hand in extreme red the way a skipper
+ * rings a danger on a paper chart. The words are always readable; the box
+ * draws once per reading, when it first comes into view, and is simply there
+ * on a later visit to the same reading (and under reduced motion).
+ */
+function AvoidMark({ reading, children }: { reading: string; children: ReactNode }) {
+  const fresh = useFirstSight(`avoid-mark:${reading}`);
+  const [drawMs] = useState(() => (fresh ? 900 : 0));
+  return (
+    <span data-mark="avoid">
+      <Highlighter action="box" color={risk.extreme} animationDuration={drawMs} padding={4} strokeWidth={1.5} multiline={false}>
+        {children}
+      </Highlighter>
+    </span>
+  );
+}
 
 function dayName(offset: number, t: Strings): string {
   return offset === 0 ? t.today : offset === 1 ? t.tomorrow : t.dayAfter;
@@ -197,7 +217,7 @@ function Advice({
       {prohibitions.length > 0 && (
         <div className="border-t px-5 py-3.5" style={{ borderColor: "var(--rule-faint)" }}>
           <h3 className="label flex items-center gap-2 !text-risk-extreme">
-            <NoEntryGlyph size={13} /> {t.avoid}
+            <NoEntryGlyph size={13} /> <AvoidMark reading={data.generated_at}>{t.avoid}</AvoidMark>
           </h3>
           <ul className="mt-2.5 space-y-2">
             {prohibitions.map(({ text, zone }, i) => {
