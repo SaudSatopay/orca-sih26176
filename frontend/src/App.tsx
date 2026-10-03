@@ -92,6 +92,11 @@ function prefetchSheets() {
   if (w.requestIdleCallback) w.requestIdleCallback(go, { timeout: 4000 });
   else window.setTimeout(go, 2500);
 }
+import { EffectSlot } from "./effects/EffectSlot";
+import "./effects/splash.css";
+
+// The splash's own chunk, fetched only when the gate lets it run (effects/gate.ts).
+const SplashInk = lazy(() => import("./effects/SplashInk"));
 
 const SESSION = "demo";
 const RADIUS_KM = 100;
@@ -585,6 +590,8 @@ export default function App() {
           onTour={startTour}
           onScenario={runScenario}
         />
+        {/* wet ink in the water under the whole landing (effects/SplashInk.tsx) */}
+        <EffectSlot name="splash" Effect={SplashInk} poster={null} yieldable armOn="interaction" className="splash-slot" effectClassName="splash-live" />
       </>
     );
   }

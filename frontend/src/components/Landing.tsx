@@ -571,7 +571,7 @@ export default function Landing({
             </h1>
             <div className="wave-rule mt-6 max-w-[360px]" />
             <p
-              className="mt-6 max-w-[470px] text-lead leading-relaxed text-ink-500"
+              className="mt-6 max-w-[470px] text-lead leading-relaxed text-ink-700"
               style={{ textWrap: "pretty" }}
             >
               {t.sub}
@@ -757,7 +757,7 @@ export default function Landing({
       {/* footer */}
       <Reveal delay={980}>
         <div className="mt-8 flex flex-wrap items-baseline justify-between gap-2 pb-4">
-          <span className="font-mono text-label uppercase tracking-[0.14em] text-ink-400">
+          <span className="font-mono text-label uppercase tracking-[0.14em] text-ink-500">
             {t.footer}
           </span>
           <a

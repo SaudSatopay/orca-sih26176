@@ -34,7 +34,22 @@ describe("which landing effects may run", () => {
     expect(allowedEffects({ ...desktop, search: "", wide: false })).toEqual([]);
     expect(allowedEffects({ ...desktop, search: "", finePointer: false })).toEqual([]);
     expect(allowedEffects({ ...desktop, wide: false })).toEqual(ALL_EFFECTS);
-    expect(allowedEffects({ ...desktop, finePointer: false })).toEqual(ALL_EFFECTS);
+    // …except the splash, which follows a mouse and has nothing to follow on touch
+    expect(allowedEffects({ ...desktop, finePointer: false })).toEqual(
+      ALL_EFFECTS.filter((name) => name !== "splash"),
+    );
+  });
+
+  it("runs the splash on a desktop with a mouse, alone on request, and never on touch", () => {
+    expect(DEFAULT_EFFECTS).toContain("splash");
+    expect(allowedEffects({ ...desktop, search: "" })).toContain("splash");
+    expect(allowedEffects({ ...desktop, search: "?fx=splash" })).toEqual(["splash"]);
+    expect(allowedEffects({ ...desktop, search: "?fx=none" })).not.toContain("splash");
+    expect(allowedEffects({ ...desktop, search: "?fx=splash", finePointer: false })).toEqual([]);
+    expect(allowedEffects({ ...desktop, search: "", reducedMotion: true })).toEqual([]);
+    expect(allowedEffects({ ...desktop, search: "", saveData: true })).toEqual([]);
+    expect(allowedEffects({ ...desktop, search: "", webgl: false })).toEqual([]);
+    expect(CONTEXTS.splash).toBe(1);
   });
 
   it("gives reduced motion, data saver and no-WebGL the poster", () => {

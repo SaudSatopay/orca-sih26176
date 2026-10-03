@@ -1,1 +1,0 @@
-import{r as o}from"./index-CM_2qAKl.js";const e=typeof window<"u",s=e?o.useLayoutEffect:o.useEffect;export{s as u};

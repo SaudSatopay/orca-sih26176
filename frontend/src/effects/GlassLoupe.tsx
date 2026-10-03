@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { DEFAULT_EFFECTS, effectsHere, readEffectEnv, requestedEffects } from "./gate";
 import { noteEffect, type EffectState } from "./ledger";
+import { leases } from "./contexts";
 import { RULE_H, scaleNumerals, type ScaleNumeral } from "./glassScale";
 import "./glass.css";
 
@@ -38,6 +39,24 @@ const SHIPPED_LOUPES: readonly string[] = ["tabs", "open"];
 /** After load and fonts: long enough for the hero's entrance to have landed. */
 const SETTLE_MS = 1200;
 const REARM_DEBOUNCE_MS = 250;
+/** The open slab re-arms once scrolling has been still this long. */
+const SCROLL_SETTLE_MS = 400;
+/** …and only if the page has moved more than this since the still was drawn. */
+const SCROLL_DRIFT_PX = 2;
+
+/**
+ * Draw a lens's stills under a WebGL context lease (contexts.ts): arming
+ * waits its turn when three contexts are out, opens its one context, loses
+ * it, and gives the lease back. Rejects if `signal` aborts while waiting.
+ */
+async function underLease<T>(signal: AbortSignal, draw: () => Promise<T>): Promise<T> {
+  const lease = await leases.acquire("glass", { signal });
+  try {
+    return await draw();
+  } finally {
+    lease.release();
+  }
+}
 
 /** How far the lens bleeds past a tab, px. */
 const TAB_LENS_BLEED_X = 4;
@@ -182,6 +201,7 @@ function TabsLoupe({ tier, children }: { tier: Exclude<GlassTier, "off">; childr
     const anchor = anchorRef.current;
     let gone = false;
     let timer: number | undefined;
+    const ctl = new AbortController();
 
     const clear = () => {
       if (hosts) hosts.replaceChildren();
@@ -207,12 +227,14 @@ function TabsLoupe({ tier, children }: { tier: Exclude<GlassTier, "off">; childr
             height: stripPage.height + TAB_LENS_BLEED_Y * 2,
           };
         });
-        const result = await armTabs({
-          sheetEl: sheet,
-          strip: { x: stripPage.x, y: stripPage.y, width: strip.offsetWidth },
-          lenses,
-          dpr: Math.min(window.devicePixelRatio || 1, 2),
-        });
+        const result = await underLease(ctl.signal, () =>
+          armTabs({
+            sheetEl: sheet,
+            strip: { x: stripPage.x, y: stripPage.y, width: strip.offsetWidth },
+            lenses,
+            dpr: Math.min(window.devicePixelRatio || 1, 2),
+          }),
+        );
         if (gone) return;
         const sel = selectedIndex(list);
         clear();
@@ -258,6 +280,7 @@ function TabsLoupe({ tier, children }: { tier: Exclude<GlassTier, "off">; childr
     if (list && ro) ro.observe(list);
     return () => {
       gone = true;
+      ctl.abort();
       cancelSettle();
       window.clearTimeout(timer);
       window.removeEventListener("resize", rearm);
@@ -343,6 +366,13 @@ function OpenLoupe({ children }: { children: ReactNode }) {
     if (failed) return;
     let gone = false;
     let timer: number | undefined;
+    let scrollTimer: number | undefined;
+    /** The scroll the still was drawn at: the ground under the slab is a fixed layer. */
+    let armedAt: { x: number; y: number } | null = null;
+    let arming = false;
+    /** A resize or scroll asked for a new still while one was being drawn. */
+    let again = false;
+    const ctl = new AbortController();
     // The decorations render before the children: the control is the host's
     // next element sibling.
     const control = hostRef.current?.nextElementSibling;
@@ -358,15 +388,26 @@ function OpenLoupe({ children }: { children: ReactNode }) {
     };
 
     const arm = async () => {
+      if (arming) {
+        again = true;
+        return;
+      }
+      arming = true;
       note("open", "loading");
       try {
         const { armOpen } = await import("./glassArm");
         if (gone) return;
-        const btn = pageRect(control);
-        const lens = { x: btn.x - 3, y: btn.y - 3, width: btn.width + 6, height: btn.height + 6 };
-        const ruleSpec = { x: btn.x - RULE_BLEED, baseY: btn.y + btn.height - 3, width: btn.width + RULE_BLEED * 2 };
-        const result = await armOpen({ lens, rule: ruleSpec, dpr: Math.min(window.devicePixelRatio || 1, 2) });
+        const { result, at, lens } = await underLease(ctl.signal, async () => {
+          // Measured inside the lease: the ground is painted at this scroll.
+          const at = { x: window.scrollX, y: window.scrollY };
+          const btn = pageRect(control);
+          const lens = { x: btn.x - 3, y: btn.y - 3, width: btn.width + 6, height: btn.height + 6 };
+          const ruleSpec = { x: btn.x - RULE_BLEED, baseY: btn.y + btn.height - 3, width: btn.width + RULE_BLEED * 2 };
+          const result = await armOpen({ lens, rule: ruleSpec, dpr: Math.min(window.devicePixelRatio || 1, 2) });
+          return { result, at, lens };
+        });
         if (gone) return;
+        armedAt = at;
         clear();
         // Position against the shared offsetParent, like the lens host.
         rule.style.left = `${control.offsetLeft - RULE_BLEED}px`;
@@ -391,6 +432,12 @@ function OpenLoupe({ children }: { children: ReactNode }) {
           clear();
           setFailed(true);
         }
+      } finally {
+        arming = false;
+        if (again && !gone) {
+          again = false;
+          rearm();
+        }
       }
     };
 
@@ -398,13 +445,33 @@ function OpenLoupe({ children }: { children: ReactNode }) {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => void arm(), REARM_DEBOUNCE_MS);
     };
+    // The slab's still shows the fixed ground as it lay under the button at
+    // the scroll it was drawn at. Once scrolling settles somewhere else with
+    // the button on screen, draw it again (a lease permitting), so the
+    // graticule under the glass lines up with the graticule around it.
+    const onScroll = () => {
+      window.clearTimeout(scrollTimer);
+      scrollTimer = window.setTimeout(() => {
+        if (!armedAt || gone) return;
+        const moved =
+          Math.abs(window.scrollY - armedAt.y) > SCROLL_DRIFT_PX ||
+          Math.abs(window.scrollX - armedAt.x) > SCROLL_DRIFT_PX;
+        const r = control.getBoundingClientRect();
+        const onScreen = r.bottom > 0 && r.top < window.innerHeight;
+        if (moved && onScreen) void arm();
+      }, SCROLL_SETTLE_MS);
+    };
     const cancelSettle = whenSettled(() => void arm());
     window.addEventListener("resize", rearm);
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       gone = true;
+      ctl.abort();
       cancelSettle();
       window.clearTimeout(timer);
+      window.clearTimeout(scrollTimer);
       window.removeEventListener("resize", rearm);
+      window.removeEventListener("scroll", onScroll);
       clear();
     };
   }, [failed]);

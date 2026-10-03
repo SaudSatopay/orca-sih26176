@@ -29,7 +29,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-## React Bits — `reactbits/`
+## React Bits — `reactbits/`, and the effect modules in `src/effects/` named after React Bits components (`SplashInk.tsx` and the night-band and showcase effects)
 
 https://reactbits.dev · https://github.com/DavidHDev/react-bits
 
