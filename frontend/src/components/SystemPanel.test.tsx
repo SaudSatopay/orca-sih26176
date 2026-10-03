@@ -66,6 +66,39 @@ function mediaWindow(on: string[]) {
   };
 }
 
+describe("the live feed pushes in", () => {
+  it("logs the previous reading at the top of the table and marks it newest for a moment", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await openPanel("DEMO");
+      await screen.findByText("28.3 °C");
+      await vi.advanceTimersByTimeAsync(7000);
+      const table = await screen.findByRole("table");
+      const body = table.querySelectorAll("tbody > tr");
+      expect(body).toHaveLength(1);
+      expect(body[0]).toHaveAttribute("data-newest");
+      // the mark is a moment, not a state
+      await vi.advanceTimersByTimeAsync(2500);
+      expect(table.querySelector("tbody > tr")).not.toHaveAttribute("data-newest");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("takes nothing in while the feed is held", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      await openPanel("DEMO");
+      await screen.findByText("28.3 °C");
+      fireEvent.click(screen.getByRole("button", { name: "Hold" }));
+      await vi.advanceTimersByTimeAsync(14000);
+      expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe("the engine room runs (beams between the pipeline's nodes)", () => {
   it("at desktop width every gap in the pipeline carries a beam, not the old travelling dots", async () => {
     const restore = mediaWindow(["min-width: 1024px"]);

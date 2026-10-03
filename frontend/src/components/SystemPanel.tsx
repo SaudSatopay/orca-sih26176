@@ -11,6 +11,7 @@ import { measurement } from "../format";
 import { fill } from "./todayModel";
 import { useMediaQuery } from "../layout";
 import { BeamGap } from "../ui/console/BeamGap";
+import { AnimatedList } from "../ui/unlumen/animated-list";
 import "./views.css";
 
 /**
@@ -38,6 +39,10 @@ type FeedRow = {
 };
 
 const POLL_MS = 7000;
+/** How long the reading that has just entered the log stays marked. */
+const NEWEST_MS = 1800;
+
+const rowKey = (r: FeedRow) => `${r.port}-${r.at}`;
 
 function fmt(m?: api.Measurement | null): string {
   // The one format for every quantity: "deg C" prints as "°C" (S5, X5).
@@ -68,6 +73,9 @@ export default function SystemPanel({
   // Seconds until the next try, shown while the feed is not answering.
   const [retryIn, setRetryIn] = useState(POLL_MS / 1000);
   const portIdx = useRef(0);
+  const shownRef = useRef<FeedRow | null>(null);
+  // The reading that has just entered the log: washed in teal for a moment.
+  const [newestKey, setNewestKey] = useState<string | null>(null);
   // The pipeline's beams run at desktop width, where the flow is a row; the
   // stacked flow below it keeps its drop lines.
   const wide = useMediaQuery("(min-width: 1024px)");
@@ -95,7 +103,11 @@ export default function SystemPanel({
           vis: fmt(f.weather.measurements?.visibility),
           at: new Date().toLocaleTimeString("en-IN", { hour12: false }),
         };
+        // The reading on show steps down into the log, marked as its newest.
+        const previous = shownRef.current;
+        shownRef.current = row;
         setRows((r) => [row, ...r].slice(0, 6));
+        if (previous) setNewestKey(rowKey(previous));
         setTick((n) => n + 1);
         setScanning(true);
       } catch {
@@ -124,6 +136,12 @@ export default function SystemPanel({
   }, [scanning]);
 
   const latest = rows[0];
+  // The mark on the reading that has just entered the log lasts a moment.
+  useEffect(() => {
+    if (!newestKey) return;
+    const id = window.setTimeout(() => setNewestKey(null), NEWEST_MS);
+    return () => window.clearTimeout(id);
+  }, [newestKey]);
   const sourceName = (id: string) => (id === "OPEN_METEO" ? "Open-Meteo" : t.demoStore);
 
   // Provider status follows the data edition (S1): in DEMO the live providers
@@ -447,13 +465,21 @@ export default function SystemPanel({
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {rows.slice(1).map((r, i) => (
-                  <tr
-                    key={`${r.port}-${r.at}`}
-                    className={`border-b last:border-0 ${i === 0 ? "v-row-enter bg-chart-100/40" : ""}`}
-                    style={{ borderColor: "var(--rule-faint)" }}
-                  >
+              {/* each reading pushes in at the top on a short spring and the
+                  log makes room; the newest is washed in teal for a moment */}
+              <AnimatedList
+                as="tbody"
+                items={rows.slice(1)}
+                itemKey={rowKey}
+                itemProps={(r) => ({
+                  className: `border-b transition-colors duration-700 last:border-0 ${
+                    rowKey(r) === newestKey ? "bg-chart-100/70" : ""
+                  }`,
+                  style: { borderColor: "var(--rule-faint)" },
+                  "data-newest": rowKey(r) === newestKey ? "" : undefined,
+                })}
+                renderItem={(r) => (
+                  <>
                     <th scope="row" className="py-2 pl-4 pr-3 text-left font-sans font-bold text-ink-900">
                       {r.port}
                     </th>
@@ -472,9 +498,9 @@ export default function SystemPanel({
                     </td>
                     <td className="px-3 py-2 tabular-nums text-ink-700">{r.latency} ms</td>
                     <td className="px-3 py-2 tabular-nums text-ink-700">{r.at}</td>
-                  </tr>
-                ))}
-              </tbody>
+                  </>
+                )}
+              />
             </table>
           </div>
         )}
