@@ -11,7 +11,7 @@ export function SonarDial({ size = 76 }: { size?: number }) {
   const c = size / 2;
   return (
     <div className="relative shrink-0" style={{ width: size, height: size }} aria-hidden data-sonar>
-      <Ripple mainCircleSize={size} step={34} numCircles={4} mainCircleOpacity={0.3} style={{ inset: -size }} />
+      <Ripple mainCircleSize={size} step={28} numCircles={4} mainCircleOpacity={0.6} style={{ inset: -size * 1.1 }} />
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="relative">
         <circle cx={c} cy={c} r={c - 8} fill="none" stroke={ink[300]} strokeWidth="5" strokeDasharray="3 5" />
         <circle cx={c} cy={c} r={c - 1.5} fill="none" stroke={ink[300]} strokeWidth="0.8" />
