@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, lazy, useEffect, useRef, useState } from "react";
 import * as api from "../api";
 import type { Language } from "../types";
 import { CourseArrow, FishGlyph, LockGlyph, WarnGlyph } from "./glyphs";
@@ -13,6 +13,10 @@ import { useMediaQuery } from "../layout";
 import { BeamGap } from "../ui/console/BeamGap";
 import { AnimatedList } from "../ui/unlumen/animated-list";
 import { GlowingBadge } from "../ui/unlumen/glowing-badge";
+import { GlSlot } from "../ui/console/GlSlot";
+
+/** The contour band's chunk (and ogl) is fetched only where GlSlot allows it. */
+const Topography = lazy(() => import("../ui/reactbits/topography"));
 import "./views.css";
 
 /**
@@ -170,11 +174,16 @@ export default function SystemPanel({
           <span className="label">{t.engineRoom}</span>
           <span className="font-mono text-label text-chart-700">{t.configNote}</span>
         </div>
-        <div className="px-5 py-4">
-          <h2 className="font-display text-headline font-bold leading-snug text-ink-900 [text-wrap:balance]">
+        <div className="relative px-5 py-4">
+          {/* a living bathymetric chart under the title: depth contours in
+              chart teal drifting on the paper, desktop only (GlSlot) */}
+          <GlSlot className="pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_right,transparent_22%,black_68%)]">
+            <Topography />
+          </GlSlot>
+          <h2 className="relative font-display text-headline font-bold leading-snug text-ink-900 [text-wrap:balance]">
             {t.title}
           </h2>
-          <p className="mt-1.5 max-w-[62ch] text-body leading-relaxed text-ink-700">{t.intro}</p>
+          <p className="relative mt-1.5 max-w-[62ch] text-body leading-relaxed text-ink-700">{t.intro}</p>
         </div>
       </section>
 
