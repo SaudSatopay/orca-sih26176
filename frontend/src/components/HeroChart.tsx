@@ -8,6 +8,8 @@ import { LABEL as AGENT } from "../i18n/agentTrace";
 import { COURSE_MS, END, heroStage, type HeroStage } from "./heroSequence";
 import GlassLoupe from "../effects/GlassLoupe";
 import { readEffectEnv } from "../effects/gate";
+import { BorderBeam } from "../ui/magicui/border-beam";
+import { chart } from "../tokens";
 import "./hero.css";
 
 /**
@@ -809,6 +811,16 @@ export default function HeroChart({
         seaOn={seaOn}
         still={!started}
       />
+
+      {/* The sheet is being read: a slow teal light laps its neatline (Magic
+          UI's Border Beam, kit — a rotating conic sweep behind a mask cut to
+          the border ring, transform only). Its own layer, over the sheet and
+          under nothing that can be clicked; the glass loupe paints its lens
+          from the sheet's paper, so the light never enters it. Not drawn
+          under reduced motion. */}
+      <div aria-hidden className="hero-beam pointer-events-none absolute inset-0 z-[3] rounded-[3px]">
+        <BorderBeam duration={10} arc={96} borderWidth={3} colorFrom={chart[600]} colorTo={chart[300]} />
+      </div>
 
       <figcaption
         className="relative z-[2] flex items-center border-t px-5 py-2.5"

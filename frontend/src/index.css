@@ -1094,3 +1094,13 @@ html {
     animation: none !important;
   }
 }
+
+/* ---- u1 landing ----
+   The landing's borrowed pieces (src/ui), set in the chart's language. The
+   loops here are the kit's own classes, already registered with the ambient
+   watcher; this block only shapes them.
+
+   The coast ticker's run fades out at both ends, like tape under a ruler. */
+.coast-ticker-run {
+  mask-image: linear-gradient(90deg, transparent, black 3%, black 97%, transparent);
+}
