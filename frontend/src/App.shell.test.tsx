@@ -137,7 +137,8 @@ describe("the Ask sheet's states", () => {
     ask("Can I go at 6 AM?");
     await tick();
     expect(screen.getByText("Can I go at 6 AM?")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "The crew is reading the sea" })).toBeInTheDocument();
+    // the crew panel is its own chunk (prefetched at idle in the app); wait for it
+    expect(await screen.findByRole("heading", { name: "The crew is reading the sea" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: UI.en.pendingTitle })).not.toBeInTheDocument();
 
     await act(async () => {

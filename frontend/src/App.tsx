@@ -1,12 +1,17 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import * as api from "./api";
 import { locationAlreadyAllowed } from "./locate";
 import { useAmbientMotion } from "./ambient";
-import AgentTracePanel from "./components/AgentTrace";
-import AuthorityPanel from "./components/AuthorityPanel";
 import ChatPanel from "./components/ChatPanel";
 import ConditionsStrip from "./components/ConditionsStrip";
-import CrewWorking from "./components/CrewWorking";
 import ErrorBoundary from "./components/ErrorBoundary";
 import EvidenceLedger from "./components/EvidenceLedger";
 import FishingPanel from "./components/FishingPanel";
@@ -22,12 +27,13 @@ import {
 import { NoEntryGlyph } from "./components/viewGlyphs";
 import GuidedTour from "./components/GuidedTour";
 import Landing from "./components/Landing";
-import LocationPicker, { type PickedLocation } from "./components/LocationPicker";
+import LocationPicker, {
+  type PickedLocation,
+} from "./components/LocationPicker";
 import MarineMap from "./components/MarineMap";
 import PFZList from "./components/PFZList";
 import RiskCard from "./components/RiskCard";
 import ScenarioDeck from "./components/ScenarioDeck";
-import SystemPanel from "./components/SystemPanel";
 import RiskTimeline from "./components/RiskTimeline";
 import { useDocumentMeta } from "./documentMeta";
 import type {
@@ -59,6 +65,33 @@ import { SPEECH_LOCALE } from "./speech";
 import { initialLanguage, readBootParams } from "./boot";
 import { ink, risk } from "./tokens";
 import { GlowingBadge } from "./ui/unlumen/glowing-badge";
+import { SonarDial } from "./ui/console/SonarDial";
+
+// The sheets that carry the motion library load as their own chunks, so the
+// App chunk (which also carries the landing) stays light. They are fetched
+// once the page goes idle, so a press on their tab finds them ready.
+const loadAuthority = () => import("./components/AuthorityPanel");
+const loadSystem = () => import("./components/SystemPanel");
+const loadCrew = () => import("./components/CrewWorking");
+const loadTrace = () => import("./components/AgentTrace");
+const AuthorityPanel = lazy(loadAuthority);
+const SystemPanel = lazy(loadSystem);
+const CrewWorking = lazy(loadCrew);
+const AgentTracePanel = lazy(loadTrace);
+
+function prefetchSheets() {
+  const go = () => {
+    void loadCrew().catch(() => {});
+    void loadTrace().catch(() => {});
+    void loadAuthority().catch(() => {});
+    void loadSystem().catch(() => {});
+  };
+  const w = window as Window & {
+    requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+  };
+  if (w.requestIdleCallback) w.requestIdleCallback(go, { timeout: 4000 });
+  else window.setTimeout(go, 2500);
+}
 
 const SESSION = "demo";
 const RADIUS_KM = 100;
@@ -94,6 +127,11 @@ const BOOT_SCENARIO = BOOT.demo
   ? SCENARIOS.find((x) => x.id === BOOT.demo || x.n === BOOT.demo)
   : undefined;
 
+/** While a sheet's chunk arrives: the drafted frame, never a blank page. */
+function SheetDraft() {
+  return <div className="panel min-h-[60vh]" aria-busy="true" />;
+}
+
 export default function App() {
   const [tab, setTab] = useState<Tab>(
     BOOT.tab ?? (BOOT_SCENARIO ? "ask" : BOOT.at ? "home" : "landing"),
@@ -128,21 +166,30 @@ export default function App() {
   // The newest outlook request failed. The reading on screen, if any, is kept
   // only when it is for this same position (see the effect below).
   const [outlookErr, setOutlookErr] = useState(false);
-  const outlookAt = useRef<{ latitude: number; longitude: number } | null>(null);
+  const outlookAt = useRef<{ latitude: number; longitude: number } | null>(
+    null,
+  );
   // Official warnings in force here, so the home chart can draw them.
   const [homeAlerts, setHomeAlerts] = useState<MarineAlert[]>([]);
   // Which request the outlook on screen answers. "Loading" and the focused
   // ground are derived from it, so a new position or language resets both
   // without an effect having to.
-  const [settled, setSettled] = useState<{ place: PickedLocation; language: Language } | null>(null);
+  const [settled, setSettled] = useState<{
+    place: PickedLocation;
+    language: Language;
+  } | null>(null);
   const loadingOutlook =
-    place != null && !(settled?.place === place && settled.language === language);
+    place != null &&
+    !(settled?.place === place && settled.language === language);
   const [focus, setFocus] = useState<{
     rank: number;
     place: PickedLocation | null;
     language: Language;
   } | null>(null);
-  const focusRank = focus && focus.place === place && focus.language === language ? focus.rank : null;
+  const focusRank =
+    focus && focus.place === place && focus.language === language
+      ? focus.rank
+      : null;
 
   // ---- guided tour ----
   const [tourOn, setTourOn] = useState(false);
@@ -157,13 +204,18 @@ export default function App() {
   // ---- the document and the sheet ----
   const ui = UI[language] ?? UI.en;
   const inConsole = tab !== "landing";
-  useDocumentMeta(language, inConsole ? (VIEW_TITLE[language] ?? VIEW_TITLE.en)[tab] : null);
+  useDocumentMeta(
+    language,
+    inConsole ? (VIEW_TITLE[language] ?? VIEW_TITLE.en)[tab] : null,
+  );
   useAmbientMotion();
 
   // The ground is a fixed layer on both surfaces (index.css, `.sheet-ground`);
   // the mark tells the body to stand down so the two never double up.
   useEffect(() => {
-    document.documentElement.dataset.surface = inConsole ? "console" : "landing";
+    document.documentElement.dataset.surface = inConsole
+      ? "console"
+      : "landing";
     return () => {
       delete document.documentElement.dataset.surface;
     };
@@ -177,7 +229,9 @@ export default function App() {
   const twoColumns = tab === "home" ? todayColumns : askColumns;
   const sheetRef = useRef<HTMLDivElement>(null);
   const sheetTop = usePageTop(sheetRef, tab);
-  const stickyHeight = twoColumns ? `calc(100dvh - ${sheetTop + GUTTER}px)` : undefined;
+  const stickyHeight = twoColumns
+    ? `calc(100dvh - ${sheetTop + GUTTER}px)`
+    : undefined;
   const mapSlotRef = useRef<HTMLDivElement>(null);
   const todayMapHeight = useFittedHeight(
     mapSlotRef,
@@ -200,7 +254,10 @@ export default function App() {
       })
       .then((d) => {
         if (!alive) return;
-        outlookAt.current = { latitude: place.latitude, longitude: place.longitude };
+        outlookAt.current = {
+          latitude: place.latitude,
+          longitude: place.longitude,
+        };
         setOutlook(d);
         setOutlookErr(false);
       })
@@ -209,7 +266,11 @@ export default function App() {
         // A reading for somewhere else must never stand in for here: the last
         // one stays on screen only if it answers this same position.
         const kept = outlookAt.current;
-        if (!kept || kept.latitude !== place.latitude || kept.longitude !== place.longitude) {
+        if (
+          !kept ||
+          kept.latitude !== place.latitude ||
+          kept.longitude !== place.longitude
+        ) {
           setOutlook(null);
         }
         setOutlookErr(true);
@@ -231,7 +292,8 @@ export default function App() {
     setUnanswered(null);
     setBusy(true);
     // A retry answers the question already on screen; it is not asked twice.
-    if (!again) setMessages((m) => [...m, { id: `${Date.now()}-u`, role: "user", text }]);
+    if (!again)
+      setMessages((m) => [...m, { id: `${Date.now()}-u`, role: "user", text }]);
     try {
       const res = await api.ask({
         message: text,
@@ -243,13 +305,20 @@ export default function App() {
       setMode(res.mode);
       setMessages((m) => [
         ...m,
-        { id: `${Date.now()}-o`, role: "orca", text: res.answer, response: res },
+        {
+          id: `${Date.now()}-o`,
+          role: "orca",
+          text: res.answer,
+          response: res,
+        },
       ]);
       // Speech needs a gesture first: a deep link that asks by itself stays
       // silent rather than lean on a browser allowance that is going away.
       if (speak && navigator.userActivation?.hasBeenActive !== false) {
         try {
-          const u = new SpeechSynthesisUtterance(res.answer.split(". ").slice(0, 2).join(". "));
+          const u = new SpeechSynthesisUtterance(
+            res.answer.split(". ").slice(0, 2).join(". "),
+          );
           u.lang = SPEECH_LOCALE[res.language] ?? SPEECH_LOCALE.en;
           u.rate = 0.98;
           window.speechSynthesis.cancel();
@@ -294,7 +363,9 @@ export default function App() {
   const wasTab = useRef(tab);
   useEffect(() => {
     if (wasTab.current !== tab && !tourOn)
-      document.querySelector<HTMLElement>("main")?.focus({ preventScroll: true });
+      document
+        .querySelector<HTMLElement>("main")
+        ?.focus({ preventScroll: true });
     wasTab.current = tab;
   }, [tab, tourOn]);
 
@@ -369,8 +440,18 @@ export default function App() {
 
   // ---------------------------------------------------------------- boot
   useEffect(() => {
-    api.zones().then((z) => setZones(z.features)).catch(() => setZones([]));
-    api.health().then((h) => setMode(h.data_mode)).catch(() => setMode("DEMO"));
+    prefetchSheets();
+  }, []);
+
+  useEffect(() => {
+    api
+      .zones()
+      .then((z) => setZones(z.features))
+      .catch(() => setZones([]));
+    api
+      .health()
+      .then((h) => setMode(h.data_mode))
+      .catch(() => setMode("DEMO"));
 
     // The app must be useful the moment it opens: find the fisher, then load
     // safety, grounds and warnings without them touching anything.
@@ -412,7 +493,8 @@ export default function App() {
     // The timers are cleared on unmount, so StrictMode's mount-unmount-mount
     // in development fires the scenario once, not twice.
     const timers: number[] = [];
-    if (BOOT_SCENARIO) timers.push(window.setTimeout(() => runScenario(BOOT_SCENARIO.ask), 250));
+    if (BOOT_SCENARIO)
+      timers.push(window.setTimeout(() => runScenario(BOOT_SCENARIO.ask), 250));
     if (BOOT.tour) timers.push(window.setTimeout(() => startTour(), 500));
     return () => {
       alive = false;
@@ -453,12 +535,23 @@ export default function App() {
   // A position found by GPS or tapped on the chart is named in the reader's
   // language, at render, so switching language renames it.
   const shownPlace = useMemo(
-    () => (place ? { ...place, label: place.label || (place.source === "gps" ? ui.yourLocation : ui.selectedPoint) } : null),
+    () =>
+      place
+        ? {
+            ...place,
+            label:
+              place.label ||
+              (place.source === "gps" ? ui.yourLocation : ui.selectedPoint),
+          }
+        : null,
     [place, ui.yourLocation, ui.selectedPoint],
   );
 
   // A do-not-go day quiets the chart: buoys to paper rings, no percentages.
-  const tripOff = useMemo(() => (outlook ? tripIsOff(outlook) : false), [outlook]);
+  const tripOff = useMemo(
+    () => (outlook ? tripIsOff(outlook) : false),
+    [outlook],
+  );
 
   // Stable identity: the chart's redraw effect depends on `origin`, so this
   // object may only change when a reading it shows changes — never because
@@ -496,16 +589,23 @@ export default function App() {
     );
   }
 
-  const cell = "flex flex-1 flex-col justify-center border-l px-5 py-3 xl:flex-none";
+  const cell =
+    "flex flex-1 flex-col justify-center border-l px-5 py-3 xl:flex-none";
   const cellRule = { borderColor: "var(--rule-faint)" };
   const readings = [
     {
       k: ui.safety,
       v: outlook ? `${outlook.safety.score}` : "—",
-      s: outlook ? (bands[outlook.safety.category] ?? outlook.safety.category) : "",
+      s: outlook
+        ? (bands[outlook.safety.category] ?? outlook.safety.category)
+        : "",
       color: outlook ? RISK_INK[outlook.safety.category] : undefined,
     },
-    { k: ui.waves, v: outlook ? `${outlook.safety.wave_height_m ?? "—"}` : "—", s: "m" },
+    {
+      k: ui.waves,
+      v: outlook ? `${outlook.safety.wave_height_m ?? "—"}` : "—",
+      s: "m",
+    },
     {
       k: ui.wind,
       v: outlook ? `${Math.round(outlook.safety.wind_speed_kmh ?? 0)}` : "—",
@@ -540,7 +640,14 @@ export default function App() {
           <a
             href={urlFor("landing").search || "/"}
             onClick={(e) => {
-              if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+              if (
+                e.metaKey ||
+                e.ctrlKey ||
+                e.shiftKey ||
+                e.altKey ||
+                e.button !== 0
+              )
+                return;
               e.preventDefault();
               go("landing");
             }}
@@ -568,9 +675,14 @@ export default function App() {
             className="flex min-w-0 basis-full items-stretch border-t md:basis-auto md:border-t-0"
             style={cellRule}
           >
-            <div className={`${cell} hidden border-l-0 xl:flex xl:border-l`} style={cellRule}>
+            <div
+              className={`${cell} hidden border-l-0 xl:flex xl:border-l`}
+              style={cellRule}
+            >
               <span className="label">{ui.chartNo}</span>
-              <span className="mt-1 font-mono text-body font-bold text-ink-800">SIH26176</span>
+              <span className="mt-1 font-mono text-body font-bold text-ink-800">
+                SIH26176
+              </span>
             </div>
 
             <button
@@ -588,11 +700,19 @@ export default function App() {
                   tone={mode === "LIVE" ? risk.low : risk.high}
                   pulse={!switching}
                   className="!text-body !tracking-normal"
-                  textClassName={mode === "LIVE" ? "text-risk-low" : "text-risk-high"}
+                  textClassName={
+                    mode === "LIVE" ? "text-risk-low" : "text-risk-high"
+                  }
                 >
                   {switching ? ui.modeSwitching : modeLabel}
                 </GlowingBadge>
-                <svg width="14" height="12" viewBox="0 0 14 12" className="text-ink-400" aria-hidden>
+                <svg
+                  width="14"
+                  height="12"
+                  viewBox="0 0 14 12"
+                  className="text-ink-400"
+                  aria-hidden
+                >
                   <path
                     d="M1 3.5 H12 M9.5 1 L12 3.5 L9.5 6 M13 8.5 H2 M4.5 6 L2 8.5 L4.5 11"
                     fill="none"
@@ -615,13 +735,22 @@ export default function App() {
             >
               <span className="label">{ui.voice}</span>
               <span className="mt-1 flex items-center gap-1.5 font-mono text-body font-bold uppercase text-ink-800">
-                {speak ? <SpeakerGlyph /> : <SpeakerOffGlyph className="text-ink-400" />}
+                {speak ? (
+                  <SpeakerGlyph />
+                ) : (
+                  <SpeakerOffGlyph className="text-ink-400" />
+                )}
                 {speak ? ui.voiceOn : ui.voiceOff}
               </span>
               <span className="sr-only">. {ui.voiceHint}</span>
             </button>
 
-            <div className={`${cell} !px-4`} style={cellRule} role="group" aria-label={ui.lang}>
+            <div
+              className={`${cell} !px-4`}
+              style={cellRule}
+              role="group"
+              aria-label={ui.lang}
+            >
               <span className="label" aria-hidden>
                 {ui.lang}
               </span>
@@ -638,7 +767,11 @@ export default function App() {
                         ? "border-ink-900 bg-ink-900 text-paper-50"
                         : "text-ink-500 hover:bg-paper-150 hover:text-ink-900"
                     }`}
-                    style={language === l ? undefined : { borderColor: "var(--rule)" }}
+                    style={
+                      language === l
+                        ? undefined
+                        : { borderColor: "var(--rule)" }
+                    }
                   >
                     <span aria-hidden>{LANG_SHORT[l]}</span>
                     <span className="sr-only">{LANG_NAME[l]}</span>
@@ -647,7 +780,10 @@ export default function App() {
               </span>
             </div>
 
-            <div className="flex items-center border-l px-4 py-3" style={cellRule}>
+            <div
+              className="flex items-center border-l px-4 py-3"
+              style={cellRule}
+            >
               <button
                 onClick={() => (tourOn ? setTourOn(false) : startTour())}
                 className="btn-ink whitespace-nowrap"
@@ -673,7 +809,14 @@ export default function App() {
               key={x}
               href={urlFor(x).search}
               onClick={(e) => {
-                if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                if (
+                  e.metaKey ||
+                  e.ctrlKey ||
+                  e.shiftKey ||
+                  e.altKey ||
+                  e.button !== 0
+                )
+                  return;
                 e.preventDefault();
                 go(x);
               }}
@@ -712,7 +855,9 @@ export default function App() {
         tabIndex={-1}
         className="flex min-h-0 flex-1 animate-rise flex-col gap-4"
       >
-        <h1 className="sr-only">{(VIEW_TITLE[language] ?? VIEW_TITLE.en)[tab]}</h1>
+        <h1 className="sr-only">
+          {(VIEW_TITLE[language] ?? VIEW_TITLE.en)[tab]}
+        </h1>
 
         {/* ================= TODAY : location + today's plan ================= */}
         {tab === "home" && (
@@ -729,7 +874,11 @@ export default function App() {
                 className="flex min-w-0 flex-col gap-4 min-[1100px]:sticky min-[1100px]:top-4 min-[1100px]:min-h-[min(calc(100dvh-2rem),640px)]"
                 style={{ height: stickyHeight }}
               >
-                <LocationPicker current={shownPlace} language={language} onPick={setPlace} />
+                <LocationPicker
+                  current={shownPlace}
+                  language={language}
+                  onPick={setPlace}
+                />
 
                 <dl
                   className="panel grid shrink-0 grid-cols-2 sm:grid-cols-4"
@@ -841,10 +990,16 @@ export default function App() {
                     chart below never jumps while they hand over. */}
                 <div
                   data-area="verdict"
-                  data-settled={messages.length > 0 || busy || latest ? "" : undefined}
+                  data-settled={
+                    messages.length > 0 || busy || latest ? "" : undefined
+                  }
                   className="min-w-0 space-y-4"
                 >
-                  {busy && <CrewWorking language={language} />}
+                  {busy && (
+                    <Suspense fallback={null}>
+                      <CrewWorking language={language} />
+                    </Suspense>
+                  )}
 
                   {!busy && latest?.risk && (
                     <RiskCard
@@ -862,18 +1017,7 @@ export default function App() {
                       className="panel-tint flex items-center gap-5 border-dashed p-5"
                       style={{ borderColor: "var(--rule-strong)" }}
                     >
-                      <svg width="76" height="76" viewBox="0 0 76 76" className="shrink-0" aria-hidden>
-                        <circle
-                          cx="38"
-                          cy="38"
-                          r="30"
-                          fill="none"
-                          stroke={ink[300]}
-                          strokeWidth="5"
-                          strokeDasharray="3 5"
-                        />
-                        <circle cx="38" cy="38" r="36.5" fill="none" stroke={ink[300]} strokeWidth="0.8" />
-                      </svg>
+                      <SonarDial />
                       <div className="min-w-0">
                         <h2 className="font-display text-lead font-bold leading-snug text-ink-900">
                           {ui.pendingTitle}
@@ -899,7 +1043,11 @@ export default function App() {
                 </ErrorBoundary>
 
                 {latest && (
-                  <ConditionsStrip res={latest} language={language} answerLang={latest.language} />
+                  <ConditionsStrip
+                    res={latest}
+                    language={language}
+                    answerLang={latest.language}
+                  />
                 )}
 
                 {latest && latest.alerts.length > 0 && (
@@ -909,16 +1057,23 @@ export default function App() {
                         <WarnGlyph size={13} /> {ui.warnings}
                       </h2>
                     </div>
-                    <div className="space-y-3 px-4 py-3.5" lang={latest.language}>
+                    <div
+                      className="space-y-3 px-4 py-3.5"
+                      lang={latest.language}
+                    >
                       {latest.alerts.map((a, i) => (
                         <div key={i} className="max-w-[78ch]">
                           <h3 className="font-display text-lead font-bold leading-snug text-risk-extreme">
                             {a.headline}
                           </h3>
-                          <p className="mt-1 text-body leading-relaxed text-ink-700">{a.detail}</p>
+                          <p className="mt-1 text-body leading-relaxed text-ink-700">
+                            {a.detail}
+                          </p>
                           <p className="mt-1 font-mono text-label uppercase tracking-wide text-ink-500">
                             {a.source} · {a.severity}
-                            {a.valid_till ? ` · ${ui.validTill} ${a.valid_till}` : ""}
+                            {a.valid_till
+                              ? ` · ${ui.validTill} ${a.valid_till}`
+                              : ""}
                           </p>
                         </div>
                       ))}
@@ -927,7 +1082,10 @@ export default function App() {
                 )}
 
                 {latest && (
-                  <RiskTimeline location={latest.intent.location} language={language} />
+                  <RiskTimeline
+                    location={latest.intent.location}
+                    language={language}
+                  />
                 )}
 
                 {latest && <PFZList zones={latest.pfz} language={language} />}
@@ -942,7 +1100,9 @@ export default function App() {
                         // The optimiser counts every restricted polygon a
                         // course enters; a crossing course is marked, never
                         // set as a neutral option.
-                        const crossings = Math.round(r.penalties?.restricted_zones ?? 0);
+                        const crossings = Math.round(
+                          r.penalties?.restricted_zones ?? 0,
+                        );
                         return (
                           <div
                             key={r.name}
@@ -962,7 +1122,12 @@ export default function App() {
                             <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                               <h3 className="flex items-center gap-2.5 font-display text-body font-bold text-ink-900">
                                 {/* course symbology, drawn as plotted */}
-                                <svg width="26" height="8" className="shrink-0" aria-hidden>
+                                <svg
+                                  width="26"
+                                  height="8"
+                                  className="shrink-0"
+                                  aria-hidden
+                                >
                                   <line
                                     x1="1"
                                     y1="4"
@@ -970,7 +1135,9 @@ export default function App() {
                                     y2="4"
                                     stroke={r.recommended ? risk.low : ink[400]}
                                     strokeWidth="2"
-                                    strokeDasharray={r.recommended ? "7 4" : "2 4"}
+                                    strokeDasharray={
+                                      r.recommended ? "7 4" : "2 4"
+                                    }
                                   />
                                 </svg>
                                 <span lang={latest.language}>{r.name}</span>
@@ -983,15 +1150,22 @@ export default function App() {
                                 )}
                                 {crossings > 0 && (
                                   <span className="flex items-center gap-1.5 font-mono text-label font-bold uppercase tracking-[0.08em] text-risk-extreme">
-                                    <NoEntryGlyph size={13} className="shrink-0" />
+                                    <NoEntryGlyph
+                                      size={13}
+                                      className="shrink-0"
+                                    />
                                     {crossings === 1
                                       ? ui.crossesOne
-                                      : ui.crossesMany.replace("{n}", String(crossings))}
+                                      : ui.crossesMany.replace(
+                                          "{n}",
+                                          String(crossings),
+                                        )}
                                   </span>
                                 )}
                               </h3>
                               <span className="shrink-0 font-mono text-label tabular-nums text-ink-500">
-                                {r.distance_km} km · {Math.round(r.eta_minutes)} min
+                                {r.distance_km} km · {Math.round(r.eta_minutes)}{" "}
+                                min
                               </span>
                             </div>
                             <p
@@ -1016,12 +1190,14 @@ export default function App() {
                 )}
 
                 {latest && (
-                  <AgentTracePanel
-                    trace={latest.trace}
-                    elapsed={latest.elapsed_ms}
-                    language={language}
-                    answerLang={latest.language}
-                  />
+                  <Suspense fallback={null}>
+                    <AgentTracePanel
+                      trace={latest.trace}
+                      elapsed={latest.elapsed_ms}
+                      language={language}
+                      answerLang={latest.language}
+                    />
+                  </Suspense>
                 )}
 
                 {latest && (
@@ -1039,13 +1215,17 @@ export default function App() {
 
         {tab === "authority" && (
           <ErrorBoundary language={language}>
-            <AuthorityPanel language={language} />
+            <Suspense fallback={<SheetDraft />}>
+              <AuthorityPanel language={language} />
+            </Suspense>
           </ErrorBoundary>
         )}
 
         {tab === "system" && (
           <ErrorBoundary language={language}>
-            <SystemPanel mode={mode} language={language} />
+            <Suspense fallback={<SheetDraft />}>
+              <SystemPanel mode={mode} language={language} />
+            </Suspense>
           </ErrorBoundary>
         )}
       </main>

@@ -82,10 +82,8 @@ export default function RiskCard({
   return (
     <section className="verdict panel rule-double overflow-hidden" aria-labelledby="verdict-words">
       {beaming && (
-        // The kit's ring clips its own children at the padding edge, which is
-        // exactly where the light should show; the host lets it paint into
-        // the border ring (the mask still keeps it there).
-        <div className="pointer-events-none absolute inset-0 z-[2] rounded-[inherit] [&>div]:!overflow-visible">
+        // two laps of light round the fresh verdict, above its contents
+        <div className="pointer-events-none absolute inset-0 z-[2] rounded-[inherit]">
           <BorderBeam duration={BEAM_LAP_S} arc={90} borderWidth={3} />
         </div>
       )}
