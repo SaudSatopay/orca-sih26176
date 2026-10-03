@@ -130,6 +130,14 @@ describe("provider status follows the data edition (S1)", () => {
     expect(screen.queryByText("Standby")).not.toBeInTheDocument();
   });
 
+  it("the provider in use glows and pings; the ones standing by keep still", async () => {
+    await openPanel("DEMO");
+    const inUse = screen.getByText("In use");
+    expect(inUse.closest("[data-pulse]")).not.toBeNull();
+    for (const standby of await screen.findAllByText("Standby · verified"))
+      expect(standby.closest("[data-pulse]")).toBeNull();
+  });
+
   it("in LIVE the open providers are in use and the demo store stands by", async () => {
     await openPanel("LIVE");
     expect(await screen.findAllByText("In use")).toHaveLength(2);

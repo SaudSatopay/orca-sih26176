@@ -12,6 +12,7 @@ import { fill } from "./todayModel";
 import { useMediaQuery } from "../layout";
 import { BeamGap } from "../ui/console/BeamGap";
 import { AnimatedList } from "../ui/unlumen/animated-list";
+import { GlowingBadge } from "../ui/unlumen/glowing-badge";
 import "./views.css";
 
 /**
@@ -199,12 +200,12 @@ export default function SystemPanel({
                   {p.name}
                 </h4>
               </div>
-              {/* the dot and the rule carry the status colour; the words stay in ink */}
-              <div
-                className="mt-2 inline-block border px-1.5 py-px font-mono text-label font-bold uppercase tracking-[0.12em] text-ink-800"
-                style={{ borderColor: p.color }}
-              >
-                {p.status}
+              {/* the dot, the rule and the glow carry the status colour; the
+                  words stay in ink. The provider in use pings. */}
+              <div className="mt-2">
+                <GlowingBadge tone={p.color} pulse={p.live}>
+                  {p.status}
+                </GlowingBadge>
               </div>
               <p className="mt-2 text-label leading-relaxed text-ink-700">{p.gives}</p>
               <p className="mt-1 text-label italic leading-snug text-ink-500">{p.note}</p>
