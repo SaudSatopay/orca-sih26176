@@ -57,7 +57,7 @@ Coast Guard instructions — and it says so, on every screen.
 | The front door | Today — the fisher's plan |
 |:---:|:---:|
 | ![Landing page](docs/landing.png) | ![Today view](docs/today.png) |
-| *Live coastline stats, the plotted-course hero, three ways in* | *Ranked grounds with chance-of-fish, likely species, factor analytics, trip plan* |
+| *The whole coast's risk at a glance, a fisher's question answered live by the crew, three ways in* | *Safe to go from Goa: ranked grounds with chance-of-fish, likely species, factor bars, when to leave and be back* |
 
 | Ask ORCA — Marathi in, Marathi out | Authority — the district view |
 |:---:|:---:|
