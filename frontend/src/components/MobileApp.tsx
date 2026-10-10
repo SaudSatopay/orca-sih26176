@@ -1326,13 +1326,16 @@ export default function MobileApp() {
               {/* a day with no trip in it says so, in the place the plan would be */}
               {tripOff && (
                 <div className="panel-tint hatch-danger px-3.5 py-3" role="note">
+                  {/* the safety gate's day off is about missing data, not the sea */}
                   <div className="font-display text-title font-bold leading-tight text-ink-900">
-                    {t.noTrip}
+                    {gateWithholds(outlook.decision) ? t.noTripData : t.noTrip}
                   </div>
                   <p className="mt-1 text-lead leading-snug text-ink-700">
-                    {outlook.safety.improves_after
-                      ? fill(t.noTripUntil, { t: outlook.safety.improves_after })
-                      : t.noTripBody}
+                    {gateWithholds(outlook.decision)
+                      ? t.noTripDataBody
+                      : outlook.safety.improves_after
+                        ? fill(t.noTripUntil, { t: outlook.safety.improves_after })
+                        : t.noTripBody}
                   </p>
                 </div>
               )}

@@ -154,6 +154,9 @@ describe("the phone's Today tab", () => {
     expect(screen.queryByText("Go with care")).not.toBeInTheDocument();
     expect(screen.queryByText("/ 100")).not.toBeInTheDocument();
     expect(screen.getByText(/does not have enough reliable sea data/)).toBeInTheDocument();
+    // the day off says why: missing data, not a rough sea
+    expect(screen.getByText("ORCA cannot clear a trip today")).toBeInTheDocument();
+    expect(screen.queryByText("No safe time to fish today")).not.toBeInTheDocument();
   });
 
   it("labels a return time after midnight in the fisher's terms", async () => {

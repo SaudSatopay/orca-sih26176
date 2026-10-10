@@ -52,6 +52,26 @@ Coast Guard instructions — and it says so, on every screen.
 
 ---
 
+## Know when NOT to decide: the safety gate
+
+ORCA already knew when the sea was dangerous. Now it also knows when its own
+evidence is too old or missing to say "go". Every input of the decision carries
+its source, age and freshness limit; a deterministic gate after the risk engine
+answers **GO**, **CAUTION** (stale data, degraded confidence), **INSUFFICIENT
+DATA** (no score, follow the official advisory) or **NO-GO** — and no data
+problem can ever lower an official-warning floor.
+
+| Stale wave forecast: CAUTION | Marine feed down: INSUFFICIENT DATA |
+|---|---|
+| ![Stale](docs/safety-gate/ask-stale.webp) | ![Unavailable](docs/safety-gate/ask-unavailable.webp) |
+
+Try it: `/?tab=ask&demo=safe`, then the **Data drill** chips (Healthy · Stale ·
+Unavailable · Recovery), or `python -m pytest backend/tests/test_safety_gate.py -v`.
+The whole design, the four scenarios and the test output:
+**[docs/SAFETY-GATE.md](docs/SAFETY-GATE.md)**.
+
+---
+
 ## Screenshots
 
 | The front door | Today — the fisher's plan |

@@ -22,6 +22,9 @@ const en = {
   noTrip: "No safe time to fish today",
   noTripBody: "Stay ashore and keep the boat tied. The fishing grounds will show again when the sea allows.",
   noTripUntil: "The sea may ease after {t}. Ask again then.",
+  noTripData: "ORCA cannot clear a trip today",
+  noTripDataBody:
+    "A sea reading is missing. Follow the official advisory; the fishing grounds will show again when the data is back.",
   bestTime: "Best time",
   returnBy: "Be back by",
   dayToday: "today",
@@ -98,6 +101,9 @@ export const T: Record<Language, MobileStrings> = {
     noTrip: "आज मछली पकड़ने का कोई सुरक्षित समय नहीं",
     noTripBody: "किनारे पर रहें और नाव बाँधकर रखें। समुद्र शांत होने पर मछली के इलाक़े फिर दिखेंगे।",
     noTripUntil: "{t} बजे के बाद समुद्र शांत हो सकता है। तब दोबारा पूछें।",
+    noTripData: "आज ORCA यात्रा की मंज़ूरी नहीं दे सकता",
+    noTripDataBody:
+      "समुद्र की एक रीडिंग उपलब्ध नहीं है। आधिकारिक सलाह का पालन करें; आँकड़े लौटने पर मछली के इलाक़े फिर दिखेंगे।",
     bestTime: "सबसे अच्छा समय",
     returnBy: "इससे पहले लौटें",
     dayToday: "आज",
@@ -169,6 +175,9 @@ export const T: Record<Language, MobileStrings> = {
     noTrip: "आज मासेमारीसाठी सुरक्षित वेळ नाही",
     noTripBody: "किनाऱ्यावर थांबा आणि होडी बांधून ठेवा. समुद्र शांत झाल्यावर मासेमारीच्या जागा पुन्हा दिसतील.",
     noTripUntil: "{t} नंतर समुद्र शांत होऊ शकतो. तेव्हा पुन्हा विचारा.",
+    noTripData: "आज ORCA फेरीला परवानगी देऊ शकत नाही",
+    noTripDataBody:
+      "समुद्राची एक नोंद उपलब्ध नाही. अधिकृत सल्ला पाळा; माहिती परत आल्यावर मासेमारीच्या जागा पुन्हा दिसतील.",
     bestTime: "सर्वोत्तम वेळ",
     returnBy: "याआधी परत या",
     dayToday: "आज",
