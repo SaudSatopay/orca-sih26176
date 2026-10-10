@@ -32,7 +32,7 @@ from ..schemas import (AgentTrace, ChatRequest, ChatResponse, Evidence,
                        GeofenceAlert, Intent, Location, PFZZone, RiskAssessment,
                        RouteOption)
 from ..services import data_health, safety_gate
-from ..services.i18n import RISK_BAND, sea_state, t
+from ..services.i18n import RISK_BAND, SUGGESTIONS, sea_state, t
 from . import (cyclone_agent, explanation_agent, gis_agent, intent_agent,
                ocean_agent, pfz_agent, risk_agent, route_agent, weather_agent)
 
@@ -110,11 +110,40 @@ def _handle(req: ChatRequest) -> ChatResponse:
         longitude=req.longitude, location_name=req.location_name, previous=previous,
     )
     intent = Intent(**intent_res.data)
+    early_lang = intent.language
+
+    # ---- know when not to decide: a place or a day ORCA cannot read ------
+    beyond = intent.days_ahead is not None and intent.days_ahead >= intent_agent.HORIZON_DAYS
+    if beyond or (intent.location is None and intent.place_unknown):
+        if beyond:
+            decision = safety_gate.cannot_decide(
+                "gate_reason_horizon", "horizon", now_ist(), lang=early_lang,
+                drill=feeds.active_drill(), days=intent.days_ahead,
+                horizon=intent_agent.HORIZON_DAYS)
+        else:
+            decision = safety_gate.cannot_decide(
+                "gate_reason_place", "place", now_ist(), lang=early_lang,
+                drill=feeds.active_drill(), place=intent.place_unknown)
+        if intent.location is not None:
+            _SESSIONS[req.session_id] = intent   # the place still carries to a follow-up
+        return ChatResponse(
+            session_id=req.session_id, language=early_lang,
+            answer=" ".join([decision.headline, *decision.reasons, t("gate_advisory", early_lang)]),
+            intent=intent, trace=[_trace(intent_res, "intent", early_lang)],
+            suggestions=SUGGESTIONS.get(early_lang, SUGGESTIONS["en"]),
+            mode=get_data_mode() if get_data_mode() in ("LIVE", "DEMO") else "DEMO",  # type: ignore[arg-type]
+            disclaimer=t("disclaimer", early_lang),
+            elapsed_ms=int((time.perf_counter() - started) * 1000),
+            decision=decision,
+        )
+
     if intent.location is None:
         from ..data.geo import DEFAULT_PORT
         intent.location = Location(name=DEFAULT_PORT["name"], latitude=DEFAULT_PORT["lat"],
                                    longitude=DEFAULT_PORT["lon"], state=DEFAULT_PORT["state"])
         intent.location_text = DEFAULT_PORT["name"]
+        # Answered for the default harbour: the answer says so.
+        intent.location_assumed = True
     _SESSIONS[req.session_id] = intent
     _SESSIONS.move_to_end(req.session_id)
     while len(_SESSIONS) > MAX_SESSIONS:

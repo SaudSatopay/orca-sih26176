@@ -97,6 +97,24 @@ def decide(risk: Optional[RiskAssessment], health: Sequence[DataHealth], now: da
     )
 
 
+def cannot_decide(reason_key: str, blocking: str, now: datetime, *,
+                  lang: Language = "en", drill: str = "healthy", **words) -> SafetyDecision:
+    """INSUFFICIENT_DATA before any reading is taken: the question asks about
+    a place ORCA has no harbour for, or a day beyond the forecast it reads.
+    No risk is computed, so no number can be shown for the wrong place or day."""
+    say = lambda key, **kw: i18n.t(key, lang, **kw)  # noqa: E731
+    return SafetyDecision(
+        state="INSUFFICIENT_DATA",
+        confidence="insufficient",
+        headline=say("gate_headline_INSUFFICIENT_DATA"),
+        reasons=[say(reason_key, **words)],
+        blocking_inputs=[blocking],
+        risk_go=None,
+        drill=drill,
+        timestamp=now.isoformat(timespec="seconds"),
+    )
+
+
 def evidence_rows(decision: SafetyDecision, health: Sequence[DataHealth],
                   lang: Language = "en", mode: str = "DEMO") -> List[Evidence]:
     """The gate in the evidence ledger: its verdict, then each critical input's age.

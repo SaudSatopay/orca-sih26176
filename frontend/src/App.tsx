@@ -33,6 +33,7 @@ import LocationPicker, {
 import MarineMap from "./components/MarineMap";
 import PFZList from "./components/PFZList";
 import RiskCard from "./components/RiskCard";
+import SafetyGate from "./components/SafetyGate";
 import ScenarioDeck from "./components/ScenarioDeck";
 import DataDrillPanel from "./components/DataDrill";
 import RiskTimeline from "./components/RiskTimeline";
@@ -1086,6 +1087,20 @@ export default function App() {
                       decision={latest.decision}
                       health={latest.data_health}
                     />
+                  )}
+
+                  {/* no reading was taken (a place or a day ORCA cannot read):
+                      the evidence check stands alone, with no score to show */}
+                  {!busy && latest && !latest.risk && latest.decision && (
+                    <section className="panel overflow-hidden">
+                      <SafetyGate
+                        key={latest.decision.timestamp}
+                        decision={latest.decision}
+                        health={latest.data_health}
+                        language={language}
+                        answerLang={latest.language}
+                      />
+                    </section>
                   )}
 
                   {!latest && !busy && (

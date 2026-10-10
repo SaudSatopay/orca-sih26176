@@ -95,6 +95,86 @@ def _extract_time(text: str) -> Optional[str]:
     return None
 
 
+# The forecast ORCA reads covers today and the next two days.
+HORIZON_DAYS = 3
+
+_NUMBER_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+    "eight": 8, "nine": 9, "ten": 10,
+    "दो": 2, "तीन": 3, "चार": 4, "पाँच": 5, "पांच": 5, "छह": 6, "सात": 7, "आठ": 8, "दस": 10,
+    "दोन": 2, "पाच": 5, "सहा": 6,
+}
+_WEEKDAYS = {
+    "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3, "friday": 4,
+    "saturday": 5, "sunday": 6,
+    "सोमवार": 0, "मंगलवार": 1, "मंगळवार": 1, "बुधवार": 2, "गुरुवार": 3, "शुक्रवार": 4,
+    "शनिवार": 5, "रविवार": 6,
+}
+_NEXT_WEEK = ["next week", "अगले हफ्ते", "अगले हफ़्ते", "अगले सप्ताह", "पुढच्या आठवड्यात",
+              "पुढील आठवड्यात"]
+
+
+def _as_number(token: str) -> Optional[int]:
+    if token.isdigit():
+        return int(token)
+    return _NUMBER_WORDS.get(token)
+
+
+def days_ahead(text: str, base: datetime) -> Optional[int]:
+    """How far ahead a question asks, when it says so beyond today/tomorrow.
+
+    "in 5 days", "5 दिन बाद", "५ दिवसांनी", "next week", "on Friday". None
+    when the question names no such day (today, tomorrow and the day after
+    are handled by _extract_date).
+    """
+    t = _normalise(text)
+    for pattern in (r"\bin\s+(\w+)\s+days?\b", r"(\S+)\s+दिन\s+(?:बाद|में)",
+                    r"(\S+)\s+दिवसांनी", r"(\S+)\s+दिवसांत"):
+        m = re.search(pattern, t)
+        if m and _as_number(m.group(1)) is not None:
+            return _as_number(m.group(1))
+    if any(w in t for w in _NEXT_WEEK):
+        return 7
+    for name, wd in _WEEKDAYS.items():
+        if re.search(r"(?<![\w\u0900-\u097F])" + name, t):
+            ahead = (wd - base.weekday()) % 7
+            return ahead or 7
+    return None
+
+
+# Words that follow "near" or "from" without naming a place.
+_NOT_PLACES = {
+    "the", "a", "an", "my", "our", "your", "me", "us", "here", "there", "home", "shore",
+    "coast", "harbour", "harbor", "port", "sea", "land", "beach", "now", "today", "tomorrow",
+    "morning", "evening", "night", "noon", "am", "pm", "ist", "orca", "it", "this", "that",
+    "english", "hindi", "marathi", "gujarati", "konkani", "tamil", "telugu", "kannada",
+    "malayalam", "bengali", "odia", "monday", "tuesday", "wednesday", "thursday", "friday",
+    "saturday", "sunday", "days", "day", "week", "next",
+    "किनाऱ्या", "किनाऱ्याच्या", "किनारे", "किनारा", "समुद्रा", "समुद्र", "बंदरा", "घरा", "घर",
+    "बंदरगाह", "माझ्या", "मेरे", "हमारे",
+}
+
+
+def unknown_place(text: str) -> Optional[str]:
+    """A place the question names that matches none of ORCA's landing centres.
+
+    English: the word after near / from / off / around / outside (any case),
+    or a Capitalised word after at / in. Marathi: the word before जवळ;
+    Hindi: the word before के पास. Ordinary words ("near the coast", "at 6 AM",
+    "in Marathi") are never taken for places.
+    """
+    candidates = []
+    candidates += re.findall(r"\b(?:near|from|off|around|outside)\s+([A-Za-z][A-Za-z\-]{2,})", text)
+    candidates += re.findall(r"\b(?:at|in)\s+([A-Z][A-Za-z\-]{2,})", text)
+    candidates += re.findall(r"(?:^|\s)([\u0900-\u097F]+?)\s?जवळ", text)
+    candidates += re.findall(r"(?:^|\s)([\u0900-\u097F]+)\s+के\s+पास", text)
+    for word in candidates:
+        if word.lower() in _NOT_PLACES or find_port(word):
+            continue
+        return word
+    return None
+
+
 def _extract_date(text: str, base: datetime) -> str:
     t = _normalise(text)
     if any(w in t for w in ["day after tomorrow", "परवा", "परसों"]):
@@ -178,6 +258,10 @@ def run(message: str, *, language: Optional[Language] = None,
     missing: List[str] = []
     if location is None:
         missing.append("location")
+    # Know when not to decide: a named place ORCA has no harbour for, or a
+    # day beyond the forecast it reads, is recorded, never quietly replaced.
+    place_unknown = unknown_place(message) if location is None else None
+    ahead = days_ahead(message, now)
 
     intent = Intent(
         intent=intent_type,
@@ -190,6 +274,8 @@ def run(message: str, *, language: Optional[Language] = None,
         raw_query=message,
         needs=needs_for(intent_type),
         missing=missing,
+        place_unknown=place_unknown,
+        days_ahead=ahead,
     )
 
     return AgentResult(

@@ -100,6 +100,18 @@ otherwise               -> GO
 8. **Nothing plans a trip on a withheld verdict.** When a reading is missing, every surface drops the plan: no fishing grounds, no course, no best hours, no stay or catch figures, no next-day sea claims and no 24-hour score timeline. That covers desktop Ask and Today, the phone's Today and Ask cards, the spoken plan, the stat row and the Authority board.
 9. **LIVE mode never invents a warning, and never claims there is none.** There is no open IMD/INCOIS feed. In LIVE mode the scripted demo bulletins are never shown, because a flat sea under a fake "IMD warning" teaches a fisher to ignore the next one. The warnings input reads **"not connected — check IMD / INCOIS"** and is never "none". It is MISSING, so a LIVE answer is INSUFFICIENT DATA, unless the live sea itself already says NO-GO (waves ≥ 4 m, a gale). The scripted "improves after 11:00" is also DEMO-only.
 
+## It also knows when it does not know *where* or *when*
+
+Evidence can be missing for the place or the day as well as for a feed. Neither is ever quietly substituted.
+
+| The question | Before | Now |
+|---|---|---|
+| *"Can I go fishing near Malvan tomorrow?"* (no Malvan landing centre) | answered for Mumbai, silently | **INSUFFICIENT DATA**: *"ORCA does not know Malvan yet — it has no sea readings for it. Choose your harbour on the map."* No score is computed for the wrong place. |
+| *"…near Goa in 5 days?"*, *"next week"*, *"५ दिवसांनी"* | answered for today, silently | **INSUFFICIENT DATA**: *"ORCA can only see 3 days ahead — you asked about 5 days from now."* |
+| *"Can I go fishing tomorrow morning?"* (no place named) | Mumbai, silently | Mumbai, the default harbour, and the answer **says so**: *"No place was named — this answer is for Mumbai…"* |
+
+The checks recognise English ("near / from / off …"), Marathi ("…जवळ") and Hindi ("… के पास"). They never mistake ordinary words for places: "near the coast", "at 6 AM" and "in Marathi" are tested.
+
 ## The four deterministic drills
 
 The sea never changes between drills; only the rehearsed marine feed's health does. Switch drills from:
@@ -183,7 +195,7 @@ test_scenario_2_stale_marine_data_is_not_presented_as_fresh          PASSED
 test_scenario_3_missing_marine_data_fails_safe_and_invents_nothing   PASSED
 test_scenario_4_recovery_returns_to_normal_without_a_restart         PASSED
 test_official_warning_floors_hold_under_every_drill[... x 8]         PASSED
-93 passed (safety gate) · 272 passed (backend) · 753 passed (frontend)
+105 passed (safety gate) · 284 passed (backend) · 754 passed (frontend)
 ```
 
 Then open the app (`RUN-ORCA.bat`, or `cd backend; python -m uvicorn app.main:app --port 8000`) and try:

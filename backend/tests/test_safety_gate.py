@@ -657,3 +657,51 @@ def test_the_recommended_course_never_crosses_land(origin, dest):
     for o in options:  # a straight line over land is labelled, never offered as a course
         if route_crosses_land([(l.latitude, l.longitude) for l in o.legs]):
             assert not o.recommended and o.penalties.get("over_land") == 1.0
+
+
+# ---- know when not to decide: a place it does not know, a day it cannot see -------------
+
+@pytest.mark.parametrize("question,place", [
+    ("Can I go fishing near Malvan tomorrow?", "Malvan"),
+    ("Is it safe to go out from Mangaluru today?", "Mangaluru"),
+    ("मी उद्या मालवणजवळ मासेमारीला जाऊ शकतो का?", "मालवण"),
+])
+def test_a_place_orca_does_not_know_is_never_answered_for_mumbai(ask, question, place):
+    r = ask(question)
+    assert r.decision.state == "INSUFFICIENT_DATA"
+    assert r.decision.blocking_inputs == ["place"]
+    assert r.risk is None, "no score for a place that was never read"
+    assert place in r.answer
+    assert "Mumbai" not in r.answer and "मुंबई" not in r.answer
+
+
+@pytest.mark.parametrize("question,days", [
+    ("Is it safe to go fishing near Goa in 5 days?", 5),
+    ("Can I fish near Goa next week?", 7),
+    ("मी ५ दिवसांनी गोव्याजवळ मासेमारीला जाऊ शकतो का?", 5),
+    ("क्या मैं अगले हफ्ते गोवा के पास मछली पकड़ सकता हूँ?", 7),
+])
+def test_a_day_beyond_the_forecast_is_said_out_loud(ask, question, days):
+    r = ask(question)
+    assert r.decision.state == "INSUFFICIENT_DATA"
+    assert r.decision.blocking_inputs == ["horizon"]
+    assert r.risk is None, "today's sea is not the answer for a day it cannot see"
+    assert "3" in r.answer and str(days) in r.answer
+
+
+def test_no_place_named_is_answered_for_the_default_harbour_and_says_so(ask):
+    r = ask("Can I go fishing tomorrow morning?")
+    assert r.intent.location_text == "Mumbai"
+    assert "default harbour" in r.answer
+
+
+@pytest.mark.parametrize("question", [
+    "Is it safe to go fishing tomorrow morning near Goa?",   # a known place
+    "Can I go fishing near the coast at 6 AM tomorrow?",     # no place, ordinary words
+    "Answer in Marathi: is it safe near Goa?",               # a language, not a place
+    "Is it safe near Goa the day after tomorrow?",           # inside the 3 days
+])
+def test_ordinary_questions_are_not_mistaken_for_unknown_places_or_far_days(ask, question):
+    r = ask(question)
+    assert r.decision.blocking_inputs in ([], ["wave"]) or r.decision.state != "INSUFFICIENT_DATA"
+    assert r.risk is not None

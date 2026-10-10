@@ -15,6 +15,7 @@ import chatUnavailable from "../test/fixtures/gate-chat-unavailable.json";
 import chatStale from "../test/fixtures/gate-chat-stale.json";
 import fishingUnavailable from "../test/fixtures/gate-fishing-unavailable.json";
 import fishingStale from "../test/fixtures/gate-fishing-stale.json";
+import chatUnknownPlace from "../test/fixtures/gate-chat-unknown-place.json";
 
 vi.mock("../api");
 vi.mock("./MarineMap", () => ({ default: () => null }));
@@ -131,5 +132,20 @@ describe("the desktop console", () => {
     const api = await openConsole("?m=0&tab=ask&demo=safe");
     expect(await screen.findByText("No score — ORCA will not guess")).toBeInTheDocument();
     expect(api.riskTimeline).not.toHaveBeenCalled();
+  });
+});
+
+describe("a place ORCA does not know", () => {
+  it("the console shows the evidence check alone, with the reason and no score", async () => {
+    const api = await openConsole("?m=0&tab=ask&demo=safe");
+    api.ask.mockResolvedValue(chatUnknownPlace as unknown as ChatResponse);
+    // the boot scenario asks first; this answer is the one under test
+    const strip = await vi.waitFor(() => {
+      const el = document.querySelector('[data-gate="INSUFFICIENT_DATA"]');
+      if (!el) throw new Error("no gate strip yet");
+      return el;
+    });
+    expect(strip).toHaveTextContent(/does not know Malvan/);
+    expect(screen.queryByText(/\/ 100/)).not.toBeInTheDocument();
   });
 });

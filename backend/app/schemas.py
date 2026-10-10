@@ -59,6 +59,12 @@ class Intent(BaseModel):
     raw_query: str = ""
     needs: List[str] = Field(default_factory=list)
     missing: List[str] = Field(default_factory=list)
+    # A place the question named that ORCA has no landing centre for.
+    place_unknown: Optional[str] = None
+    # How many days ahead the question asked about, when it said so.
+    days_ahead: Optional[int] = None
+    # True when no place was named and ORCA answered for its default harbour.
+    location_assumed: bool = False
 
 
 class DataHealth(BaseModel):

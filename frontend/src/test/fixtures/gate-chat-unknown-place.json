@@ -1,0 +1,69 @@
+{
+ "session_id": "fixture-place",
+ "language": "en",
+ "answer": "Not enough reliable data to decide — follow the official advisory. ORCA does not know Malvan yet — it has no sea readings for it. Choose your harbour on the map instead of guessing a nearby one. Follow the official IMD / INCOIS advisory and Coast Guard instructions.",
+ "intent": {
+  "intent": "fishing_safety",
+  "activity": "fishing",
+  "location": null,
+  "location_text": "",
+  "date": "2026-10-11",
+  "time": "13:00",
+  "language": "en",
+  "raw_query": "Can I go fishing near Malvan tomorrow?",
+  "needs": [
+   "weather",
+   "ocean",
+   "cyclone",
+   "gis",
+   "risk"
+  ],
+  "missing": [
+   "location"
+  ],
+  "place_unknown": "Malvan",
+  "days_ahead": null,
+  "location_assumed": false
+ },
+ "risk": null,
+ "pfz": [],
+ "routes": [],
+ "geofence": [],
+ "alerts": [],
+ "evidence": [],
+ "trace": [
+  {
+   "agent": "intent",
+   "status": "ok",
+   "latency_ms": 1,
+   "summary": "fishing_safety @ unknown 13:00",
+   "source": "ORCA",
+   "mode": "DEMO"
+  }
+ ],
+ "suggestions": [
+  "What about 12 PM?",
+  "Show nearby fishing zones",
+  "Give me the safest route",
+  "Is there a cyclone nearby?"
+ ],
+ "mode": "DEMO",
+ "disclaimer": "ORCA is a decision-support tool. It does not replace official marine advisories or Coast Guard instructions.",
+ "elapsed_ms": 1,
+ "decision": {
+  "state": "INSUFFICIENT_DATA",
+  "confidence": "insufficient",
+  "headline": "Not enough reliable data to decide — follow the official advisory.",
+  "reasons": [
+   "ORCA does not know Malvan yet — it has no sea readings for it. Choose your harbour on the map instead of guessing a nearby one."
+  ],
+  "blocking_inputs": [
+   "place"
+  ],
+  "stale_inputs": [],
+  "risk_go": null,
+  "drill": "healthy",
+  "timestamp": "2026-10-10T13:47:26+05:30"
+ },
+ "data_health": []
+}

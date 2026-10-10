@@ -14,8 +14,8 @@ from ..schemas import (AgentResult, DataHealth, Evidence, Language, Location, PF
                        RiskAssessment, RouteOption, SafetyDecision)
 from ..services import safety_gate
 from ..services.i18n import (SEA_STATE_L10N, SUGGESTIONS, direction, format_stamp,
-                             humanise_duration, sea_state, source_label, t, verdict_key,
-                             zone_name)
+                             humanise_duration, port_label, sea_state, source_label, t,
+                             verdict_key, zone_name)
 from .base import timed
 
 # Localised names for the risk factors (rendering concern, kept next to the renderer)
@@ -192,6 +192,11 @@ def run(*, intent, risk: Optional[RiskAssessment], pfz: List[PFZZone],
         key = "geofence_inside" if alert.inside else "geofence_warn"
         parts.append(t(key, lang, zone=zone_name(alert.zone_name, lang),
                        distance=alert.distance_km))
+
+    # ---- an assumed place is said out loud ----------------------------------
+    if getattr(intent, "location_assumed", False):
+        parts.append(t("gate_place_assumed", lang,
+                       place=port_label(intent.location_text, lang)))
 
     # ---- provenance ------------------------------------------------------
     # Only real data providers belong in the citation line — "ORCA" is us.

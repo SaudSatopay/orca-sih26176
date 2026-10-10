@@ -281,6 +281,30 @@ T: Dict[str, Dict[Language, str]] = {
                          "hi": "{feed} {age} पहले फिर से जुड़ा — रीडिंग फिर से ताज़ा हैं।",
                          "mr": "{feed} {age} पूर्वी पुन्हा जोडला गेला — नोंदी पुन्हा ताज्या "
                                "आहेत."},
+    "gate_reason_place": {
+        "en": "ORCA does not know {place} yet — it has no sea readings for it. Choose your "
+              "harbour on the map instead of guessing a nearby one.",
+        "hi": "ORCA अभी {place} को नहीं जानता — वहाँ के समुद्र की रीडिंग उसके पास नहीं। "
+              "पास की किसी जगह का अनुमान लगाने के बजाय नक्शे पर अपना बंदरगाह चुनें।",
+        "mr": "ORCA ला {place} अजून माहीत नाही — तिथल्या समुद्राच्या नोंदी त्याच्याकडे नाहीत. "
+              "जवळच्या ठिकाणाचा अंदाज लावण्याऐवजी नकाशावर तुमचे बंदर निवडा.",
+    },
+    "gate_reason_horizon": {
+        "en": "ORCA can only see {horizon} days ahead — you asked about {days} days from now. "
+              "Ask again closer to the day.",
+        "hi": "ORCA केवल {horizon} दिन आगे तक देख सकता है — आपने {days} दिन बाद के बारे में "
+              "पूछा। उस दिन के क़रीब फिर पूछें।",
+        "mr": "ORCA फक्त {horizon} दिवस पुढचे पाहू शकतो — तुम्ही {days} दिवसांनंतरचे विचारले. "
+              "त्या दिवसाच्या जवळ पुन्हा विचारा.",
+    },
+    "gate_place_assumed": {
+        "en": "No place was named — this answer is for {place}, ORCA's default harbour. "
+              "Choose your harbour to change it.",
+        "hi": "कोई जगह नहीं बताई गई — यह उत्तर {place} के लिए है, ORCA का मूल बंदरगाह। "
+              "बदलने के लिए अपना बंदरगाह चुनें।",
+        "mr": "कोणतेही ठिकाण सांगितले नाही — हे उत्तर {place} साठी आहे, ORCA चे मूळ बंदर. "
+              "बदलण्यासाठी तुमचे बंदर निवडा.",
+    },
     "gate_conf_normal": {"en": "normal confidence", "hi": "सामान्य भरोसा",
                          "mr": "नेहमीचा विश्वास"},
     "gate_conf_degraded": {"en": "degraded confidence", "hi": "घटा हुआ भरोसा",
@@ -323,6 +347,19 @@ SOURCE_LABELS_L10N: Dict[str, Dict[Language, str]] = {
     "ORCA_GIS": {"hi": "ORCA भू-स्थानिक परत (OpenStreetMap से तैयार)",
                  "mr": "ORCA भू-स्थानिक स्तर (OpenStreetMap वरून तयार)"},
 }
+
+
+def port_label(name: str, lang: Language) -> str:
+    """A landing centre's name as the reader writes it (its Devanagari alias)."""
+    if lang == "en":
+        return name
+    from ..data.geo import PORTS
+    for port in PORTS:
+        if port["name"] == name:
+            for alias in port["aliases"]:
+                if DEVANAGARI.search(alias):
+                    return alias
+    return name
 
 
 def source_label(code: str, lang: Language) -> str:
