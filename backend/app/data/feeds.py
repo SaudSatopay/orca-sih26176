@@ -24,14 +24,19 @@ modes and the drill sets their age too. The chart layer ships with the app.
 
 The drill is a runtime switch like the LIVE/DEMO mode: no restart, and the next
 question sees it. Switch it with POST /api/config/data-health, the Ask view's
-drill chips, ?drill= in a link, or ORCA_DATA_DRILL at start-up.
+drill chips, ?drill= in a link, or ORCA_DATA_DRILL at start-up. A single
+request can also carry its own drill (`drill_override`), which wins for that
+request only and leaves the server-wide switch alone: stateless, so it holds
+on a serverless host where consecutive requests may reach different instances.
 """
 from __future__ import annotations
 
+import contextvars
 import os
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict, Iterator, Optional
 
 
 @dataclass(frozen=True)
@@ -69,8 +74,33 @@ if _ACTIVE["drill"] not in DRILLS:
     _ACTIVE["drill"] = "healthy"
 
 
+# A drill carried by the request being served; None means "use the server's".
+_REQUEST_DRILL: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "orca_request_drill", default=None)
+
+
 def active_drill() -> str:
-    return _ACTIVE["drill"]
+    return _REQUEST_DRILL.get() or _ACTIVE["drill"]
+
+
+@contextmanager
+def drill_override(name: Optional[str]) -> Iterator[None]:
+    """Serve one request under `name` (if given) without touching the server's drill.
+
+    The value lives in a context variable, so concurrent requests never see
+    each other's drill; work handed to a thread pool must run in a copy of the
+    caller's context (contextvars.copy_context().run) to carry it along.
+    """
+    if not name:
+        yield
+        return
+    if name not in DRILLS:
+        raise ValueError(f"drill must be one of: {', '.join(DRILLS)}")
+    token = _REQUEST_DRILL.set(name)
+    try:
+        yield
+    finally:
+        _REQUEST_DRILL.reset(token)
 
 
 def set_drill(name: str) -> str:

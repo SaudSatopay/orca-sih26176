@@ -18,6 +18,7 @@ state out).
 """
 from __future__ import annotations
 
+import contextvars
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -85,7 +86,12 @@ def _trace(result, name: str, lang: str = "en") -> AgentTrace:
 
 
 def handle(req: ChatRequest) -> ChatResponse:
-    """Run the full ORCA graph for one user message."""
+    """Run the full ORCA graph for one user message (under its own drill, if any)."""
+    with feeds.drill_override(req.drill):
+        return _handle(req)
+
+
+def _handle(req: ChatRequest) -> ChatResponse:
     started = time.perf_counter()
 
     # ---- node 1: intent --------------------------------------------------
@@ -114,17 +120,23 @@ def handle(req: ChatRequest) -> ChatResponse:
 
     # ---- node 2: specialists, concurrently -------------------------------
     jobs = {}
+
+    def submit(pool, fn, *args):
+        # Each specialist runs in a copy of this request's context, so a drill
+        # carried by the request travels into the worker thread with it.
+        return pool.submit(contextvars.copy_context().run, fn, *args)
+
     with ThreadPoolExecutor(max_workers=5) as pool:
         if "weather" in needs:
-            jobs["weather"] = pool.submit(weather_agent.run, location, when, lang)
+            jobs["weather"] = submit(pool, weather_agent.run, location, when, lang)
         if "ocean" in needs:
-            jobs["ocean"] = pool.submit(ocean_agent.run, location, when, lang)
+            jobs["ocean"] = submit(pool, ocean_agent.run, location, when, lang)
         if "pfz" in needs:
-            jobs["pfz"] = pool.submit(pfz_agent.run, location, when)
+            jobs["pfz"] = submit(pool, pfz_agent.run, location, when)
         if "cyclone" in needs:
-            jobs["cyclone"] = pool.submit(cyclone_agent.run, location, when, lang)
+            jobs["cyclone"] = submit(pool, cyclone_agent.run, location, when, lang)
         if "gis" in needs:
-            jobs["gis"] = pool.submit(gis_agent.run, location, when, lang)
+            jobs["gis"] = submit(pool, gis_agent.run, location, when, lang)
         results = {name: fut.result() for name, fut in jobs.items()}
 
     for name, res in results.items():

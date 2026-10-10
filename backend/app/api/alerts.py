@@ -1,6 +1,8 @@
 """Marine alerts + the authority-side rollup."""
 from __future__ import annotations
 
+from typing import Optional
+
 from fastapi import APIRouter, Query
 
 from ..agents import cyclone_agent, gis_agent, ocean_agent, risk_agent, weather_agent
@@ -32,7 +34,14 @@ def alerts(lat: float = Query(...), lon: float = Query(...),
 
 
 @router.get("/authority/dashboard")
-def authority_dashboard(lang: str = Query("en")) -> dict:
+def authority_dashboard(lang: str = Query("en"),
+                        drill: Optional[str] = Query(
+                            None, pattern="^(healthy|stale|unavailable|recovery)$")) -> dict:
+    with feeds.drill_override(drill):
+        return _dashboard(lang)
+
+
+def _dashboard(lang: str) -> dict:
     """Every monitored landing centre, scored — the authority view.
 
     Shows ORCA serving district administrations, not just individual fishers.

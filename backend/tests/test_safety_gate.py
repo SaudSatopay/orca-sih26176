@@ -516,3 +516,33 @@ def test_the_authority_board_flags_weak_evidence_without_touching_a_score(client
             assert (row["risk_score"], row["gate"]) == (92, "NO_GO")
     assert j["summary"]["evidence_flagged"] == sum(
         1 for r in j["locations"] if r["gate"] in ("CAUTION", "INSUFFICIENT_DATA"))
+
+
+# ---- a request may carry its own drill (stateless, serverless-safe) ------------------
+
+def test_a_question_can_carry_its_own_drill_without_touching_the_servers(ask):
+    r = ask(GOA_Q, drill="stale")
+    assert (r.decision.state, r.decision.drill) == ("CAUTION", "stale")
+    assert feeds.active_drill() == "healthy", "the server-wide drill is left alone"
+    assert ask(GOA_Q).decision.state == "GO"
+
+
+def test_todays_outlook_can_carry_its_own_drill(client):
+    j = client.get("/api/fishing", params={**GOA_SEA, "drill": "unavailable"}).json()
+    assert j["decision"]["state"] == "INSUFFICIENT_DATA"
+    assert client.get("/api/config/data-health").json()["drill"] == "healthy"
+    board = client.get("/api/authority/dashboard", params={"drill": "stale"}).json()
+    assert board["decision"]["state"] == "CAUTION"
+
+
+def test_an_unknown_per_request_drill_is_refused(client):
+    assert client.get("/api/fishing", params={**GOA_SEA, "drill": "chaos"}).status_code == 422
+    r = client.post("/api/chat", json={"message": GOA_Q, "drill": "chaos"})
+    assert r.status_code == 422
+
+
+def test_the_per_request_drill_reaches_the_parallel_agents(ask):
+    # the specialists run in a thread pool; the drill must travel with them
+    r = ask(GOA_Q, drill="unavailable")
+    wave = next(h for h in r.data_health if h.input == "wave")
+    assert wave.status == "MISSING"

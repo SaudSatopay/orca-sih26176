@@ -101,7 +101,14 @@ def fishing_outlook(
     radius_km: float = Query(MAX_RADIUS_KM, ge=5, le=MAX_RADIUS_KM),
     days: int = Query(3, ge=1, le=3, description="Today plus the next N-1 days"),
     lang: str = Query("en", pattern="^(en|hi|mr)$"),
+    drill: Optional[str] = Query(None, pattern="^(healthy|stale|unavailable|recovery)$",
+                                 description="Answer under this data drill only"),
 ) -> dict:
+    with feeds.drill_override(drill):
+        return _outlook(lat, lon, radius_km, days, lang)
+
+
+def _outlook(lat: float, lon: float, radius_km: float, days: int, lang: str) -> dict:
     now = now_ist()
     port = nearest_port(lat, lon)
     loc = Location(name=port["name"], latitude=lat, longitude=lon, state=port["state"])

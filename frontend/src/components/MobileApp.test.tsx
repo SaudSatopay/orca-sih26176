@@ -159,6 +159,17 @@ describe("the phone's Today tab", () => {
     expect(screen.queryByText("No safe time to fish today")).not.toBeInTheDocument();
   });
 
+  it("reads the sea under a ?drill= link's data drill, carried by each request", async () => {
+    const { api, MobileApp } = await openPhone("?lang=en&drill=unavailable");
+    render(<MobileApp />);
+    await screen.findByText("Go with care");
+    expect(api.fishingOutlook).toHaveBeenCalledWith(
+      expect.any(Number),
+      expect.any(Number),
+      expect.objectContaining({ drill: "unavailable" }),
+    );
+  });
+
   it("labels a return time after midnight in the fisher's terms", async () => {
     const { MobileApp } = await openPhone();
     render(<MobileApp />);

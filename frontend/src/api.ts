@@ -45,6 +45,8 @@ export function ask(params: {
   longitude?: number;
   locationName?: string;
   sessionId?: string;
+  /** Answer under this data drill only; the server's own drill is left alone. */
+  drill?: DataDrill;
 }): Promise<ChatResponse> {
   return json<ChatResponse>(`${BASE}/chat`, {
     method: "POST",
@@ -55,6 +57,7 @@ export function ask(params: {
       longitude: params.longitude ?? null,
       location_name: params.locationName ?? null,
       session_id: params.sessionId ?? "demo",
+      ...(params.drill ? { drill: params.drill } : {}),
     }),
   });
 }
@@ -110,7 +113,7 @@ export function checkPosition(
 export function fishingOutlook(
   lat: number,
   lon: number,
-  opts: { radiusKm?: number; days?: number; lang?: Language } = {},
+  opts: { radiusKm?: number; days?: number; lang?: Language; drill?: DataDrill } = {},
 ): Promise<FishingOutlook> {
   const p = new URLSearchParams({
     lat: String(lat),
@@ -119,6 +122,7 @@ export function fishingOutlook(
     days: String(opts.days ?? 3),
     lang: opts.lang ?? "en",
   });
+  if (opts.drill) p.set("drill", opts.drill);
   return json<FishingOutlook>(`${BASE}/fishing?${p}`);
 }
 

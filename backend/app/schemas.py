@@ -211,6 +211,8 @@ class ChatRequest(BaseModel):
     longitude: Optional[float] = None
     location_name: Optional[str] = None
     session_id: str = "default"
+    # Answer this one question under a data drill, leaving the server's alone.
+    drill: Optional[Literal["healthy", "stale", "unavailable", "recovery"]] = None
 
 
 class AgentTrace(BaseModel):

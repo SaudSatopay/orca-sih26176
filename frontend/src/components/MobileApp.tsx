@@ -833,6 +833,9 @@ export default function MobileApp() {
 
   // ---- position ----
   const [pinned] = useState(() => readBootParams(window.location.search).at);
+  // A ?drill= link answers every reading under that data drill (the safety
+  // gate's demo), carried by each request; the server's own drill is untouched.
+  const [drill] = useState(() => readBootParams(window.location.search).drill);
   const canLocate = typeof navigator !== "undefined" && "geolocation" in navigator;
   const [geo, setGeo] = useState<Geo>(() =>
     pinned ? "pinned" : canLocate ? "checking" : "unavailable",
@@ -938,7 +941,12 @@ export default function MobileApp() {
     if (!place) return;
     let alive = true;
     api
-      .fishingOutlook(place.lat, place.lon, { radiusKm: 100, days: 3, lang: language })
+      .fishingOutlook(place.lat, place.lon, {
+        radiusKm: 100,
+        days: 3,
+        lang: language,
+        ...(drill ? { drill } : {}),
+      })
       .then((d) => {
         if (!alive) return;
         setLoaded({ place, language, data: d });
@@ -948,7 +956,7 @@ export default function MobileApp() {
     return () => {
       alive = false;
     };
-  }, [place, language, attempt]);
+  }, [place, language, attempt, drill]);
 
   // The page itself speaks the chosen language, and names the open tab.
   useEffect(() => {
@@ -1145,6 +1153,7 @@ export default function MobileApp() {
         sessionId: SESSION,
         latitude: place?.lat,
         longitude: place?.lon,
+        ...(drill ? { drill } : {}),
       });
       setAnswer(res);
       if (res.language !== language) setLanguage(res.language);

@@ -257,6 +257,14 @@ export default function App() {
     680,
   );
 
+  // ------------------------------------------------------------- data drill
+  // The safety-gate demo's drill, once this visit has chosen one (a chip or
+  // ?drill=): sent with every question and outlook, so each is answered under
+  // it whichever server instance replies. Null until chosen: the server's own.
+  const [drillNow, setDrillNow] = useState<DataDrill>(BOOT.drill ?? "healthy");
+  const [drillBusy, setDrillBusy] = useState(false);
+  const drillChoice = useRef<DataDrill | null>(BOOT.drill);
+
   // ---------------------------------------------------- outlook on position
   useEffect(() => {
     if (!place) return;
@@ -266,6 +274,7 @@ export default function App() {
         radiusKm: RADIUS_KM,
         days: 3,
         lang: language,
+        ...(drillChoice.current ? { drill: drillChoice.current } : {}),
       });
     (BOOT.drill ? DRILL_READY.then(fetchOutlook) : fetchOutlook())
       .then((d) => {
@@ -299,7 +308,8 @@ export default function App() {
     return () => {
       alive = false;
     };
-  }, [place, language]);
+    // drillNow: a new drill re-reads today's outlook under it
+  }, [place, language, drillNow]);
 
   // ------------------------------------------------------------- chat
   const send = async (text: string, again = false) => {
@@ -315,6 +325,7 @@ export default function App() {
         message: text,
         language: langChoice ?? undefined,
         sessionId: SESSION,
+        ...(drillChoice.current ? { drill: drillChoice.current } : {}),
       });
       if (stale()) return;
       setLatest(res);
@@ -397,15 +408,13 @@ export default function App() {
     await send(ask);
   };
 
-  // ------------------------------------------------------------- data drill
   // The safety-gate demo: set the rehearsed marine feed's health, then ask
   // the question on screen again — the same sea, answered on new evidence.
-  const [drillNow, setDrillNow] = useState<DataDrill>(BOOT.drill ?? "healthy");
-  const [drillBusy, setDrillBusy] = useState(false);
   const answeredDrill = latest?.decision?.drill;
   const activeDrill: DataDrill = drillBusy || !isDrill(answeredDrill) ? drillNow : answeredDrill;
   const runDrill = async (d: DataDrill) => {
     setDrillNow(d);
+    drillChoice.current = d;
     setDrillBusy(true);
     try {
       await api.setDataDrill(d);

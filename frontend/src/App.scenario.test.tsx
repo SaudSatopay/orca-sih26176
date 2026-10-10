@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatResponse } from "./types";
@@ -104,5 +104,39 @@ describe("a rehearsed scenario opened by deep link", () => {
     });
     expect(screen.queryByText("first answer, arriving late")).not.toBeInTheDocument();
     expect(screen.getAllByText("second answer")).toHaveLength(1);
+  });
+});
+
+describe("the safety-gate data drill", () => {
+  it("sets the drill, asks the question on screen again, and carries the drill with it", async () => {
+    const api = await openApp("?demo=danger");
+    // a real answer names the question it answered; the drill asks it again
+    api.ask.mockResolvedValue({
+      ...response,
+      intent: { location: null, raw_query: QUESTION },
+    } as unknown as ChatResponse);
+    api.setDataDrill.mockResolvedValue({ ok: true, drill: "stale", drills: [] });
+    expect(await screen.findByText(LEAD)).toBeInTheDocument();
+    const firstCalls = api.ask.mock.calls.length;
+    fireEvent.click(screen.getByRole("button", { name: "Stale" }));
+    await waitFor(() => expect(api.ask.mock.calls.length).toBe(firstCalls + 1));
+    expect(api.setDataDrill).toHaveBeenCalledWith("stale");
+    expect(api.ask).toHaveBeenLastCalledWith(
+      expect.objectContaining({ message: QUESTION, drill: "stale" }),
+    );
+  });
+
+  it("answers a ?drill= link under that drill from the very first question", async () => {
+    const api = await openApp("?demo=danger&drill=unavailable");
+    expect(await screen.findByText(LEAD)).toBeInTheDocument();
+    expect(api.ask).toHaveBeenCalledWith(
+      expect.objectContaining({ message: QUESTION, drill: "unavailable" }),
+    );
+  });
+
+  it("sends no drill at all when the visit never chose one", async () => {
+    const api = await openApp("?demo=danger");
+    expect(await screen.findByText(LEAD)).toBeInTheDocument();
+    expect(api.ask.mock.calls[0][0]).not.toHaveProperty("drill");
   });
 });
