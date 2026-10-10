@@ -64,9 +64,6 @@ def decide(risk: Optional[RiskAssessment], health: Sequence[DataHealth], now: da
                            detail=h.detail if h else say("dh_no_reading")))
     for key in stale:
         h = by_input[key]
-        if h.note == "bundled":
-            reasons.append(say("gate_reason_bundled", input=h.label))
-            continue
         reasons.append(say("gate_reason_stale", input=h.label,
                            age=age_text(h.age_seconds or 0, lang),
                            limit=age_text(h.freshness_limit_seconds or 0, lang)))

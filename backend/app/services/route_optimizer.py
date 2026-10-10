@@ -17,7 +17,7 @@ from __future__ import annotations
 import heapq
 from typing import Dict, List, Optional, Sequence, Tuple
 
-from ..data.geo import (Coord, distance_to_polygon_km, haversine_km,
+from ..data.geo import (Coord, distance_to_polygon_km, haversine_km, is_on_land,
                         point_in_polygon, RESTRICTED_ZONES, route_zone_conflicts)
 from ..schemas import Language, RouteLeg, RouteOption
 from .i18n import t, zone_name
@@ -26,6 +26,8 @@ GRID_STEPS = 20                # nodes per axis; 400-node graph — still instan
 ZONE_PENALTY_KM = 400.0        # effective cost of entering a restricted polygon
 ZONE_BUFFER_KM = 2.0           # keep-clear buffer around polygons
 BASE_SPEED_KMH = 18.0          # ~10 knots: typical small motorised fishing craft
+HARBOUR_KM = 3.0               # a course may leave and reach its own harbours
+LAND_SAMPLE_KM = 1.0           # how finely a leg is checked for land
 
 
 def _speed_for(wave_m: Optional[float], wind_kmh: Optional[float]) -> float:
@@ -81,11 +83,43 @@ def _nearest_node(grid: List[List[Coord]], pt: Coord) -> Tuple[int, int]:
     return best
 
 
+def _land_between(a: Coord, b: Coord, ends: Sequence[Coord]) -> bool:
+    """Does the leg a-b touch land outside the harbour circles around `ends`?
+
+    Sampled every LAND_SAMPLE_KM (the simplified coastline is +-10-20 km in the
+    deltas, so a finer test would be false precision). A point within
+    HARBOUR_KM of an end is the harbour itself: a boat has to leave it.
+    """
+    steps = max(1, int(haversine_km(a, b) / LAND_SAMPLE_KM))
+    for s in range(steps + 1):
+        pt = (a[0] + (b[0] - a[0]) * s / steps, a[1] + (b[1] - a[1]) * s / steps)
+        if any(haversine_km(pt, e) <= HARBOUR_KM for e in ends):
+            continue
+        if is_on_land(pt[0], pt[1]):
+            return True
+    return False
+
+
+def route_crosses_land(points: Sequence[Coord]) -> bool:
+    """True when a course runs over land anywhere beyond its two ends."""
+    ends = (points[0], points[-1]) if points else ()
+    return any(_land_between(points[i], points[i + 1], ends) for i in range(len(points) - 1))
+
+
 def _astar(grid: List[List[Coord]], start: Tuple[int, int], goal: Tuple[int, int],
            wave_m: Optional[float], wind_kmh: Optional[float],
-           avoid_zones: bool) -> List[Tuple[int, int]]:
+           avoid_zones: bool, ends: Sequence[Coord] = ()) -> List[Tuple[int, int]]:
     rows, cols = len(grid), len(grid[0])
     goal_pt = grid[goal[0]][goal[1]]
+    # Land is a wall, not a cost: a leg that touches land outside the two
+    # harbours is never taken. Checked lazily, once per leg.
+    land_leg: Dict[Tuple[Tuple[int, int], Tuple[int, int]], bool] = {}
+
+    def over_land(a: Tuple[int, int], b: Tuple[int, int]) -> bool:
+        key = (a, b) if a <= b else (b, a)
+        if key not in land_leg:
+            land_leg[key] = _land_between(grid[a[0]][a[1]], grid[b[0]][b[1]], ends)
+        return land_leg[key]
 
     def h(node: Tuple[int, int]) -> float:
         return haversine_km(grid[node[0]][node[1]], goal_pt)
@@ -113,6 +147,8 @@ def _astar(grid: List[List[Coord]], start: Tuple[int, int], goal: Tuple[int, int
             if not (0 <= ni < rows and 0 <= nj < cols):
                 continue
             nxt = (ni, nj)
+            if ends and over_land(current, nxt):
+                continue
             leg_km = haversine_km(grid[ci][cj], grid[ni][nj])
             cost = leg_km * (1.0 + wave_penalty_per_km + wind_penalty_per_km)
             if avoid_zones:
@@ -196,12 +232,17 @@ def plan_routes(origin: Coord, dest: Coord, *, wave_m: Optional[float] = None,
     grid = _build_grid(origin, dest)
     s = _nearest_node(grid, origin)
     g = _nearest_node(grid, dest)
-    idx_path = _astar(grid, s, g, wave_m, wind_kmh, avoid_zones=True)
+    idx_path = _astar(grid, s, g, wave_m, wind_kmh, avoid_zones=True, ends=(origin, dest))
     full_pts = [origin] + [grid[i][j] for i, j in idx_path] + [dest]
     safe_pts = _simplify(full_pts)
     # Never let cosmetic simplification reintroduce a hazard the planner avoided.
     if route_zone_conflicts(safe_pts) and not route_zone_conflicts(full_pts):
         safe_pts = full_pts
+    if route_crosses_land(safe_pts) and not route_crosses_land(full_pts):
+        safe_pts = full_pts
+    # The chart has no sea path at this resolution: say so, never recommend
+    # a line over land as "safest".
+    no_sea_route = route_crosses_land(safe_pts)
     safe_km = _path_length(safe_pts)
     safe_conflicts = route_zone_conflicts(safe_pts)
 
@@ -216,10 +257,11 @@ def plan_routes(origin: Coord, dest: Coord, *, wave_m: Optional[float] = None,
         risk_score=risk_score,
         risk_category=risk_category,  # type: ignore[arg-type]
         penalties={"restricted_zones": float(len(safe_conflicts)),
-                   "extra_km_vs_direct": round(max(0.0, safe_km - direct_km), 1)},
-        recommended=True,
-        notes=(t("route_note_clear", lang)
-               if not safe_conflicts else
+                   "extra_km_vs_direct": round(max(0.0, safe_km - direct_km), 1),
+                   "over_land": 1.0 if no_sea_route else 0.0},
+        recommended=not no_sea_route,
+        notes=(t("route_note_no_sea", lang) if no_sea_route else
+               t("route_note_clear", lang) if not safe_conflicts else
                t("route_note_close", lang)),
     )
 
@@ -238,8 +280,13 @@ def plan_routes(origin: Coord, dest: Coord, *, wave_m: Optional[float] = None,
                if direct_conflicts else t("route_note_direct_clear", lang)),
     )
 
+    direct_over_land = route_crosses_land(direct_pts)
+    if direct_over_land:
+        direct.penalties["over_land"] = 1.0
+        direct.notes = t("route_note_direct_land", lang)
+
     # If the direct line is clean and barely shorter, don't invent a detour.
-    if not direct_conflicts and safe_km <= direct_km * 1.03:
+    if not direct_conflicts and not direct_over_land and safe_km <= direct_km * 1.03:
         direct.recommended = True
         safest.recommended = False
         options = [direct, safest]

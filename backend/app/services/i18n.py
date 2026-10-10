@@ -191,9 +191,18 @@ T: Dict[str, Dict[Language, str]] = {
                        "hi": "{feed} {age} पहले फिर से जुड़ा",
                        "mr": "{feed} {age} पूर्वी पुन्हा जोडला गेला"},
     "dh_no_reading": {"en": "no reading", "hi": "कोई रीडिंग नहीं", "mr": "नोंद नाही"},
-    "dh_bundled": {"en": "bundled bulletin — no live IMD / INCOIS feed, age unknown",
-                   "hi": "साथ आया बुलेटिन — IMD / INCOIS का लाइव स्रोत नहीं, उम्र अज्ञात",
-                   "mr": "सोबतचे बुलेटिन — IMD / INCOIS चा थेट स्रोत नाही, वय अज्ञात"},
+    "dh_not_connected": {"en": "no official warnings feed is connected in live mode — check IMD / "
+                               "INCOIS yourself",
+                         "hi": "लाइव मोड में कोई आधिकारिक चेतावनी स्रोत जुड़ा नहीं — IMD / INCOIS "
+                               "ख़ुद देखें",
+                         "mr": "थेट मोडमध्ये कोणताही अधिकृत इशारा स्रोत जोडलेला नाही — IMD / INCOIS "
+                               "स्वतः पाहा"},
+    "rf_warnings_not_connected": {"en": "No official warnings feed connected — check IMD / INCOIS",
+                                  "hi": "आधिकारिक चेतावनी स्रोत जुड़ा नहीं — IMD / INCOIS देखें",
+                                  "mr": "अधिकृत इशारा स्रोत जोडलेला नाही — IMD / INCOIS पाहा"},
+    "trace_warnings_not_connected": {"en": "warnings feed not connected — check IMD",
+                                     "hi": "चेतावनी स्रोत जुड़ा नहीं — IMD देखें",
+                                     "mr": "इशारा स्रोत जोडलेला नाही — IMD पाहा"},
     "minute_one": {"en": "min", "hi": "मि", "mr": "मिनिट"},
     "dhs_FRESH": {"en": "fresh", "hi": "ताज़ा", "mr": "ताजी"},
     "dhs_STALE": {"en": "out of date", "hi": "पुराना", "mr": "जुनी"},
@@ -240,12 +249,6 @@ T: Dict[str, Dict[Language, str]] = {
     "gate_reason_stale": {"en": "{input} is {age} old — over the {limit} limit.",
                           "hi": "{input}: {age} पुराना आँकड़ा — {limit} की सीमा से ज़्यादा।",
                           "mr": "{input}: {age} जुनी नोंद — {limit} मर्यादेपेक्षा जास्त."},
-    "gate_reason_bundled": {"en": "{input}: no live IMD / INCOIS feed is connected — the bundled "
-                                  "bulletin cannot say what was issued in the last hour.",
-                            "hi": "{input}: IMD / INCOIS का कोई लाइव स्रोत जुड़ा नहीं — साथ आया "
-                                  "बुलेटिन पिछले घंटे की चेतावनी नहीं बता सकता।",
-                            "mr": "{input}: IMD / INCOIS चा कोणताही थेट स्रोत जोडलेला नाही — सोबतचे "
-                                  "बुलेटिन गेल्या तासातील इशारा सांगू शकत नाही."},
     "gate_reason_blocking": {"en": "{input}: {detail}.", "hi": "{input}: {detail}।",
                              "mr": "{input}: {detail}."},
     "gate_block": {"en": "ORCA will not clear a trip on missing or out-of-date evidence.",
@@ -610,6 +613,16 @@ T.update({
         "en": "Shortest track, but it passes through: {zones}",
         "hi": "सबसे छोटा रास्ता, पर यह इन क्षेत्रों से गुज़रता है: {zones}",
         "mr": "सर्वात जवळचा मार्ग, पण तो या क्षेत्रांमधून जातो: {zones}",
+    },
+    "route_note_no_sea": {
+        "en": "No sea route on this chart between these points — check the chart before you go.",
+        "hi": "इस नक्शे पर इन जगहों के बीच समुद्री रास्ता नहीं — जाने से पहले नक्शा देखें।",
+        "mr": "या नकाशावर या ठिकाणांदरम्यान सागरी मार्ग नाही — जाण्यापूर्वी नकाशा पाहा.",
+    },
+    "route_note_direct_land": {
+        "en": "Straight line only — it crosses land, so it is not a course.",
+        "hi": "केवल सीधी रेखा — यह ज़मीन पार करती है, इसलिए यह रास्ता नहीं है।",
+        "mr": "फक्त सरळ रेषा — ती जमिनीवरून जाते, म्हणून हा मार्ग नाही.",
     },
     "route_note_direct_clear": {
         "en": "Shortest track, no restricted areas on the way.",

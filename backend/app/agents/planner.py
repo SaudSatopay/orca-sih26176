@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import contextvars
 import time
+from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
@@ -35,8 +36,11 @@ from ..services.i18n import RISK_BAND, sea_state, t
 from . import (cyclone_agent, explanation_agent, gis_agent, intent_agent,
                ocean_agent, pfz_agent, risk_agent, route_agent, weather_agent)
 
-# session_id -> last intent (gives follow-ups their context)
-_SESSIONS: Dict[str, Intent] = {}
+# session_id -> last intent (gives follow-ups their context). Bounded: the
+# least recently used sessions are forgotten first, so memory cannot grow
+# without limit on a long-running server.
+_SESSIONS: "OrderedDict[str, Intent]" = OrderedDict()
+MAX_SESSIONS = 2000
 
 # One line per agent for the crew trace, in the reader's language (`g`).
 # The intent line stays as the parser wrote it: it is a readback of code names.
@@ -49,7 +53,10 @@ AGENT_SUMMARY = {
                              state=sea_state(d.get("sea_state"), g) if d.get("sea_state") else None)
                            if d.get("wave_height_m") is not None else t("trace_ocean_none", g)),
     "pfz": lambda d, g: t("trace_pfz", g, n=len(d.get("zones", []))),
-    "cyclone": lambda d, g: (d.get("headline") or t("trace_no_warning", g)),
+    "cyclone": lambda d, g: (d.get("headline")
+                             or (t("trace_warnings_not_connected", g)
+                                 if d.get("feed_connected") is False
+                                 else t("trace_no_warning", g))),
     "gis": lambda d, g: t("trace_gis", g, km=d.get("distance_from_shore_km"),
                           n=len(d.get("zones_nearby", []))),
     "risk": lambda d, g: f"{d.get('score')}/100 "
@@ -109,6 +116,9 @@ def _handle(req: ChatRequest) -> ChatResponse:
                                    longitude=DEFAULT_PORT["lon"], state=DEFAULT_PORT["state"])
         intent.location_text = DEFAULT_PORT["name"]
     _SESSIONS[req.session_id] = intent
+    _SESSIONS.move_to_end(req.session_id)
+    while len(_SESSIONS) > MAX_SESSIONS:
+        _SESSIONS.popitem(last=False)
 
     location = intent.location
     when = _target_datetime(intent)

@@ -34,7 +34,10 @@ def _factor_label(key: str, lang: Language) -> str:
 
 
 WARNING_STATE = {"active": {"en": "active", "hi": "सक्रिय", "mr": "सक्रिय"},
-                 "none": {"en": "none", "hi": "कोई नहीं", "mr": "नाही"}}
+                 "none": {"en": "none", "hi": "कोई नहीं", "mr": "नाही"},
+                 "unchecked": {"en": "not connected — check IMD",
+                               "hi": "स्रोत जुड़ा नहीं — IMD देखें",
+                               "mr": "स्रोत जोडलेला नाही — IMD पाहा"}}
 
 
 def _short_value(key: str, weather: Dict, ocean: Dict, cyclone: Dict, gis: Dict,
@@ -45,7 +48,10 @@ def _short_value(key: str, weather: Dict, ocean: Dict, cyclone: Dict, gis: Dict,
     if key == "wind" and weather.get("wind_speed_kmh") is not None:
         return f"{weather['wind_speed_kmh']:.0f} km/h"
     if key == "cyclone":
-        state = "active" if cyclone.get("official_warning_active") else "none"
+        if cyclone.get("feed_connected") is False:
+            state = "unchecked"   # LIVE: no warnings feed, so never "none"
+        else:
+            state = "active" if cyclone.get("official_warning_active") else "none"
         return WARNING_STATE[state].get(lang, state)
     if key == "weather" and weather.get("rain_probability_pct") is not None:
         return f"{weather['rain_probability_pct']:.0f}%"

@@ -26,10 +26,13 @@ def run(location: Location, when: datetime, lang: Language = "en") -> AgentResul
     # There is no open IMD warnings API, so the bulletin store is the warnings
     # provider in both modes. A silent warnings feed is never read as "no
     # warning": its health is MISSING, and the safety gate will not clear a trip.
-    # In LIVE mode the bulletin store is still the only source: it is shown,
-    # but as a bundled bulletin of unknown age, never as a fresh live check.
-    feed = (feeds.FeedStatus("warnings", "DEMO", True, None, None, "bundled")
-            if live_enabled() else feeds.demo_feed("warnings", now))
+    # In LIVE mode there is no official warnings feed to read (no open IMD /
+    # INCOIS API): the scripted demo bulletins are never shown there — a flat
+    # sea under a fake "IMD warning" teaches a fisher to ignore the next one —
+    # and the status is "not connected", never "no warning".
+    live = live_enabled()
+    feed = (feeds.FeedStatus("warnings", "DEMO", False, None, "not_connected")
+            if live else feeds.demo_feed("warnings", now))
     # Words only: the type, severity and "official" flag the risk engine
     # reads are the same in every language.
     alerts: List[Dict] = [localise_alert(a, lang)
@@ -49,8 +52,13 @@ def run(location: Location, when: datetime, lang: Language = "en") -> AgentResul
             "official_warning_active": official,
             "highest_severity": (worst or {}).get("severity"),
             "headline": (worst or {}).get("headline"),
+            # False in LIVE mode: no warnings feed is connected, so "no alert"
+            # means "not checked", never "none".
+            "feed_connected": not live,
         },
-        unavailable=[] if feed.available else ["warnings feed did not respond — no warnings check"],
+        unavailable=([] if feed.available else
+                     ["no official warnings feed connected in live mode — check IMD / INCOIS"]
+                     if live else ["warnings feed did not respond — no warnings check"]),
         source="DEMO",
         timestamp=stamp,
         confidence=0.95 if alerts else 0.8,

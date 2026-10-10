@@ -72,18 +72,6 @@ export function readBootParams(search: string): BootParams {
 }
 
 /**
- * A `?drill=` link sets the data drill once, before the first question or
- * outlook is fetched. Resolves either way: a refused or failed switch leaves
- * the server on whatever drill it had, and the app still loads.
- */
-export function applyBootDrill(
-  drill: DataDrill | null,
-  set: (d: DataDrill) => Promise<unknown>,
-): Promise<void> {
-  return drill ? set(drill).then(() => undefined, () => undefined) : Promise.resolve();
-}
-
-/**
  * The language the phone app opens in: `?lang=` wins, then the first of the
  * phone's own languages that ORCA speaks, then English.
  */

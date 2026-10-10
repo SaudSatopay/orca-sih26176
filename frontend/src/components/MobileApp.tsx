@@ -31,6 +31,7 @@ import {
   WarnGlyph,
 } from "./glyphs";
 import { initialLanguage, readBootParams } from "../boot";
+import { deviceSession } from "../session";
 import { ERRORS } from "../i18n/errors";
 import {
   ASK_EXAMPLES,
@@ -99,7 +100,7 @@ type SheetKind = "harbour" | "language";
 
 const TABS: MTab[] = ["today", "map", "ask"];
 const LANGUAGES: Language[] = ["en", "hi", "mr"];
-const SESSION = "phone";
+const SESSION = deviceSession("phone");
 const HOME = PORTS[0];
 const HOME_PLACE: Place = { lat: HOME.lat, lon: HOME.lon, name: HOME.name };
 const GEO_OPTIONS: PositionOptions = { enableHighAccuracy: true, timeout: 7000, maximumAge: 300_000 };

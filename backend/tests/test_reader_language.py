@@ -68,7 +68,7 @@ def test_english_wording_is_unchanged(ask):
     assert route.routes[1].notes.startswith("Shortest track, but it passes through: ")
     summaries = {tr.agent: tr.summary for tr in route.trace}
     assert summaries["explanation"] == "answer composed"
-    assert summaries["route"] == "36.4 km recommended"
+    assert summaries["route"] == "37.3 km recommended"
     assert summaries["risk"] == "28/100 MODERATE"
 
 

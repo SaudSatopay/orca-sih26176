@@ -63,6 +63,8 @@ def check(input_key: str, feed: FeedStatus, now: datetime, *, lang: Language = "
                           detail=detail)
 
     if not feed.available:
+        if feed.error == "not_connected":
+            return record("MISSING", False, i18n.t("dh_not_connected", lang), available=False)
         if feed.error == "provider_error":
             return record("ERROR", False, i18n.t("dh_error", lang, feed=_feed_name(policy.feed, lang)),
                           available=False)
@@ -73,10 +75,6 @@ def check(input_key: str, feed: FeedStatus, now: datetime, *, lang: Language = "
     if feed.note == "standin":
         return record("MISSING", False, i18n.t("dh_standin", lang), available=False)
 
-    if feed.note == "bundled":
-        # Present, but not a live check: its age is unknown, so it can never be
-        # FRESH. Usable with caution (CAUTION), never enough for a clean GO.
-        return record("STALE", True, i18n.t("dh_bundled", lang))
 
     if limit is None:
         return record("FRESH", True, i18n.t("dh_static", lang))

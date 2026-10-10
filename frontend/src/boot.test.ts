@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import {
-  applyBootDrill,
   initialLanguage,
   isPhoneLayout,
   PHONE_QUERY,
@@ -129,15 +128,3 @@ describe("deep links", () => {
   });
 });
 
-describe("a ?drill= link", () => {
-  it("sets the drill once before anything is asked, and never blocks the app", async () => {
-    const set = vi.fn(() => Promise.resolve({ ok: true }));
-    await applyBootDrill("stale", set);
-    expect(set).toHaveBeenCalledWith("stale");
-    const refused = vi.fn(() => Promise.reject(new Error("400")));
-    await expect(applyBootDrill("unavailable", refused)).resolves.toBeUndefined();
-    const untouched = vi.fn(() => Promise.resolve());
-    await applyBootDrill(null, untouched);
-    expect(untouched).not.toHaveBeenCalled();
-  });
-});

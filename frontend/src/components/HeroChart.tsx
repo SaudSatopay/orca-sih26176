@@ -111,7 +111,7 @@ const POSTERS: Record<SceneId, Poster> = {
     land: LAND_WEST,
     sea: { kind: "breeze", u: 0.62, v: -0.3 },
     buoys: [81, 76, 74],
-    safestKm: 36.4,
+    safestKm: 37.3,
     directKm: 31.0,
   },
   danger: {
@@ -546,7 +546,7 @@ function Sheet({
               {stage.arrived && (
                 <span className="hero-lbl hero-anchor-s hero-halo font-bold uppercase text-risk-low" style={at(260, 134)}>
                   <span className="hero-rise-in block">
-                    {t.safest} · {(p.safestKm ?? 36.4).toFixed(1)} km
+                    {t.safest} · {(p.safestKm ?? 37.3).toFixed(1)} km
                   </span>
                 </span>
               )}

@@ -64,7 +64,8 @@ import { tripIsOff } from "./components/todayModel";
 import { PORTS } from "./ports";
 import { RISK_INK } from "./risk";
 import { SPEECH_LOCALE } from "./speech";
-import { applyBootDrill, initialLanguage, readBootParams } from "./boot";
+import { initialLanguage, readBootParams } from "./boot";
+import { deviceSession } from "./session";
 import { gateWithholds, isDrill, scoreUnconfirmed } from "./gateModel";
 import { GATE } from "./i18n/gate";
 import { ink, risk } from "./tokens";
@@ -103,7 +104,7 @@ import "./effects/splash.css";
 // The splash's own chunk, fetched only when the gate lets it run (effects/gate.ts).
 const SplashInk = lazyEffect(() => import("./effects/SplashInk"));
 
-const SESSION = "demo";
+const SESSION = deviceSession("console");
 const RADIUS_KM = 100;
 const DEFAULT_PORT = PORTS[0]; // Mumbai — used only if location is unavailable
 const LANGUAGES: Language[] = ["en", "hi", "mr"];
@@ -121,11 +122,6 @@ type Tab = AppTab | "landing";
 /** The deep link this page was opened with — read once, before first render. */
 const BOOT = readBootParams(window.location.search);
 
-/**
- * `?drill=` sets the safety-gate demo's data drill before the first question
- * or outlook is fetched (they wait for it only when the link names one).
- */
-const DRILL_READY = applyBootDrill(BOOT.drill, api.setDataDrill);
 
 /**
  * Every sheet is an address. The URL for a view keeps the params that name
@@ -279,7 +275,7 @@ export default function App() {
         lang: language,
         ...(drillChoice.current ? { drill: drillChoice.current } : {}),
       });
-    (BOOT.drill ? DRILL_READY.then(fetchOutlook) : fetchOutlook())
+    fetchOutlook()
       .then((d) => {
         if (!alive) return;
         outlookAt.current = {
@@ -411,7 +407,8 @@ export default function App() {
     await send(ask);
   };
 
-  // The safety-gate demo: set the rehearsed marine feed's health, then ask
+  // The safety-gate demo: choose the rehearsed marine feed's health for this
+  // visit (carried by each request, never the server's own switch), then ask
   // the question on screen again — the same sea, answered on new evidence.
   const answeredDrill = latest?.decision?.drill;
   const activeDrill: DataDrill = drillBusy || !isDrill(answeredDrill) ? drillNow : answeredDrill;
@@ -424,7 +421,6 @@ export default function App() {
     window.history.replaceState(window.history.state, "", here);
     setDrillBusy(true);
     try {
-      await api.setDataDrill(d);
       const asked = latest?.intent.raw_query;
       if (asked) await send(asked);
       else await runScenario(SCENARIOS.find((x) => x.id === "safe")?.ask ?? SCENARIOS[0].ask);
@@ -552,9 +548,7 @@ export default function App() {
       timers.push(
         window.setTimeout(
           () =>
-            BOOT.drill
-              ? void DRILL_READY.then(() => runScenario(BOOT_SCENARIO.ask))
-              : runScenario(BOOT_SCENARIO.ask),
+            runScenario(BOOT_SCENARIO.ask),
           250,
         ),
       );

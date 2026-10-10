@@ -39,9 +39,9 @@ def set_data_mode(mode: str) -> str:
 # Seconds before a live API call is abandoned in favour of cache/demo data.
 LIVE_TIMEOUT_SECONDS = float(os.getenv("ORCA_LIVE_TIMEOUT", "4.0"))
 
-# Optional LLM layer. ORCA runs fully without it (rule-based intent + template
-# explanations). When a key is present the LLM only *rephrases* — it never
-# computes a risk score. See services/llm.py.
+# Optional LLM layer — reserved, NOT wired in this build: nothing reads these
+# settings. ORCA runs fully without one (rule-based intent + template
+# explanations), and an LLM would only ever rephrase — never compute a score.
 LLM_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 LLM_MODEL = os.getenv("ORCA_LLM_MODEL", "claude-sonnet-5")
 LLM_ENABLED = bool(LLM_API_KEY) and os.getenv("ORCA_USE_LLM", "1") != "0"

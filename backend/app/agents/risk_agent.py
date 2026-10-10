@@ -6,7 +6,7 @@ from typing import Dict, Optional
 
 from ..data import demo_store
 from ..schemas import AgentResult, Language, Location
-from ..services import risk_engine
+from ..services import i18n, risk_engine
 from .base import timed
 
 
@@ -39,12 +39,22 @@ def run(location: Location, when: datetime, *, weather: Optional[Dict], ocean: O
         lang=lang,
     )
 
-    # When will it get better? (drives "ask me again at 11")
-    improve_hour = demo_store.next_improvement_hour(
-        location.name, when.hour + when.minute / 60.0
-    )
-    if assessment.category in ("HIGH", "EXTREME") and improve_hour is not None:
-        assessment.window = f"{improve_hour:02d}:00"
+    # When will it get better? (drives "ask me again at 11"). Only the
+    # rehearsed dataset knows its own future; in LIVE mode a scripted hour
+    # would be an invented forecast, so no window is promised.
+    if mode != "LIVE":
+        improve_hour = demo_store.next_improvement_hour(
+            location.name, when.hour + when.minute / 60.0
+        )
+        if assessment.category in ("HIGH", "EXTREME") and improve_hour is not None:
+            assessment.window = f"{improve_hour:02d}:00"
+
+    # With no warnings feed connected, the warning factor must not read "no
+    # active warning": it was never checked.
+    if cyclone.get("feed_connected") is False:
+        for factor in assessment.factors:
+            if factor.key == "cyclone":
+                factor.detail = i18n.t("rf_warnings_not_connected", lang)
 
     return AgentResult(
         agent="risk",

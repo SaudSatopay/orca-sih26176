@@ -84,7 +84,7 @@ def test_scoring_the_chance_did_not_move_any_rehearsed_number(ask, session_id):
     assert ask(PFZ_ASK, session_id=session_id + "-pfz").risk.score == 36
     route = ask(ROUTE_ASK, location_name="Mumbai", session_id=session_id + "-route")
     assert route.risk.score == 28
-    assert next(o for o in route.routes if o.recommended).distance_km == 36.4
+    assert next(o for o in route.routes if o.recommended).distance_km == 37.3
 
 
 # ---- (b) Hindi and Marathi answers contain no English sentence -------------

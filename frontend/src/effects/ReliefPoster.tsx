@@ -206,7 +206,7 @@ export function ReliefInk({ lean = NO_LEAN }: { lean?: Lean }) {
         fontSize="9"
         letterSpacing={track(1)}
       >
-        {hero.safest} · 36.4 {t.km}
+        {hero.safest} · 37.3 {t.km}
       </text>
 
       {/* the harbour the boat leaves from */}

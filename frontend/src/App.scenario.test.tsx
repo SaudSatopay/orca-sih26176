@@ -108,19 +108,19 @@ describe("a rehearsed scenario opened by deep link", () => {
 });
 
 describe("the safety-gate data drill", () => {
-  it("sets the drill, asks the question on screen again, and carries the drill with it", async () => {
+  it("asks the question on screen again, carrying the drill, without touching the server's", async () => {
     const api = await openApp("?demo=danger");
     // a real answer names the question it answered; the drill asks it again
     api.ask.mockResolvedValue({
       ...response,
       intent: { location: null, raw_query: QUESTION },
     } as unknown as ChatResponse);
-    api.setDataDrill.mockResolvedValue({ ok: true, drill: "stale", drills: [] });
     expect(await screen.findByText(LEAD)).toBeInTheDocument();
     const firstCalls = api.ask.mock.calls.length;
     fireEvent.click(screen.getByRole("button", { name: "Stale" }));
     await waitFor(() => expect(api.ask.mock.calls.length).toBe(firstCalls + 1));
-    expect(api.setDataDrill).toHaveBeenCalledWith("stale");
+    // the drill travels with the question; the server-wide drill is never touched
+    expect(api.setDataDrill).not.toHaveBeenCalled();
     expect(api.ask).toHaveBeenLastCalledWith(
       expect.objectContaining({ message: QUESTION, drill: "stale" }),
     );

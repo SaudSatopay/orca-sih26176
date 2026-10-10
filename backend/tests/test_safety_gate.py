@@ -469,7 +469,7 @@ def test_live_outage_recovers_by_itself_after_the_failure_cache_expires(monkeypa
     try:
         down = ask(GOA_Q)
         assert down.decision.state == "INSUFFICIENT_DATA"
-        assert set(down.decision.blocking_inputs) == {"wave", "wind"}
+        assert set(down.decision.blocking_inputs) == {"wave", "wind", "warnings"}
 
         provider.up = True                      # the provider is back ...
         assert ask(GOA_Q).decision.state == "INSUFFICIENT_DATA"   # ... failure cached 60 s
@@ -478,28 +478,38 @@ def test_live_outage_recovers_by_itself_after_the_failure_cache_expires(monkeypa
         back = ask(GOA_Q)
         assert back.mode == "LIVE"
         assert next(h for h in back.data_health if h.input == "wave").status == "FRESH"
-        assert back.decision.blocking_inputs == [], "the sea readings are back"
-        # ... and the honest LIVE answer is CAUTION, not a clean GO: there is no
-        # open IMD/INCOIS feed, so the warnings come from the bundled bulletin,
-        # whose age is unknown. A stand-in never clears a trip.
-        assert (back.decision.state, back.decision.stale_inputs) == ("CAUTION", ["warnings"])
-        assert any("no live IMD / INCOIS feed" in x for x in back.decision.reasons)
+        assert "wave" not in back.decision.blocking_inputs, "the sea readings are back"
+        # ... and the honest LIVE answer still withholds a go: there is no
+        # official warnings feed in LIVE mode (no open IMD / INCOIS API), and an
+        # unchecked warning is never read as "no warning".
+        assert (back.decision.state, back.decision.blocking_inputs) == (
+            "INSUFFICIENT_DATA", ["warnings"])
+        assert any("no official warnings feed" in x for x in back.decision.reasons)
     finally:
         live_client.clear_cache()
 
 
-def test_live_mode_never_reports_the_bundled_warnings_as_fresh(monkeypatch, ask):
+@pytest.mark.parametrize("question", [MUMBAI_6AM, PARADIP])
+def test_live_mode_never_shows_a_scripted_warning(monkeypatch, ask, question):
+    # A calm live sea where the rehearsed dataset scripts an IMD warning
+    # (Mumbai 06:00) or a cyclone (Paradip): LIVE must show neither.
     provider = _FakeProvider()
     provider.up = True
     monkeypatch.setattr(live_client, "_http", lambda: provider)
     live_client.clear_cache()
     config.set_data_mode("LIVE")
     try:
-        r = ask(GOA_Q)
+        r = ask(question)
+        assert r.alerts == [] and r.risk.official_warning is False
+        assert r.risk.score < 70, "no floor from a warning nobody issued"
+        assert r.risk.window is None, "no scripted 'improves after 11:00'"
         warnings = next(h for h in r.data_health if h.input == "warnings")
-        assert (warnings.status, warnings.usable, warnings.age_seconds, warnings.observed_at) == (
-            "STALE", True, None, None)
-        assert r.decision.state == "CAUTION"
+        assert (warnings.status, warnings.available) == ("MISSING", False)
+        assert "no official warnings feed" in warnings.detail
+        assert r.decision.state == "INSUFFICIENT_DATA"
+        cyclone = next(f for f in r.risk.factors if f.key == "cyclone")
+        assert "No official warnings feed connected" in cyclone.detail
+        assert "none" not in r.answer.split("Sources")[0]
     finally:
         live_client.clear_cache()
 
@@ -626,3 +636,24 @@ def test_a_request_pins_one_drill_for_its_whole_answer(ask):
     feeds.set_drill("stale")
     r = ask(GOA_Q)
     assert r.decision.drill == "stale" and r.decision.state == "CAUTION"
+
+
+# ---- the safest course never runs over land -----------------------------------------
+
+from app.services.route_optimizer import plan_routes, route_crosses_land  # noqa: E402
+
+
+@pytest.mark.parametrize("origin,dest", [
+    ((9.85, 76.10), (7.70, 77.60)),     # off Kochi to south of Kanyakumari (reported)
+    ((21.70, 72.30), (20.65, 70.95)),   # Bhavnagar to Diu, across Saurashtra (reported)
+    ((18.922, 72.835), (18.826, 72.558)),  # Mumbai harbour to area 1 (rehearsed)
+])
+def test_the_recommended_course_never_crosses_land(origin, dest):
+    options = plan_routes(origin, dest, wave_m=1.2, wind_kmh=18)
+    recommended = [o for o in options if o.recommended]
+    assert len(recommended) == 1
+    legs = [(l.latitude, l.longitude) for l in recommended[0].legs]
+    assert not route_crosses_land(legs)
+    for o in options:  # a straight line over land is labelled, never offered as a course
+        if route_crosses_land([(l.latitude, l.longitude) for l in o.legs]):
+            assert not o.recommended and o.penalties.get("over_land") == 1.0
