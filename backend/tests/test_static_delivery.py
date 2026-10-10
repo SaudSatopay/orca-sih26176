@@ -78,3 +78,17 @@ def test_the_showcase_screens_are_served_as_webp(client):
     res = client.get(f"/sheets/{sheet.name}")
     assert res.status_code == 200
     assert res.headers["content-type"] == "image/webp"
+
+
+@pytest.mark.parametrize("path", [
+    "/..%2F..%2Fbackend%2Fapp%2Fconfig.py",          # the reported request
+    "/..%2f..%2fbackend%2fapp%2fconfig.py",
+    "/%2e%2e%2F%2e%2e%2Fbackend%2Fapp%2Fconfig.py",
+    "/assets/..%2F..%2F..%2Fbackend%2Fapp%2Fconfig.py",
+    "/..%5C..%5Cbackend%5Capp%5Cconfig.py",          # Windows separators
+])
+def test_no_file_outside_the_built_frontend_is_ever_served(client, path):
+    r = client.get(path)
+    # never the server's own source (or a .env beside it) — at most the app's page
+    assert "LIVE_TIMEOUT_SECONDS" not in r.text
+    assert "ANTHROPIC_API_KEY" not in r.text

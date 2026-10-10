@@ -108,10 +108,16 @@ if _DIST.is_dir():
     def index() -> FileResponse:
         return FileResponse(_DIST / "index.html", headers=_NO_STORE)
 
+    _DIST_ROOT = _DIST.resolve()
+
     @app.get("/{full_path:path}")
     def spa(full_path: str) -> FileResponse:
-        candidate = _DIST / full_path
-        if candidate.is_file():
+        # Only a file that resolves INSIDE the built frontend is ever served.
+        # The path arrives decoded, so "..%2F" or "..%5C" climbs like "../";
+        # resolving first and checking containment stops it reading the
+        # server's own source, or a .env beside it.
+        candidate = (_DIST / full_path).resolve()
+        if candidate.is_file() and candidate.is_relative_to(_DIST_ROOT):
             # /index.html by name is the same entry document as "/".
             if candidate.name == "index.html":
                 return FileResponse(candidate, headers=_NO_STORE)
