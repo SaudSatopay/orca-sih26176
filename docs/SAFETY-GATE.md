@@ -175,6 +175,27 @@ With live data, freshness is measured from when each Open-Meteo series was fetch
 
 `test_live_outage_recovers_by_itself_after_the_failure_cache_expires` proves this with a fake provider and a fake clock.
 
+## No signal at sea: the same gate on the phone
+
+A fisher loses signal a few kilometres out. The phone keeps ORCA's last plan and re-judges it on the device as it ages (`regate` in `frontend/src/offline.ts`), with the same rules as the server:
+
+- **Age:** each input's age is recomputed from its `observed_at`, against the limits carried in its own data-health record. The only thresholds are the server's.
+- **Verdict:** decided in the backend's order:
+  - NO-GO is held;
+  - a critical input too old gives INSUFFICIENT DATA, and the plan is withheld;
+  - a stale critical input gives CAUTION;
+  - otherwise GO.
+- **Never less cautious:** the phone can make the server's verdict more cautious, never less.
+- **Warnings age first:** they are fresh for 1 h and usable for 3 h. A GO plan therefore reads CAUTION after an hour and INSUFFICIENT DATA after three.
+- **Ask:** offline, it does not guess. It says there is no connection, and points to the last plan and its age.
+- **Service worker:** a minimal one (`frontend/public/sw.js`) opens the app shell with no signal. Pages are network-first, so an online visit always gets the deployed app. `/api` is never cached.
+
+Rehearse it with `/?m=1&offline=90` (the plan is 1 h 30 min old) and `/?m=1&offline=200` (3 h 20 min old):
+
+| `?offline=90`: CAUTION, warnings past 1 h | `?offline=200`: INSUFFICIENT DATA, warnings past 3 h |
+|---|---|
+| ![Offline, 90 min](safety-gate/phone-offline-90.webp) | ![Offline, 200 min](safety-gate/phone-offline-200.webp) |
+
 ## Run it yourself
 
 From a clean checkout:
@@ -230,7 +251,8 @@ The chips and `?drill=` links send the drill with every request: `"drill"` in th
 4. **The floor holds.** With the feed still down, ask about Paradip: still **92 EXTREME · Do not launch**.
 5. **Recovery.** Back to **GO, normal confidence**, "marine feed reconnected 1 min ago". No restart.
 6. **Optional: where and when.** Ask *"Can I go fishing near Malvan tomorrow?"*. The answer is **Insufficient data**: ORCA does not know Malvan, so it computes no score for the wrong harbour.
-7. **Proof.** Run `python -m pytest backend/tests/test_safety_gate.py -v`.
+7. **Optional: no signal.** Open `/?m=1&offline=200` on a phone. ORCA's last plan is 3 h 20 min old, and the phone itself now says **Insufficient data**: no score and no plan.
+8. **Proof.** Run `python -m pytest backend/tests/test_safety_gate.py -v`.
 
 ## Design decisions to defend
 
@@ -253,4 +275,5 @@ The chips and `?drill=` links send the drill with every request: `"drill"` in th
 | Decision and words | `planner.py` (gate node), `explanation_agent.py` (answer and evidence), `plain_language.py`, `api/fishing.py`, `api/routes.py` (`/api/config/data-health`) |
 | Words, en/hi/mr | `backend/app/services/i18n.py` (`dh_*`, `gate_*`), `frontend/src/i18n/gate.ts` |
 | UI | `frontend/src/components/SafetyGate.tsx` (evidence check and the Evidence Confidence panel), `DataDrill.tsx`, `RiskCard.tsx`, `FishingPanel.tsx`, `MobileApp.tsx`, `gateModel.ts`, `boot.ts` (`?drill=`) |
-| Tests | `backend/tests/test_safety_gate.py` (105), `frontend/src/components/SafetyGate.test.tsx`, `DataDrill.test.tsx`, `RiskCard.test.tsx`, `FishingPanel.test.tsx`, `MobileApp.test.tsx`, `gateModel.test.ts`, `boot.test.ts` |
+| Offline, on the phone | `frontend/src/offline.ts` (`regate`), `components/OfflinePlan.tsx`, `i18n/offline.ts`, `public/sw.js` |
+| Tests | `backend/tests/test_safety_gate.py` (105), `frontend/src/offline.test.ts`, `MobileApp.offline.test.tsx`, `sw.test.ts`, `frontend/src/components/SafetyGate.test.tsx`, `DataDrill.test.tsx`, `RiskCard.test.tsx`, `FishingPanel.test.tsx`, `MobileApp.test.tsx`, `gateModel.test.ts`, `boot.test.ts` |

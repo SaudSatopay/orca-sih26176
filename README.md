@@ -70,6 +70,7 @@ Unavailable · Recovery), or `python -m pytest backend/tests/test_safety_gate.py
 The whole design, the four scenarios and the test output:
 **[docs/SAFETY-GATE.md](docs/SAFETY-GATE.md)**. The showcase page, with a live
 demo against the real backend: **[/challenge.html](https://orca-psi-one.vercel.app/challenge.html)**.
+With no signal, the phone re-judges ORCA's last plan as it ages: try `/?m=1&offline=200`.
 
 ---
 
