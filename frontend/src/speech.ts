@@ -117,11 +117,30 @@ export function listenOnce(rec: SpeechRecognitionLike, h: ListenHandlers): Liste
   let done = false; // the question was sent, or listening failed or was abandoned
   let stopped = false; // the fisher pressed STOP
   let ended = false;
+  let released = false; // the recognizer has been told to let go of the microphone
+
+  // Listening is over: let go of the recognizer. iOS Safari keeps the
+  // microphone open (the orange dot) for as long as a recognizer holds its
+  // audio session, even after `end`; aborting an ended recognizer is a no-op
+  // elsewhere. Nothing of ours stays attached to it.
+  const release = () => {
+    if (released) return;
+    released = true;
+    rec.onresult = null;
+    rec.onerror = null;
+    rec.onend = null;
+    try {
+      rec.abort?.();
+    } catch {
+      /* already gone */
+    }
+  };
 
   const finish = () => {
     if (ended) return;
     ended = true;
     h.onEnd?.();
+    release();
   };
 
   rec.interimResults = false;
@@ -157,6 +176,7 @@ export function listenOnce(rec: SpeechRecognitionLike, h: ListenHandlers): Liste
       done = true;
       if (rec.abort) rec.abort();
       else rec.stop();
+      released = true; // aborted already: the end that follows lets go of nothing more
     },
   };
 }

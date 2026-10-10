@@ -200,6 +200,35 @@ describe("listening for one question", () => {
     expect(h.onEnd).toHaveBeenCalledTimes(1);
   });
 
+  it("lets go of the microphone once the question is taken (iOS keeps it open otherwise)", () => {
+    const { rec, h } = listen();
+    rec.say([heard("is it safe")]);
+    rec.end();
+    expect(h.onFinal).toHaveBeenCalledWith("is it safe");
+    // the recognizer is told to drop its audio capture, and nothing of ours stays on it
+    expect(rec.aborted).toBe(1);
+    expect(rec.onresult).toBeNull();
+    expect(rec.onerror).toBeNull();
+    expect(rec.onend).toBeNull();
+  });
+
+  it("lets go of the microphone after silence, a STOP or an error as well", () => {
+    const silence = listen();
+    silence.rec.end();
+    expect(silence.rec.aborted).toBe(1);
+
+    const stopped = listen();
+    stopped.session.stop();
+    stopped.rec.end();
+    expect(stopped.rec.aborted).toBe(1);
+
+    const failed = listen();
+    failed.rec.fail("network");
+    expect(failed.rec.aborted).toBe(1);
+    expect(failed.rec.onend).toBeNull();
+    expect(failed.h.onEnd).toHaveBeenCalledTimes(1);
+  });
+
   it("sends nothing at all once abandoned", () => {
     const { rec, h, session } = listen();
     rec.say([heard("is it safe")]);
