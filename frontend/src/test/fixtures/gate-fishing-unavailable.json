@@ -1,0 +1,166 @@
+{
+ "location": {
+  "latitude": 15.4,
+  "longitude": 73.7,
+  "name": "Panaji (Goa)",
+  "state": "Goa",
+  "nearest_landing_centre": "Panaji (Goa)",
+  "distance_from_shore_km": 17.0
+ },
+ "generated_at": "2026-10-10T13:31:40+05:30",
+ "radius_km": 100.0,
+ "safety": {
+  "score": 20,
+  "category": "LOW",
+  "official_warning": false,
+  "improves_after": null,
+  "wave_height_m": null,
+  "wind_speed_kmh": 15.5,
+  "sea_state": null
+ },
+ "areas": [],
+ "best_window": null,
+ "hourly_ranking": [],
+ "duration": null,
+ "economics": null,
+ "routes": [],
+ "avoid": [
+  {
+   "name": "Malvan Marine Sanctuary",
+   "zone_type": "marine_protected_area",
+   "distance_km": 71.09,
+   "window": null,
+   "active_now": true,
+   "severity": "critical"
+  }
+ ],
+ "forecast": [],
+ "advice": [
+  "ORCA does not have enough reliable sea data to say go today. Follow the official advisory.",
+  "Sea height unknown, there is a steady breeze.",
+  "Never enter the red area on the map — Malvan Marine Sanctuary. Boats are stopped and fined there.",
+  "This is our best guess from the data — it is not a promise of fish. Always follow the Coast Guard and the government warning."
+ ],
+ "mode": "DEMO",
+ "method": "Likelihood from chlorophyll, sea-surface temperature, thermal front strength, sea state and time of day. Species mix weighted by regional occurrence records (OBIS / Map of Life snapshot). A likelihood, never a guarantee.",
+ "decision": {
+  "state": "INSUFFICIENT_DATA",
+  "confidence": "insufficient",
+  "headline": "Not enough reliable data to decide — follow the official advisory.",
+  "reasons": [
+   "Wave height: no reading — the marine forecast feed did not respond.",
+   "ORCA will not clear a trip on missing or out-of-date evidence."
+  ],
+  "blocking_inputs": [
+   "wave"
+  ],
+  "stale_inputs": [],
+  "risk_go": true,
+  "drill": "unavailable",
+  "timestamp": "2026-10-10T13:31:40+05:30"
+ },
+ "data_health": [
+  {
+   "input": "wave",
+   "label": "Wave height",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "marine",
+   "available": false,
+   "observed_at": null,
+   "age_seconds": null,
+   "freshness_limit_seconds": 10800,
+   "max_age_seconds": 21600,
+   "status": "MISSING",
+   "critical": true,
+   "usable": false,
+   "detail": "no reading — the marine forecast feed did not respond",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "wind",
+   "label": "Wind",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "weather",
+   "available": true,
+   "observed_at": "2026-10-10T13:19:40+05:30",
+   "age_seconds": 720,
+   "freshness_limit_seconds": 10800,
+   "max_age_seconds": 21600,
+   "status": "FRESH",
+   "critical": true,
+   "usable": true,
+   "detail": "12 min old (limit 3 h)",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "warnings",
+   "label": "Official warnings",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "warnings",
+   "available": true,
+   "observed_at": "2026-10-10T13:06:40+05:30",
+   "age_seconds": 1500,
+   "freshness_limit_seconds": 3600,
+   "max_age_seconds": 10800,
+   "status": "FRESH",
+   "critical": true,
+   "usable": true,
+   "detail": "25 min old (limit 1 h)",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "position",
+   "label": "Position and restricted zones",
+   "source": "ORCA geospatial layer (OpenStreetMap derived)",
+   "feed": "chart",
+   "available": true,
+   "observed_at": null,
+   "age_seconds": null,
+   "freshness_limit_seconds": null,
+   "max_age_seconds": null,
+   "status": "FRESH",
+   "critical": true,
+   "usable": true,
+   "detail": "bundled with the app",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "rain",
+   "label": "Rain and visibility",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "weather",
+   "available": true,
+   "observed_at": "2026-10-10T13:19:40+05:30",
+   "age_seconds": 720,
+   "freshness_limit_seconds": 10800,
+   "max_age_seconds": 21600,
+   "status": "FRESH",
+   "critical": false,
+   "usable": true,
+   "detail": "12 min old (limit 3 h)",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "current",
+   "label": "Surface current",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "marine",
+   "available": false,
+   "observed_at": null,
+   "age_seconds": null,
+   "freshness_limit_seconds": 21600,
+   "max_age_seconds": 43200,
+   "status": "MISSING",
+   "critical": false,
+   "usable": false,
+   "detail": "no reading — the marine forecast feed did not respond",
+   "note": null,
+   "mode": "DEMO"
+  }
+ ]
+}

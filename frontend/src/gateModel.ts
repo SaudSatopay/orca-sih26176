@@ -14,9 +14,10 @@ export function ageText(seconds: number, lang: Language): string {
   const minutes = Math.max(0, Math.floor(seconds / 60));
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  if (h && m) return `${h} ${u.h} ${m} ${u.min}`;
+  const mins = (n: number) => `${n} ${n === 1 ? u.min1 : u.min}`;
+  if (h && m) return `${h} ${u.h} ${mins(m)}`;
   if (h) return `${h} ${u.h}`;
-  return `${m} ${u.min}`;
+  return mins(m);
 }
 
 /** Critical inputs that are fresh, out of all the critical ones. */

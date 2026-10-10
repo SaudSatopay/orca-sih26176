@@ -476,9 +476,30 @@ def test_live_outage_recovers_by_itself_after_the_failure_cache_expires(monkeypa
 
         clock["t"] += live_client.CACHE_TTL_FAIL + 1               # ... then retried
         back = ask(GOA_Q)
-        assert (back.decision.state, back.decision.confidence) == ("GO", "normal")
         assert back.mode == "LIVE"
         assert next(h for h in back.data_health if h.input == "wave").status == "FRESH"
+        assert back.decision.blocking_inputs == [], "the sea readings are back"
+        # ... and the honest LIVE answer is CAUTION, not a clean GO: there is no
+        # open IMD/INCOIS feed, so the warnings come from the bundled bulletin,
+        # whose age is unknown. A stand-in never clears a trip.
+        assert (back.decision.state, back.decision.stale_inputs) == ("CAUTION", ["warnings"])
+        assert any("no live IMD / INCOIS feed" in x for x in back.decision.reasons)
+    finally:
+        live_client.clear_cache()
+
+
+def test_live_mode_never_reports_the_bundled_warnings_as_fresh(monkeypatch, ask):
+    provider = _FakeProvider()
+    provider.up = True
+    monkeypatch.setattr(live_client, "_http", lambda: provider)
+    live_client.clear_cache()
+    config.set_data_mode("LIVE")
+    try:
+        r = ask(GOA_Q)
+        warnings = next(h for h in r.data_health if h.input == "warnings")
+        assert (warnings.status, warnings.usable, warnings.age_seconds, warnings.observed_at) == (
+            "STALE", True, None, None)
+        assert r.decision.state == "CAUTION"
     finally:
         live_client.clear_cache()
 
@@ -546,3 +567,62 @@ def test_the_per_request_drill_reaches_the_parallel_agents(ask):
     r = ask(GOA_Q, drill="unavailable")
     wave = next(h for h in r.data_health if h.input == "wave")
     assert wave.status == "MISSING"
+
+
+
+# ---- review fixes: nothing plans a trip on a withheld verdict ----------------------
+
+def test_today_plans_no_trip_when_the_gate_withholds(client):
+    feeds.set_drill("unavailable")
+    j = client.get("/api/fishing", params=GOA_SEA).json()
+    assert j["decision"]["state"] == "INSUFFICIENT_DATA"
+    assert (j["areas"], j["routes"], j["forecast"], j["hourly_ranking"]) == ([], [], [], [])
+    assert (j["duration"], j["economics"], j["best_window"]) == (None, None, None)
+    spoken = " ".join(j["advice"])
+    for planning in ("Areas", "best time", "Stay there", "Tomorrow", "calmer", "rougher"):
+        assert planning not in spoken, planning
+
+
+def test_a_withheld_answer_offers_no_course_and_no_grounds(ask):
+    feeds.set_drill("unavailable")
+    r = ask("Give me the safest route to the nearest fishing zone near Goa")
+    assert r.decision.state == "INSUFFICIENT_DATA"
+    assert (r.pfz, r.routes) == ([], [])
+    risk_row = next(t for t in r.trace if t.agent == "risk")
+    assert risk_row.summary == "score withheld — evidence incomplete"
+
+
+def test_a_warned_centre_with_a_missing_reading_says_the_risk_may_be_higher(ask):
+    healthy = ask("Can I go fishing near Digha?")
+    feeds.set_drill("unavailable")
+    r = ask("Can I go fishing near Digha?", session_id="digha-down")
+    assert r.decision.state == "NO_GO" and healthy.decision.state == "NO_GO"
+    assert r.risk.score >= 70, "the warning floor holds"
+    assert r.risk.score <= healthy.risk.score
+    assert any("may be higher than shown" in x for x in r.decision.reasons)
+    assert not any("cannot weaken" in x for x in r.decision.reasons)
+
+
+def test_a_no_go_on_stale_readings_says_so_plainly():
+    d = safety_gate.decide(_risk(False), _health(wind="STALE"), now())
+    assert d.state == "NO_GO"
+    assert any("out of date" in x for x in d.reasons)
+
+
+def test_no_risk_result_reports_incomplete_evidence_not_stale_data():
+    d = safety_gate.decide(None, _health(), now())
+    assert (d.state, d.confidence) == ("INSUFFICIENT_DATA", "insufficient")
+    assert d.reasons == ["The risk engine returned no result."]
+
+
+def test_one_minute_is_singular_in_marathi():
+    assert data_health.age_text(60, "mr") == "1 मिनिट"
+    assert data_health.age_text(120, "mr") == "2 मिनिटे"
+    assert data_health.age_text(60, "en") == "1 min"
+
+
+def test_a_request_pins_one_drill_for_its_whole_answer(ask):
+    # the server-wide drill is read once at the start of the request
+    feeds.set_drill("stale")
+    r = ask(GOA_Q)
+    assert r.decision.drill == "stale" and r.decision.state == "CAUTION"

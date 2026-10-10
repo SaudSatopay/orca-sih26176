@@ -73,8 +73,8 @@ export function zones(): Promise<{ features: ZoneFeature[]; note: string }> {
 }
 
 /** The coastal risk board. `lang` translates warning headlines, never figures. */
-export function authority(lang: Language = "en"): Promise<AuthorityDashboard> {
-  return json(`${BASE}/authority/dashboard?lang=${lang}`);
+export function authority(lang: Language = "en", drill?: DataDrill): Promise<AuthorityDashboard> {
+  return json(`${BASE}/authority/dashboard?lang=${lang}${drill ? `&drill=${drill}` : ""}`);
 }
 
 /** Official warnings and geofence alerts in force at a position. */

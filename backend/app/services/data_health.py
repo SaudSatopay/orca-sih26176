@@ -32,7 +32,10 @@ FUTURE_SKEW_S = 600
 
 def age_text(seconds: int, lang: Language) -> str:
     """'4 h 10 min' / '4 घं 10 मि' / '4 तास 10 मिनिटे' — the digits never change."""
-    return i18n.humanise_duration(int(seconds) // 60, lang)
+    minutes = int(seconds) // 60
+    if minutes == 1:
+        return f"1 {i18n.t('minute_one', lang)}"  # Marathi says "1 मिनिट", not "1 मिनिटे"
+    return i18n.humanise_duration(minutes, lang)
 
 
 def _feed_name(feed: str, lang: Language) -> str:
@@ -69,6 +72,11 @@ def check(input_key: str, feed: FeedStatus, now: datetime, *, lang: Language = "
 
     if feed.note == "standin":
         return record("MISSING", False, i18n.t("dh_standin", lang), available=False)
+
+    if feed.note == "bundled":
+        # Present, but not a live check: its age is unknown, so it can never be
+        # FRESH. Usable with caution (CAUTION), never enough for a clean GO.
+        return record("STALE", True, i18n.t("dh_bundled", lang))
 
     if limit is None:
         return record("FRESH", True, i18n.t("dh_static", lang))

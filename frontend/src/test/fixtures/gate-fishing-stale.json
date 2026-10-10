@@ -1,0 +1,628 @@
+{
+ "location": {
+  "latitude": 15.4,
+  "longitude": 73.7,
+  "name": "Panaji (Goa)",
+  "state": "Goa",
+  "nearest_landing_centre": "Panaji (Goa)",
+  "distance_from_shore_km": 17.0
+ },
+ "generated_at": "2026-10-10T13:31:23+05:30",
+ "radius_km": 100.0,
+ "safety": {
+  "score": 17,
+  "category": "LOW",
+  "official_warning": false,
+  "improves_after": null,
+  "wave_height_m": 0.97,
+  "wind_speed_kmh": 15.5,
+  "sea_state": "slight"
+ },
+ "areas": [
+  {
+   "id": "z1",
+   "rank": 1,
+   "latitude": 15.3045,
+   "longitude": 73.4284,
+   "distance_km": 31.0,
+   "bearing": "WSW",
+   "sst_c": 29.9,
+   "chlorophyll_mg_m3": 0.87,
+   "wave_height_m": 0.69,
+   "confidence": 0.67,
+   "rationale": "Chlorophyll 0.87 mg/m³ at 29.9 °C, 31 km WSW.",
+   "source": "DEMO",
+   "disclaimer": "Demo / simulated data — not a live government feed",
+   "probability": 67,
+   "rating": "good",
+   "factors": {
+    "chlorophyll": 0.421,
+    "sst": 0.745,
+    "front": 0.82,
+    "sea_state": 1.0,
+    "time_of_day": 0.56
+   },
+   "likely_species": [
+    "Bombil (Bombay duck)",
+    "Hilsa (ilish)",
+    "Paplet (silver pomfret)"
+   ],
+   "value_score": 56.6,
+   "recommended": true
+  },
+  {
+   "id": "z3",
+   "rank": 2,
+   "latitude": 15.5764,
+   "longitude": 73.3065,
+   "distance_km": 46.5,
+   "bearing": "WNW",
+   "sst_c": 28.4,
+   "chlorophyll_mg_m3": 0.73,
+   "wave_height_m": 0.63,
+   "confidence": 0.66,
+   "rationale": "Chlorophyll 0.73 mg/m³ at 28.4 °C, 46 km WNW.",
+   "source": "DEMO",
+   "disclaimer": "Demo / simulated data — not a live government feed",
+   "probability": 66,
+   "rating": "good",
+   "factors": {
+    "chlorophyll": 0.358,
+    "sst": 1.0,
+    "front": 0.58,
+    "sea_state": 1.0,
+    "time_of_day": 0.56
+   },
+   "likely_species": [
+    "Bombil (Bombay duck)",
+    "Paplet (silver pomfret)",
+    "Bangda (Indian mackerel)"
+   ],
+   "value_score": 50.7,
+   "recommended": false
+  },
+  {
+   "id": "z2",
+   "rank": 3,
+   "latitude": 15.6415,
+   "longitude": 73.4491,
+   "distance_km": 38.0,
+   "bearing": "NW",
+   "sst_c": 29.7,
+   "chlorophyll_mg_m3": 0.78,
+   "wave_height_m": 0.66,
+   "confidence": 0.64,
+   "rationale": "Chlorophyll 0.78 mg/m³ at 29.7 °C, 38 km NW.",
+   "source": "DEMO",
+   "disclaimer": "Demo / simulated data — not a live government feed",
+   "probability": 64,
+   "rating": "good",
+   "factors": {
+    "chlorophyll": 0.381,
+    "sst": 0.802,
+    "front": 0.66,
+    "sea_state": 1.0,
+    "time_of_day": 0.56
+   },
+   "likely_species": [
+    "Bombil (Bombay duck)",
+    "Paplet (silver pomfret)",
+    "Hilsa (ilish)"
+   ],
+   "value_score": 51.8,
+   "recommended": false
+  },
+  {
+   "id": "z4",
+   "rank": 4,
+   "latitude": 15.0747,
+   "longitude": 73.3262,
+   "distance_km": 54.0,
+   "bearing": "SW",
+   "sst_c": 29.5,
+   "chlorophyll_mg_m3": 0.68,
+   "wave_height_m": 0.6,
+   "confidence": 0.61,
+   "rationale": "Chlorophyll 0.68 mg/m³ at 29.5 °C, 54 km SW.",
+   "source": "DEMO",
+   "disclaimer": "Demo / simulated data — not a live government feed",
+   "probability": 61,
+   "rating": "good",
+   "factors": {
+    "chlorophyll": 0.336,
+    "sst": 0.858,
+    "front": 0.5,
+    "sea_state": 1.0,
+    "time_of_day": 0.56
+   },
+   "likely_species": [
+    "Bombil (Bombay duck)",
+    "Paplet (silver pomfret)",
+    "Hilsa (ilish)"
+   ],
+   "value_score": 44.5,
+   "recommended": false
+  },
+  {
+   "id": "z5",
+   "rank": 5,
+   "latitude": 15.4479,
+   "longitude": 73.1237,
+   "distance_km": 62.0,
+   "bearing": "W",
+   "sst_c": 29.5,
+   "chlorophyll_mg_m3": 0.63,
+   "wave_height_m": 0.57,
+   "confidence": 0.61,
+   "rationale": "Chlorophyll 0.63 mg/m³ at 29.5 °C, 62 km W.",
+   "source": "DEMO",
+   "disclaimer": "Demo / simulated data — not a live government feed",
+   "probability": 61,
+   "rating": "good",
+   "factors": {
+    "chlorophyll": 0.314,
+    "sst": 0.858,
+    "front": 0.5,
+    "sea_state": 1.0,
+    "time_of_day": 0.56
+   },
+   "likely_species": [
+    "Bombil (Bombay duck)",
+    "Paplet (silver pomfret)",
+    "Hilsa (ilish)"
+   ],
+   "value_score": 42.1,
+   "recommended": false
+  },
+  {
+   "id": "z6",
+   "rank": 6,
+   "latitude": 15.9636,
+   "longitude": 73.3882,
+   "distance_km": 71.0,
+   "bearing": "NNW",
+   "sst_c": 28.7,
+   "chlorophyll_mg_m3": 0.59,
+   "wave_height_m": 0.54,
+   "confidence": 0.6,
+   "rationale": "Chlorophyll 0.59 mg/m³ at 28.7 °C, 71 km NNW.",
+   "source": "DEMO",
+   "disclaimer": "Demo / simulated data — not a live government feed",
+   "probability": 60,
+   "rating": "good",
+   "factors": {
+    "chlorophyll": 0.295,
+    "sst": 1.0,
+    "front": 0.34,
+    "sea_state": 1.0,
+    "time_of_day": 0.56
+   },
+   "likely_species": [
+    "Bombil (Bombay duck)",
+    "Paplet (silver pomfret)",
+    "Bangda (Indian mackerel)"
+   ],
+   "value_score": 38.7,
+   "recommended": false
+  },
+  {
+   "id": "z7",
+   "rank": 7,
+   "latitude": 15.3012,
+   "longitude": 72.9798,
+   "distance_km": 78.0,
+   "bearing": "W",
+   "sst_c": 29.3,
+   "chlorophyll_mg_m3": 0.56,
+   "wave_height_m": 0.51,
+   "confidence": 0.58,
+   "rationale": "Chlorophyll 0.56 mg/m³ at 29.3 °C, 78 km W.",
+   "source": "DEMO",
+   "disclaimer": "Demo / simulated data — not a live government feed",
+   "probability": 58,
+   "rating": "good",
+   "factors": {
+    "chlorophyll": 0.279,
+    "sst": 0.915,
+    "front": 0.34,
+    "sea_state": 1.0,
+    "time_of_day": 0.56
+   },
+   "likely_species": [
+    "Bombil (Bombay duck)",
+    "Paplet (silver pomfret)",
+    "Bangda (Indian mackerel)"
+   ],
+   "value_score": 35.4,
+   "recommended": false
+  },
+  {
+   "id": "z8",
+   "rank": 8,
+   "latitude": 14.7284,
+   "longitude": 73.2664,
+   "distance_km": 88.0,
+   "bearing": "SSW",
+   "sst_c": 28.8,
+   "chlorophyll_mg_m3": 0.52,
+   "wave_height_m": 0.48,
+   "confidence": 0.58,
+   "rationale": "Chlorophyll 0.52 mg/m³ at 28.8 °C, 88 km SSW.",
+   "source": "DEMO",
+   "disclaimer": "Demo / simulated data — not a live government feed",
+   "probability": 58,
+   "rating": "good",
+   "factors": {
+    "chlorophyll": 0.257,
+    "sst": 1.0,
+    "front": 0.26,
+    "sea_state": 1.0,
+    "time_of_day": 0.56
+   },
+   "likely_species": [
+    "Bangda (Indian mackerel)",
+    "Tarli (oil sardine)",
+    "Surmai (seer fish)"
+   ],
+   "value_score": 32.5,
+   "recommended": false
+  },
+  {
+   "id": "z9",
+   "rank": 9,
+   "latitude": 15.8689,
+   "longitude": 72.9473,
+   "distance_km": 96.0,
+   "bearing": "WNW",
+   "sst_c": 29.2,
+   "chlorophyll_mg_m3": 0.49,
+   "wave_height_m": 0.45,
+   "confidence": 0.56,
+   "rationale": "Chlorophyll 0.49 mg/m³ at 29.2 °C, 96 km WNW.",
+   "source": "DEMO",
+   "disclaimer": "Demo / simulated data — not a live government feed",
+   "probability": 56,
+   "rating": "good",
+   "factors": {
+    "chlorophyll": 0.241,
+    "sst": 0.943,
+    "front": 0.26,
+    "sea_state": 1.0,
+    "time_of_day": 0.56
+   },
+   "likely_species": [
+    "Bombil (Bombay duck)",
+    "Paplet (silver pomfret)",
+    "Bangda (Indian mackerel)"
+   ],
+   "value_score": 29.1,
+   "recommended": false
+  }
+ ],
+ "best_window": {
+  "from_hour": 5,
+  "to_hour": 8
+ },
+ "hourly_ranking": [
+  {
+   "hour": 5,
+   "probability": 72
+  },
+  {
+   "hour": 6,
+   "probability": 72
+  },
+  {
+   "hour": 7,
+   "probability": 72
+  },
+  {
+   "hour": 8,
+   "probability": 71
+  },
+  {
+   "hour": 9,
+   "probability": 69
+  },
+  {
+   "hour": 10,
+   "probability": 68
+  },
+  {
+   "hour": 11,
+   "probability": 68
+  },
+  {
+   "hour": 12,
+   "probability": 67
+  },
+  {
+   "hour": 13,
+   "probability": 67
+  },
+  {
+   "hour": 14,
+   "probability": 68
+  },
+  {
+   "hour": 15,
+   "probability": 69
+  },
+  {
+   "hour": 16,
+   "probability": 70
+  },
+  {
+   "hour": 17,
+   "probability": 72
+  },
+  {
+   "hour": 18,
+   "probability": 72
+  },
+  {
+   "hour": 19,
+   "probability": 71
+  }
+ ],
+ "duration": {
+  "recommended_hours": 3.0,
+  "travel_each_way_minutes": 118,
+  "round_trip_hours": 3.9,
+  "total_trip_hours": 6.9,
+  "safe_window_hours": 14.0,
+  "limited_by_weather": false,
+  "feasible": true,
+  "return_by": "03:31",
+  "return_reason_wave_m": 0.6
+ },
+ "economics": {
+  "fuel_litres": 28,
+  "fuel_cost_inr": 2800,
+  "catch_kg_low": 40,
+  "catch_kg_high": 60,
+  "revenue_inr": 7000,
+  "profit_inr": 4200,
+  "assumptions": "Typical motorised FRP boat · 0.45 L/km · ₹100/L · mixed catch ₹140/kg"
+ },
+ "routes": [
+  {
+   "name": "Direct route",
+   "kind": "shortest",
+   "legs": [
+    {
+     "latitude": 15.4,
+     "longitude": 73.7
+    },
+    {
+     "latitude": 15.3045,
+     "longitude": 73.4284
+    }
+   ],
+   "distance_km": 31.0,
+   "eta_minutes": 118,
+   "risk_score": 17,
+   "risk_category": "LOW",
+   "penalties": {
+    "restricted_zones": 0.0
+   },
+   "recommended": true,
+   "notes": "Shortest track, no restricted areas on the way."
+  },
+  {
+   "name": "Safest route",
+   "kind": "safest",
+   "legs": [
+    {
+     "latitude": 15.4,
+     "longitude": 73.7
+    },
+    {
+     "latitude": 15.3045,
+     "longitude": 73.4284
+    }
+   ],
+   "distance_km": 31.0,
+   "eta_minutes": 118,
+   "risk_score": 17,
+   "risk_category": "LOW",
+   "penalties": {
+    "restricted_zones": 0.0,
+    "extra_km_vs_direct": 0.0
+   },
+   "recommended": false,
+   "notes": "Avoids all restricted areas."
+  }
+ ],
+ "avoid": [
+  {
+   "name": "Malvan Marine Sanctuary",
+   "zone_type": "marine_protected_area",
+   "distance_km": 71.09,
+   "window": null,
+   "active_now": true,
+   "severity": "critical"
+  }
+ ],
+ "forecast": [
+  {
+   "day_offset": 0,
+   "date": "2026-10-10",
+   "label": "today",
+   "best_hour": 17,
+   "probability": 71,
+   "rating": "very_good",
+   "wave_height_m": 0.92,
+   "wind_speed_kmh": 14.3,
+   "sea_state": "slight",
+   "calmer": true,
+   "official_warning": false,
+   "best_area_rank": 1,
+   "best_area_distance_km": 31.0
+  },
+  {
+   "day_offset": 1,
+   "date": "2026-10-11",
+   "label": "tomorrow",
+   "best_hour": 6,
+   "probability": 77,
+   "rating": "very_good",
+   "wave_height_m": 0.62,
+   "wind_speed_kmh": 10.9,
+   "sea_state": "slight",
+   "calmer": true,
+   "official_warning": false,
+   "best_area_rank": 1,
+   "best_area_distance_km": 31.0
+  },
+  {
+   "day_offset": 2,
+   "date": "2026-10-12",
+   "label": "day after tomorrow",
+   "best_hour": 6,
+   "probability": 75,
+   "rating": "very_good",
+   "wave_height_m": 0.91,
+   "wind_speed_kmh": 14.3,
+   "sea_state": "slight",
+   "calmer": true,
+   "official_warning": false,
+   "best_area_rank": 1,
+   "best_area_distance_km": 31.0
+  }
+ ],
+ "advice": [
+  "Be careful: some of today's sea data is old. Check the latest warning before you go.",
+  "Waves are about knee to waist high, there is a steady breeze.",
+  "Never enter the red area on the map — Malvan Marine Sanctuary. Boats are stopped and fined there.",
+  "Areas 1, 2, 3 on the map are your best chances today.",
+  "Area 1 is about 31 kilometres towards the south-west — good chance of fish there.",
+  "The best time to fish is 5 AM to 8 AM.",
+  "Stay there about 3 hours. With travel, the whole trip is roughly 6.9 hours.",
+  "Tomorrow: very good chance of fish, and the sea will be calmer.",
+  "The day after: very good chance of fish, and the sea will be calmer.",
+  "This is our best guess from the data — it is not a promise of fish. Always follow the Coast Guard and the government warning."
+ ],
+ "mode": "DEMO",
+ "method": "Likelihood from chlorophyll, sea-surface temperature, thermal front strength, sea state and time of day. Species mix weighted by regional occurrence records (OBIS / Map of Life snapshot). A likelihood, never a guarantee.",
+ "decision": {
+  "state": "CAUTION",
+  "confidence": "degraded",
+  "headline": "Caution — some of the data behind this answer is out of date.",
+  "reasons": [
+   "Wave height is 4 h 10 min old — over the 3 h limit.",
+   "Check the latest IMD / INCOIS bulletin before you go."
+  ],
+  "blocking_inputs": [],
+  "stale_inputs": [
+   "wave"
+  ],
+  "risk_go": true,
+  "drill": "stale",
+  "timestamp": "2026-10-10T13:31:23+05:30"
+ },
+ "data_health": [
+  {
+   "input": "wave",
+   "label": "Wave height",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "marine",
+   "available": true,
+   "observed_at": "2026-10-10T09:21:23+05:30",
+   "age_seconds": 15000,
+   "freshness_limit_seconds": 10800,
+   "max_age_seconds": 21600,
+   "status": "STALE",
+   "critical": true,
+   "usable": true,
+   "detail": "4 h 10 min old — over the 3 h limit",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "wind",
+   "label": "Wind",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "weather",
+   "available": true,
+   "observed_at": "2026-10-10T13:19:23+05:30",
+   "age_seconds": 720,
+   "freshness_limit_seconds": 10800,
+   "max_age_seconds": 21600,
+   "status": "FRESH",
+   "critical": true,
+   "usable": true,
+   "detail": "12 min old (limit 3 h)",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "warnings",
+   "label": "Official warnings",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "warnings",
+   "available": true,
+   "observed_at": "2026-10-10T13:06:23+05:30",
+   "age_seconds": 1500,
+   "freshness_limit_seconds": 3600,
+   "max_age_seconds": 10800,
+   "status": "FRESH",
+   "critical": true,
+   "usable": true,
+   "detail": "25 min old (limit 1 h)",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "position",
+   "label": "Position and restricted zones",
+   "source": "ORCA geospatial layer (OpenStreetMap derived)",
+   "feed": "chart",
+   "available": true,
+   "observed_at": null,
+   "age_seconds": null,
+   "freshness_limit_seconds": null,
+   "max_age_seconds": null,
+   "status": "FRESH",
+   "critical": true,
+   "usable": true,
+   "detail": "bundled with the app",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "rain",
+   "label": "Rain and visibility",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "weather",
+   "available": true,
+   "observed_at": "2026-10-10T13:19:23+05:30",
+   "age_seconds": 720,
+   "freshness_limit_seconds": 10800,
+   "max_age_seconds": 21600,
+   "status": "FRESH",
+   "critical": false,
+   "usable": true,
+   "detail": "12 min old (limit 3 h)",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "current",
+   "label": "Surface current",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "marine",
+   "available": true,
+   "observed_at": "2026-10-10T09:21:23+05:30",
+   "age_seconds": 15000,
+   "freshness_limit_seconds": 21600,
+   "max_age_seconds": 43200,
+   "status": "FRESH",
+   "critical": false,
+   "usable": true,
+   "detail": "4 h 10 min old (limit 6 h)",
+   "note": null,
+   "mode": "DEMO"
+  }
+ ]
+}

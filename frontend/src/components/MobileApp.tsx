@@ -728,9 +728,23 @@ function AnswerCard({
   const t = T[language] ?? T.en;
   const { headline, reasons } = readAnswer(res.answer);
   const risk = res.risk;
-  const color = risk ? RISK_COLOR[risk.category] : ink[500];
-  const printed = risk ? RISK_INK[risk.category] : ink[500];
-  const why = reasons.length ? reasons : (risk?.factors ?? []).slice(0, 3).map((f) => f.detail);
+  // The safety gate, as on Today: on insufficient evidence no number and no go
+  // stamp; on stale evidence the verdict stands, stamped with caution. The
+  // gate's own reasons lead the "why" whenever the evidence is not clean.
+  const gate = GATE[language] ?? GATE.en;
+  const withheld = gateWithholds(res.decision);
+  const tempered = gateTempers(res.decision);
+  const color = risk ? (withheld ? ink[400] : RISK_COLOR[risk.category]) : ink[500];
+  const printed = risk
+    ? withheld
+      ? ink[700]
+      : tempered
+        ? RISK_INK.MODERATE
+        : RISK_INK[risk.category]
+    : ink[500];
+  const baseWhy = reasons.length ? reasons : (risk?.factors ?? []).slice(0, 3).map((f) => f.detail);
+  const gateWhy = res.decision && (withheld || scoreUnconfirmed(res.decision)) ? res.decision.reasons : [];
+  const why = withheld ? gateWhy : [...gateWhy, ...baseWhy].slice(0, 4);
 
   return (
     <article
@@ -745,21 +759,29 @@ function AnswerCard({
     >
       {risk && (
         <div className="flex items-center gap-3.5 px-4 pt-4">
-          <Ring score={risk.score} color={color} size={84} stroke={10}>
+          <Ring score={withheld ? 0 : risk.score} color={color} size={84} stroke={10} dashed={withheld}>
             <span
               className="lining font-display text-numeral font-black leading-none"
               style={{ color: printed }}
             >
-              {Math.round(risk.score)}
+              {withheld ? "—" : Math.round(risk.score)}
             </span>
           </Ring>
           <div className="min-w-0">
             {/* the stamp prints the verdict; the band word stands beside the ring (PA2, X1) */}
             <span className="m-stamp" style={{ color: printed }}>
-              {VERDICT[language][risk.category as RiskCategory]}
+              {withheld
+                ? gate.state.INSUFFICIENT_DATA
+                : tempered
+                  ? gate.state.CAUTION
+                  : VERDICT[language][risk.category as RiskCategory]}
             </span>
             <p className="mt-2.5 text-lead font-semibold leading-tight text-ink-900">
-              {CATEGORY[language][risk.category as RiskCategory]}
+              {withheld
+                ? gate.instruction.INSUFFICIENT_DATA
+                : scoreUnconfirmed(res.decision)
+                  ? `${CATEGORY[language][risk.category as RiskCategory]} · ${gate.unconfirmed}`
+                  : CATEGORY[language][risk.category as RiskCategory]}
             </p>
           </div>
         </div>
@@ -1093,7 +1115,7 @@ export default function MobileApp() {
   const speakPlan = () => {
     if (!outlook) return;
     const bits = [...outlook.advice.slice(0, 4)];
-    if (tripOff) bits.push(t.noTrip + ".");
+    if (tripOff) bits.push((gateWithholds(outlook.decision) ? t.noTripData : t.noTrip) + ".");
     if (outlook.best_window && !tripOff)
       bits.push(
         fill(t.bestTimeSay, {

@@ -191,6 +191,10 @@ T: Dict[str, Dict[Language, str]] = {
                        "hi": "{feed} {age} पहले फिर से जुड़ा",
                        "mr": "{feed} {age} पूर्वी पुन्हा जोडला गेला"},
     "dh_no_reading": {"en": "no reading", "hi": "कोई रीडिंग नहीं", "mr": "नोंद नाही"},
+    "dh_bundled": {"en": "bundled bulletin — no live IMD / INCOIS feed, age unknown",
+                   "hi": "साथ आया बुलेटिन — IMD / INCOIS का लाइव स्रोत नहीं, उम्र अज्ञात",
+                   "mr": "सोबतचे बुलेटिन — IMD / INCOIS चा थेट स्रोत नाही, वय अज्ञात"},
+    "minute_one": {"en": "min", "hi": "मि", "mr": "मिनिट"},
     "dhs_FRESH": {"en": "fresh", "hi": "ताज़ा", "mr": "ताजी"},
     "dhs_STALE": {"en": "out of date", "hi": "पुराना", "mr": "जुनी"},
     "dhs_MISSING": {"en": "missing", "hi": "उपलब्ध नहीं", "mr": "उपलब्ध नाही"},
@@ -234,8 +238,14 @@ T: Dict[str, Dict[Language, str]] = {
                        "hi": "सभी {n} ज़रूरी आँकड़े ताज़ा हैं।",
                        "mr": "सर्व {n} आवश्यक नोंदी ताज्या आहेत."},
     "gate_reason_stale": {"en": "{input} is {age} old — over the {limit} limit.",
-                          "hi": "{input} {age} पुराना है — {limit} की सीमा से ज़्यादा।",
-                          "mr": "{input} {age} जुनी आहे — {limit} मर्यादेपेक्षा जास्त."},
+                          "hi": "{input}: {age} पुराना आँकड़ा — {limit} की सीमा से ज़्यादा।",
+                          "mr": "{input}: {age} जुनी नोंद — {limit} मर्यादेपेक्षा जास्त."},
+    "gate_reason_bundled": {"en": "{input}: no live IMD / INCOIS feed is connected — the bundled "
+                                  "bulletin cannot say what was issued in the last hour.",
+                            "hi": "{input}: IMD / INCOIS का कोई लाइव स्रोत जुड़ा नहीं — साथ आया "
+                                  "बुलेटिन पिछले घंटे की चेतावनी नहीं बता सकता।",
+                            "mr": "{input}: IMD / INCOIS चा कोणताही थेट स्रोत जोडलेला नाही — सोबतचे "
+                                  "बुलेटिन गेल्या तासातील इशारा सांगू शकत नाही."},
     "gate_reason_blocking": {"en": "{input}: {detail}.", "hi": "{input}: {detail}।",
                              "mr": "{input}: {detail}."},
     "gate_block": {"en": "ORCA will not clear a trip on missing or out-of-date evidence.",
@@ -249,12 +259,18 @@ T: Dict[str, Dict[Language, str]] = {
                       "hi": "IMD / INCOIS की आधिकारिक सलाह और तटरक्षक बल के निर्देशों का "
                             "पालन करें।",
                       "mr": "IMD / INCOIS चा अधिकृत सल्ला आणि तटरक्षक दलाच्या सूचना पाळा."},
-    "gate_nogo_data": {"en": "Missing or old data cannot weaken this: the safety rules "
-                             "already say do not go.",
-                       "hi": "गायब या पुराने आँकड़े इसे कमज़ोर नहीं कर सकते: सुरक्षा नियम "
-                             "पहले ही न जाने को कहते हैं।",
-                       "mr": "गहाळ किंवा जुनी माहिती हे कमकुवत करू शकत नाही: सुरक्षा नियम "
-                             "आधीच जाऊ नका असे सांगतात."},
+    "gate_nogo_missing": {"en": "The safety rules already say do not go. With a reading "
+                                "missing, the real risk may be higher than shown.",
+                          "hi": "सुरक्षा नियम पहले ही न जाने को कहते हैं। एक रीडिंग गायब होने से "
+                                "असली जोखिम दिखाए गए से ज़्यादा हो सकता है।",
+                          "mr": "सुरक्षा नियम आधीच जाऊ नका असे सांगतात. एक नोंद गहाळ असल्याने "
+                                "खरा धोका दाखवलेल्यापेक्षा जास्त असू शकतो."},
+    "gate_nogo_stale": {"en": "The safety rules already say do not go; some of the readings "
+                              "behind the score are out of date.",
+                        "hi": "सुरक्षा नियम पहले ही न जाने को कहते हैं; स्कोर के पीछे की कुछ "
+                              "रीडिंग पुरानी हैं।",
+                        "mr": "सुरक्षा नियम आधीच जाऊ नका असे सांगतात; गुणांमागील काही नोंदी "
+                              "जुन्या आहेत."},
     "gate_no_risk": {"en": "The risk engine returned no result.",
                      "hi": "जोखिम गणना से कोई परिणाम नहीं मिला।",
                      "mr": "धोका गणनेतून कोणताही निकाल मिळाला नाही."},
@@ -266,8 +282,8 @@ T: Dict[str, Dict[Language, str]] = {
                          "mr": "नेहमीचा विश्वास"},
     "gate_conf_degraded": {"en": "degraded confidence", "hi": "घटा हुआ भरोसा",
                            "mr": "कमी झालेला विश्वास"},
-    "gate_conf_insufficient": {"en": "not enough to decide", "hi": "निर्णय के लिए अपर्याप्त",
-                               "mr": "निर्णयासाठी अपुरी"},
+    "gate_conf_insufficient": {"en": "incomplete evidence", "hi": "अधूरे प्रमाण",
+                               "mr": "अपूर्ण पुरावा"},
     "gate_state_GO": {"en": "Go", "hi": "जा सकते हैं", "mr": "जाऊ शकता"},
     "gate_state_CAUTION": {"en": "Caution", "hi": "सावधान", "mr": "सावधान"},
     "gate_state_NO_GO": {"en": "No-go", "hi": "न जाएँ", "mr": "जाऊ नका"},
@@ -605,6 +621,9 @@ T.update({
                       "mr": "वारा {wind} km/h, पाऊस {rain}%"},
     "trace_ocean": {"en": "wave {wave} m, {state}", "hi": "लहर {wave} m, {state}",
                     "mr": "लाट {wave} m, {state}"},
+    "trace_risk_withheld": {"en": "score withheld — evidence incomplete",
+                            "hi": "स्कोर रोका गया — प्रमाण अधूरे",
+                            "mr": "गुण रोखले — पुरावा अपूर्ण"},
     "trace_ocean_none": {"en": "no wave reading — marine feed silent",
                          "hi": "लहर की रीडिंग नहीं — समुद्री स्रोत चुप",
                          "mr": "लाटेची नोंद नाही — सागरी स्रोत बंद"},

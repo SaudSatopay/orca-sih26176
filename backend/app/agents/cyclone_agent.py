@@ -14,7 +14,7 @@ from ..data.demo_store import now_ist
 from ..schemas import AgentResult, Language, Location
 from ..services import data_health
 from ..services.i18n import localise_alert
-from .base import timed
+from .base import live_enabled, timed
 
 SEVERITY_RANK = {"low": 0, "moderate": 1, "high": 2, "severe": 3}
 
@@ -26,7 +26,10 @@ def run(location: Location, when: datetime, lang: Language = "en") -> AgentResul
     # There is no open IMD warnings API, so the bulletin store is the warnings
     # provider in both modes. A silent warnings feed is never read as "no
     # warning": its health is MISSING, and the safety gate will not clear a trip.
-    feed = feeds.demo_feed("warnings", now)
+    # In LIVE mode the bulletin store is still the only source: it is shown,
+    # but as a bundled bulletin of unknown age, never as a fresh live check.
+    feed = (feeds.FeedStatus("warnings", "DEMO", True, None, None, "bundled")
+            if live_enabled() else feeds.demo_feed("warnings", now))
     # Words only: the type, severity and "official" flag the risk engine
     # reads are the same in every language.
     alerts: List[Dict] = [localise_alert(a, lang)

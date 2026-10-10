@@ -104,7 +104,7 @@ def fishing_outlook(
     drill: Optional[str] = Query(None, pattern="^(healthy|stale|unavailable|recovery)$",
                                  description="Answer under this data drill only"),
 ) -> dict:
-    with feeds.drill_override(drill):
+    with feeds.drill_override(drill or feeds.active_drill()):
         return _outlook(lat, lon, radius_km, days, lang)
 
 
@@ -240,6 +240,14 @@ def _outlook(lat: float, lon: float, radius_km: float, days: int, lang: str) -> 
         for z in nearby_zones
     ]
 
+    # ---- the gate withholds the plan --------------------------------------
+    # With a critical reading missing, ORCA plans no trip: no grounds, no best
+    # hours, no course, no stay or catch figures, and no next-day sea claims
+    # (they would be measured against a sea it could not read).
+    if decision.state == "INSUFFICIENT_DATA":
+        zones, best_window, ranked_hours = [], None, []
+        duration, economics, routes, forecast = None, None, [], []
+
     # ---- plain language --------------------------------------------------
     advice = plain_language.build(
         lang=lang,
@@ -275,7 +283,9 @@ def _outlook(lat: float, lon: float, radius_km: float, days: int, lang: str) -> 
             "improves_after": risk.get("window"),
             "wave_height_m": ocean.data.get("wave_height_m"),
             "wind_speed_kmh": weather.data.get("wind_speed_kmh"),
-            "sea_state": i18n.sea_state(ocean.data.get("sea_state"), lang),
+            # None when there is no wave reading: never an untranslated "unknown"
+            "sea_state": (i18n.sea_state(ocean.data.get("sea_state"), lang)
+                          if ocean.data.get("sea_state") else None),
         },
         "areas": zones,
         "best_window": {"from_hour": best_window[0], "to_hour": best_window[1]} if best_window else None,

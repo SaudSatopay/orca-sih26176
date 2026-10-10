@@ -87,7 +87,9 @@ def _trace(result, name: str, lang: str = "en") -> AgentTrace:
 
 def handle(req: ChatRequest) -> ChatResponse:
     """Run the full ORCA graph for one user message (under its own drill, if any)."""
-    with feeds.drill_override(req.drill):
+    # The drill is read once and pinned for the whole request, so a switch
+    # made mid-request can never mix two drills inside one answer.
+    with feeds.drill_override(req.drill or feeds.active_drill()):
         return _handle(req)
 
 
@@ -169,10 +171,17 @@ def _handle(req: ChatRequest) -> ChatResponse:
     # at normal confidence? Deterministic, and it never alters `risk`.
     health = data_health.complete([h for r in results.values() for h in r.health], lang=lang)
     decision = safety_gate.decide(risk, health, now_ist(), lang=lang, drill=feeds.active_drill())
+    # On insufficient evidence nothing below may plan a trip: no fishing
+    # grounds, no course, and the crew trace says the score was withheld.
+    withheld = decision.state == "INSUFFICIENT_DATA"
+    if withheld:
+        for row in trace:
+            if row.agent == "risk":
+                row.summary = t("trace_risk_withheld", lang)
 
     # ---- node 4: pfz list / route ---------------------------------------
     pfz_zones: List[PFZZone] = []
-    if "pfz" in results and results["pfz"].ok:
+    if "pfz" in results and results["pfz"].ok and not withheld:
         zone_rows = results["pfz"].data.get("zones", [])
         # The PFZ agent ran alongside the Ocean agent, so it scored each
         # ground against the demo sea temperature. Re-stamp the chance of fish

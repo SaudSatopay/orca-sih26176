@@ -40,7 +40,6 @@ def decide(risk: Optional[RiskAssessment], health: Sequence[DataHealth], now: da
     blocking = [k for k in DATA_HEALTH.critical_inputs()
                 if k not in by_input or not by_input[k].usable]
     stale = [h.input for h in critical if h.usable and h.status == "STALE"]
-    confidence = "insufficient" if blocking else "degraded" if stale else "normal"
 
     if risk is None:
         state = "INSUFFICIENT_DATA"
@@ -52,6 +51,8 @@ def decide(risk: Optional[RiskAssessment], health: Sequence[DataHealth], now: da
         state = "CAUTION"
     else:
         state = "GO"
+    confidence = ("insufficient" if blocking or state == "INSUFFICIENT_DATA"
+                  else "degraded" if stale else "normal")
 
     reasons: List[str] = []
     if risk is None:
@@ -63,6 +64,9 @@ def decide(risk: Optional[RiskAssessment], health: Sequence[DataHealth], now: da
                            detail=h.detail if h else say("dh_no_reading")))
     for key in stale:
         h = by_input[key]
+        if h.note == "bundled":
+            reasons.append(say("gate_reason_bundled", input=h.label))
+            continue
         reasons.append(say("gate_reason_stale", input=h.label,
                            age=age_text(h.age_seconds or 0, lang),
                            limit=age_text(h.freshness_limit_seconds or 0, lang)))
@@ -74,9 +78,11 @@ def decide(risk: Optional[RiskAssessment], health: Sequence[DataHealth], now: da
                                age=age_text(h.age_seconds or 0, lang)))
     if not blocking and not stale and risk is not None:
         reasons.append(say("gate_all_fresh", n=len(critical)))
-    if state == "NO_GO" and (blocking or stale):
-        reasons.append(say("gate_nogo_data"))
-    elif state == "INSUFFICIENT_DATA":
+    if state == "NO_GO" and blocking:
+        reasons.append(say("gate_nogo_missing"))
+    elif state == "NO_GO" and stale:
+        reasons.append(say("gate_nogo_stale"))
+    elif state == "INSUFFICIENT_DATA" and blocking:
         reasons.append(say("gate_block"))
     elif state == "CAUTION":
         reasons.append(say("gate_caution_act"))

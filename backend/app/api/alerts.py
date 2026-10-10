@@ -37,7 +37,7 @@ def alerts(lat: float = Query(...), lon: float = Query(...),
 def authority_dashboard(lang: str = Query("en"),
                         drill: Optional[str] = Query(
                             None, pattern="^(healthy|stale|unavailable|recovery)$")) -> dict:
-    with feeds.drill_override(drill):
+    with feeds.drill_override(drill or feeds.active_drill()):
         return _dashboard(lang)
 
 

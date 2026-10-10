@@ -97,6 +97,8 @@ otherwise               -> GO
 5. In the "unavailable" drill the wave height is `None`. No value is invented.
 6. Supporting inputs (rain, current) never gate the decision. They show in the inputs table.
 7. A missing reading can lower the model's own share of a score, because the engine assumes a mid hazard (0.3) for an unknown value. It can never push a score below an official-warning floor or into a GO. Any score shown on incomplete evidence is printed **unconfirmed**. Example, Digha under an IMD warning: 80 EXTREME with fresh data. With the marine feed down it reads 70 HIGH (the warning floor), stays NO-GO, and is marked unconfirmed.
+8. **Nothing plans a trip on a withheld verdict.** When a reading is missing, every surface drops the plan: no fishing grounds, no course, no best hours, no stay or catch figures, no next-day sea claims and no 24-hour score timeline. That covers desktop Ask and Today, the phone's Today and Ask cards, the spoken plan, the stat row and the Authority board.
+9. **LIVE mode never gives a clean GO.** There is no open IMD/INCOIS feed, so in LIVE mode the warnings come from the bundled bulletin, whose age is unknown. That input is STALE but usable, which makes a LIVE answer CAUTION at best: *"no live IMD / INCOIS feed is connected — check the latest bulletin"*.
 
 ## The four deterministic drills
 
@@ -141,7 +143,7 @@ With live data, freshness is measured from when each Open-Meteo series was fetch
 
 1. A failed fetch is remembered for 60 s (`CACHE_TTL_FAIL`). During that window the gate says INSUFFICIENT DATA, because the labelled stand-in values never clear a trip.
 2. After 60 s the provider is retried.
-3. When it answers, the next question is GO again, with no restart and no code change.
+3. When it answers, the sea readings are FRESH again on the next question, with no restart and no code change. The answer returns to **CAUTION**, not GO: the warnings still come from the bundled bulletin (guarantee 9).
 
 `test_live_outage_recovers_by_itself_after_the_failure_cache_expires` proves this with a fake provider and a fake clock.
 
@@ -181,7 +183,7 @@ test_scenario_2_stale_marine_data_is_not_presented_as_fresh          PASSED
 test_scenario_3_missing_marine_data_fails_safe_and_invents_nothing   PASSED
 test_scenario_4_recovery_returns_to_normal_without_a_restart         PASSED
 test_official_warning_floors_hold_under_every_drill[... x 8]         PASSED
-74 passed (safety gate) · 248 passed (backend) · 733 passed (frontend)
+89 passed (safety gate) · 263 passed (backend) · 750 passed (frontend)
 ```
 
 Then open the app (`RUN-ORCA.bat`, or `cd backend; python -m uvicorn app.main:app --port 8000`) and try:
@@ -191,6 +193,8 @@ Then open the app (`RUN-ORCA.bat`, or `cd backend; python -m uvicorn app.main:ap
 - `http://127.0.0.1:8000/?m=1&drill=unavailable&lang=mr`.
 
 When done, set the drill back to `healthy`. It is server-wide, like the LIVE/DEMO switch.
+
+A single request can also carry its own drill, leaving the server's alone: `"drill"` in the `/api/chat` body, or `?drill=` on `/api/fishing` and `/api/authority/dashboard`. The app's chips and `?drill=` links send it with every question, so the demo behaves the same on a serverless host.
 
 ## The 2–3 minute demo
 

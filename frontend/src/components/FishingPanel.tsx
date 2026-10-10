@@ -206,7 +206,9 @@ function Advice({
     planNotes.push(t.weatherShortens);
   const planWarns = d != null && (!d.feasible || d.limited_by_weather);
 
-  const hasPlan = parts.where.length > 0 || figures.length > 0 || planNotes.length > 0;
+  // Where to fish is a plan too: a day with no trip in it says nothing of it.
+  const where = off ? [] : parts.where;
+  const hasPlan = where.length > 0 || figures.length > 0 || planNotes.length > 0;
 
   return (
     <section className="panel rule-double overflow-hidden" aria-labelledby={titleId}>
@@ -314,7 +316,7 @@ function Advice({
       {hasPlan && (
         <div className="border-t px-5 py-3.5" style={{ borderColor: "var(--rule-faint)" }}>
           <h3 className="label">{t.plan}</h3>
-          {parts.where.map((line) => (
+          {where.map((line) => (
             <p key={line} className="mt-2 max-w-[62ch] text-body leading-relaxed text-ink-800">
               {line}
             </p>

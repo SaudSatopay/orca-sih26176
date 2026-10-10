@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import * as api from "../api";
 import { useFirstSight } from "../firstSight";
-import type { AuthorityDashboard, AuthorityRow, Language, RiskCategory } from "../types";
+import type { AuthorityDashboard, AuthorityRow, DataDrill, Language, RiskCategory } from "../types";
 import { RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
 import { dec1, int } from "../format";
 import { PORTS } from "../ports";
@@ -71,7 +71,14 @@ interface Board {
  * the same engine and the same evidence the fisher sees. Summary first, then
  * the coast as a profile, then the table an officer can order and export.
  */
-export default function AuthorityPanel({ language = "en" }: { language?: Language }) {
+export default function AuthorityPanel({
+  language = "en",
+  drill,
+}: {
+  language?: Language;
+  /** The safety-gate demo's data drill, when the visit chose one. */
+  drill?: DataDrill;
+}) {
   const t = T[language] ?? T.en;
   const [board, setBoard] = useState<Board>({ data: null, changes: null, error: false });
   const [loading, setLoading] = useState(true);
@@ -81,7 +88,7 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
   const read = useCallback(
     () =>
       api
-        .authority(language)
+        .authority(language, drill)
         .then((d) => {
           if (!alive.current) return;
           setBoard((prev) => ({
@@ -97,8 +104,9 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
         .finally(() => {
           if (alive.current) setLoading(false);
         }),
-    // A new language re-reads the board: its warning headlines are translated.
-    [language],
+    // A new language re-reads the board: its warning headlines are translated;
+    // a new drill re-reads it under that drill.
+    [language, drill],
   );
   /** A reading asked for by the clock or by the officer: mark it in flight. */
   const load = useCallback(() => {

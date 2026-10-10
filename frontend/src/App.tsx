@@ -65,7 +65,8 @@ import { PORTS } from "./ports";
 import { RISK_INK } from "./risk";
 import { SPEECH_LOCALE } from "./speech";
 import { applyBootDrill, initialLanguage, readBootParams } from "./boot";
-import { isDrill } from "./gateModel";
+import { gateWithholds, isDrill, scoreUnconfirmed } from "./gateModel";
+import { GATE } from "./i18n/gate";
 import { ink, risk } from "./tokens";
 import { GlowingBadge } from "./ui/unlumen/glowing-badge";
 import { SonarDial } from "./ui/console/SonarDial";
@@ -264,6 +265,8 @@ export default function App() {
   const [drillNow, setDrillNow] = useState<DataDrill>(BOOT.drill ?? "healthy");
   const [drillBusy, setDrillBusy] = useState(false);
   const drillChoice = useRef<DataDrill | null>(BOOT.drill);
+  // The same choice as state, for what renders with it (the authority board).
+  const [drillChosen, setDrillChosen] = useState<DataDrill | null>(BOOT.drill);
 
   // ---------------------------------------------------- outlook on position
   useEffect(() => {
@@ -415,6 +418,10 @@ export default function App() {
   const runDrill = async (d: DataDrill) => {
     setDrillNow(d);
     drillChoice.current = d;
+    setDrillChosen(d);
+    const here = new URL(window.location.href);
+    here.searchParams.set("drill", d);
+    window.history.replaceState(window.history.state, "", here);
     setDrillBusy(true);
     try {
       await api.setDataDrill(d);
@@ -650,14 +657,22 @@ export default function App() {
   const cell =
     "flex flex-1 flex-col justify-center border-l px-5 py-3 xl:flex-none";
   const cellRule = { borderColor: "var(--rule-faint)" };
+  // The safety gate reaches the stat row too: no number on insufficient
+  // evidence, and an incomplete one is marked unconfirmed.
+  const gateWords = GATE[language] ?? GATE.en;
+  const outlookWithheld = outlook ? gateWithholds(outlook.decision) : false;
   const readings = [
     {
       k: ui.safety,
-      v: outlook ? `${outlook.safety.score}` : "—",
+      v: outlook && !outlookWithheld ? `${outlook.safety.score}` : "—",
       s: outlook
-        ? (bands[outlook.safety.category] ?? outlook.safety.category)
+        ? outlookWithheld
+          ? gateWords.state.INSUFFICIENT_DATA
+          : `${bands[outlook.safety.category] ?? outlook.safety.category}${
+              scoreUnconfirmed(outlook.decision) ? ` · ${gateWords.unconfirmed}` : ""
+            }`
         : "",
-      color: outlook ? RISK_INK[outlook.safety.category] : undefined,
+      color: outlook ? (outlookWithheld ? ink[700] : RISK_INK[outlook.safety.category]) : undefined,
     },
     {
       k: ui.waves,
@@ -1148,7 +1163,7 @@ export default function App() {
                   </section>
                 )}
 
-                {latest && (
+                {latest && !gateWithholds(latest.decision) && (
                   <RiskTimeline
                     location={latest.intent.location}
                     language={language}
@@ -1283,7 +1298,7 @@ export default function App() {
         {tab === "authority" && (
           <ErrorBoundary language={language}>
             <Suspense fallback={<SheetDraft />}>
-              <AuthorityPanel language={language} />
+              <AuthorityPanel language={language} drill={drillChosen ?? undefined} />
             </Suspense>
           </ErrorBoundary>
         )}

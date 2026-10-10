@@ -1,0 +1,391 @@
+{
+ "session_id": "fixture-stale",
+ "language": "en",
+ "answer": "Caution — some of the data behind this answer is out of date. Conditions look safe. Risk score: 9/100. Main reasons: Wave height 0.6 m; Wind speed 11 km/h; Official warning none. Wave height is 4 h 10 min old — over the 3 h limit. Check the latest IMD / INCOIS bulletin before you go. Sources: ORCA demo dataset — SIMULATED, not official data, ORCA geospatial layer (OpenStreetMap derived) · Updated 11 Oct 2026, 06:00 IST. Demo / simulated data — not a live government feed.",
+ "intent": {
+  "intent": "fishing_safety",
+  "activity": "fishing",
+  "location": {
+   "name": "Panaji (Goa)",
+   "latitude": 15.4909,
+   "longitude": 73.8278,
+   "state": "Goa"
+  },
+  "location_text": "Panaji (Goa)",
+  "date": "2026-10-11",
+  "time": "06:00",
+  "language": "en",
+  "raw_query": "Is it safe to go fishing tomorrow morning near Goa?",
+  "needs": [
+   "weather",
+   "ocean",
+   "cyclone",
+   "gis",
+   "risk"
+  ],
+  "missing": []
+ },
+ "risk": {
+  "score": 9,
+  "category": "LOW",
+  "factors": [
+   {
+    "key": "wave",
+    "label": "Wave height",
+    "factor": 0.136,
+    "weight": 0.25,
+    "contribution": 3.4,
+    "detail": "Wave height 0.6 m"
+   },
+   {
+    "key": "wind",
+    "label": "Wind",
+    "factor": 0.123,
+    "weight": 0.2,
+    "contribution": 2.5,
+    "detail": "Wind 11 km/h"
+   },
+   {
+    "key": "cyclone",
+    "label": "Official warnings",
+    "factor": 0.05,
+    "weight": 0.25,
+    "contribution": 1.2,
+    "detail": "No active marine warning"
+   },
+   {
+    "key": "ocean",
+    "label": "Sea state & current",
+    "factor": 0.112,
+    "weight": 0.1,
+    "contribution": 1.1,
+    "detail": "Sea state slight, current 0.3 m/s"
+   },
+   {
+    "key": "gis",
+    "label": "Position & zones",
+    "factor": 0.05,
+    "weight": 0.1,
+    "contribution": 0.5,
+    "detail": "0 km offshore"
+   },
+   {
+    "key": "weather",
+    "label": "Rain / visibility",
+    "factor": 0.044,
+    "weight": 0.1,
+    "contribution": 0.4,
+    "detail": "Rain probability 4%, visibility 15 km"
+   }
+  ],
+  "overrides": [],
+  "official_warning": false,
+  "go": true,
+  "headline": "",
+  "advice": "",
+  "window": null,
+  "sources": [
+   "DEMO",
+   "ORCA_GIS"
+  ],
+  "generated_at": "2026-10-11T06:00:00+05:30",
+  "mode": "DEMO"
+ },
+ "pfz": [],
+ "routes": [],
+ "geofence": [],
+ "alerts": [],
+ "evidence": [
+  {
+   "label": "Wave height",
+   "value": "0.6 m",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "timestamp": "2026-10-11T06:00:00+05:30",
+   "confidence": 0.75,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Wave period",
+   "value": "8.6 s",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "timestamp": "2026-10-11T06:00:00+05:30",
+   "confidence": 0.75,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Sea state",
+   "value": "slight",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "timestamp": "2026-10-11T06:00:00+05:30",
+   "confidence": 0.75,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Sea surface temperature",
+   "value": "28.5 °C",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "timestamp": "2026-10-11T06:00:00+05:30",
+   "confidence": 0.75,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Wind",
+   "value": "11 km/h W",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "timestamp": "2026-10-11T06:00:00+05:30",
+   "confidence": 0.75,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Rain probability",
+   "value": "4%",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "timestamp": "2026-10-11T06:00:00+05:30",
+   "confidence": 0.75,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Visibility",
+   "value": "15.0 km",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "timestamp": "2026-10-11T06:00:00+05:30",
+   "confidence": 0.75,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Distance from shore",
+   "value": "0.0 km",
+   "source": "ORCA geospatial layer (OpenStreetMap derived)",
+   "timestamp": "2026-10-11T06:00:00+05:30",
+   "confidence": 0.9,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Safety gate",
+   "value": "Caution · degraded confidence",
+   "source": "ORCA",
+   "timestamp": "2026-10-10T13:31:23+05:30",
+   "confidence": null,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Freshness · Wave height",
+   "value": "out of date · 4 h 10 min old — over the 3 h limit",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "timestamp": "2026-10-10T09:21:23+05:30",
+   "confidence": null,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Freshness · Wind",
+   "value": "fresh · 12 min old (limit 3 h)",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "timestamp": "2026-10-10T13:19:23+05:30",
+   "confidence": null,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Freshness · Official warnings",
+   "value": "fresh · 25 min old (limit 1 h)",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "timestamp": "2026-10-10T13:06:23+05:30",
+   "confidence": null,
+   "mode": "DEMO"
+  },
+  {
+   "label": "Freshness · Position and restricted zones",
+   "value": "fresh · bundled with the app",
+   "source": "ORCA geospatial layer (OpenStreetMap derived)",
+   "timestamp": "",
+   "confidence": null,
+   "mode": "DEMO"
+  }
+ ],
+ "trace": [
+  {
+   "agent": "intent",
+   "status": "ok",
+   "latency_ms": 0,
+   "summary": "fishing_safety @ Panaji (Goa) 06:00",
+   "source": "ORCA",
+   "mode": "DEMO"
+  },
+  {
+   "agent": "weather",
+   "status": "ok",
+   "latency_ms": 0,
+   "summary": "wind 10.9 km/h, rain 4%",
+   "source": "DEMO",
+   "mode": "DEMO"
+  },
+  {
+   "agent": "ocean",
+   "status": "ok",
+   "latency_ms": 0,
+   "summary": "wave 0.62 m, slight",
+   "source": "DEMO",
+   "mode": "DEMO"
+  },
+  {
+   "agent": "cyclone",
+   "status": "ok",
+   "latency_ms": 0,
+   "summary": "no active warning",
+   "source": "DEMO",
+   "mode": "DEMO"
+  },
+  {
+   "agent": "gis",
+   "status": "ok",
+   "latency_ms": 0,
+   "summary": "0.0 km offshore, 0 zones nearby",
+   "source": "ORCA_GIS",
+   "mode": "DEMO"
+  },
+  {
+   "agent": "risk",
+   "status": "ok",
+   "latency_ms": 0,
+   "summary": "9/100 LOW",
+   "source": "ORCA",
+   "mode": "DEMO"
+  },
+  {
+   "agent": "explanation",
+   "status": "ok",
+   "latency_ms": 0,
+   "summary": "answer composed",
+   "source": "ORCA",
+   "mode": "DEMO"
+  }
+ ],
+ "suggestions": [
+  "What about 12 PM?",
+  "Show nearby fishing zones",
+  "Give me the safest route",
+  "Is there a cyclone nearby?"
+ ],
+ "mode": "DEMO",
+ "disclaimer": "ORCA is a decision-support tool. It does not replace official marine advisories or Coast Guard instructions.",
+ "elapsed_ms": 1,
+ "decision": {
+  "state": "CAUTION",
+  "confidence": "degraded",
+  "headline": "Caution — some of the data behind this answer is out of date.",
+  "reasons": [
+   "Wave height is 4 h 10 min old — over the 3 h limit.",
+   "Check the latest IMD / INCOIS bulletin before you go."
+  ],
+  "blocking_inputs": [],
+  "stale_inputs": [
+   "wave"
+  ],
+  "risk_go": true,
+  "drill": "stale",
+  "timestamp": "2026-10-10T13:31:23+05:30"
+ },
+ "data_health": [
+  {
+   "input": "wave",
+   "label": "Wave height",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "marine",
+   "available": true,
+   "observed_at": "2026-10-10T09:21:23+05:30",
+   "age_seconds": 15000,
+   "freshness_limit_seconds": 10800,
+   "max_age_seconds": 21600,
+   "status": "STALE",
+   "critical": true,
+   "usable": true,
+   "detail": "4 h 10 min old — over the 3 h limit",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "wind",
+   "label": "Wind",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "weather",
+   "available": true,
+   "observed_at": "2026-10-10T13:19:23+05:30",
+   "age_seconds": 720,
+   "freshness_limit_seconds": 10800,
+   "max_age_seconds": 21600,
+   "status": "FRESH",
+   "critical": true,
+   "usable": true,
+   "detail": "12 min old (limit 3 h)",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "warnings",
+   "label": "Official warnings",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "warnings",
+   "available": true,
+   "observed_at": "2026-10-10T13:06:23+05:30",
+   "age_seconds": 1500,
+   "freshness_limit_seconds": 3600,
+   "max_age_seconds": 10800,
+   "status": "FRESH",
+   "critical": true,
+   "usable": true,
+   "detail": "25 min old (limit 1 h)",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "position",
+   "label": "Position and restricted zones",
+   "source": "ORCA geospatial layer (OpenStreetMap derived)",
+   "feed": "chart",
+   "available": true,
+   "observed_at": null,
+   "age_seconds": null,
+   "freshness_limit_seconds": null,
+   "max_age_seconds": null,
+   "status": "FRESH",
+   "critical": true,
+   "usable": true,
+   "detail": "bundled with the app",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "rain",
+   "label": "Rain and visibility",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "weather",
+   "available": true,
+   "observed_at": "2026-10-10T13:19:23+05:30",
+   "age_seconds": 720,
+   "freshness_limit_seconds": 10800,
+   "max_age_seconds": 21600,
+   "status": "FRESH",
+   "critical": false,
+   "usable": true,
+   "detail": "12 min old (limit 3 h)",
+   "note": null,
+   "mode": "DEMO"
+  },
+  {
+   "input": "current",
+   "label": "Surface current",
+   "source": "ORCA demo dataset — SIMULATED, not official data",
+   "feed": "marine",
+   "available": true,
+   "observed_at": "2026-10-10T09:21:23+05:30",
+   "age_seconds": 15000,
+   "freshness_limit_seconds": 21600,
+   "max_age_seconds": 43200,
+   "status": "FRESH",
+   "critical": false,
+   "usable": true,
+   "detail": "4 h 10 min old (limit 6 h)",
+   "note": null,
+   "mode": "DEMO"
+  }
+ ]
+}

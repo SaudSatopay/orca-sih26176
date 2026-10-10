@@ -22,7 +22,8 @@ interface GateText {
   /** The chart layer ships with the app: no age, no limit. */
   bundled: string;
   status: Record<HealthStatus, string>;
-  units: { h: string; min: string };
+  /** `min1`: the unit after exactly one minute ("1 मिनिट", not "1 मिनिटे"). */
+  units: { h: string; min: string; min1: string };
   drillTitle: string;
   drillHint: string;
   drills: Record<DataDrill, string>;
@@ -45,7 +46,7 @@ export const GATE: Record<Language, GateText> = {
     confidence: {
       normal: "normal confidence",
       degraded: "degraded confidence",
-      insufficient: "not enough to decide",
+      insufficient: "incomplete evidence",
     },
     freshCount: "{n} of {total} critical inputs fresh",
     instruction: {
@@ -60,7 +61,7 @@ export const GATE: Record<Language, GateText> = {
     critical: "critical",
     bundled: "bundled",
     status: { FRESH: "fresh", STALE: "out of date", MISSING: "missing", ERROR: "error" },
-    units: { h: "h", min: "min" },
+    units: { h: "h", min: "min", min1: "min" },
     drillTitle: "Data drill",
     drillHint: "Sets the marine feed's health — the sea itself does not change.",
     drills: {
@@ -81,7 +82,7 @@ export const GATE: Record<Language, GateText> = {
     confidence: {
       normal: "सामान्य भरोसा",
       degraded: "घटा हुआ भरोसा",
-      insufficient: "निर्णय के लिए अपर्याप्त",
+      insufficient: "अधूरे प्रमाण",
     },
     freshCount: "{total} में से {n} ज़रूरी आँकड़े ताज़ा",
     instruction: {
@@ -96,7 +97,7 @@ export const GATE: Record<Language, GateText> = {
     critical: "ज़रूरी",
     bundled: "साथ में",
     status: { FRESH: "ताज़ा", STALE: "पुराना", MISSING: "उपलब्ध नहीं", ERROR: "त्रुटि" },
-    units: { h: "घं", min: "मि" },
+    units: { h: "घं", min: "मि", min1: "मि" },
     drillTitle: "आँकड़ा अभ्यास",
     drillHint: "समुद्री स्रोत की हालत बदलता है — समुद्र वही रहता है।",
     drills: {
@@ -117,7 +118,7 @@ export const GATE: Record<Language, GateText> = {
     confidence: {
       normal: "नेहमीचा विश्वास",
       degraded: "कमी झालेला विश्वास",
-      insufficient: "निर्णयासाठी अपुरी",
+      insufficient: "अपूर्ण पुरावा",
     },
     freshCount: "{total} पैकी {n} आवश्यक नोंदी ताज्या",
     instruction: {
@@ -132,7 +133,7 @@ export const GATE: Record<Language, GateText> = {
     critical: "आवश्यक",
     bundled: "सोबत",
     status: { FRESH: "ताजी", STALE: "जुनी", MISSING: "उपलब्ध नाही", ERROR: "त्रुटी" },
-    units: { h: "तास", min: "मिनिटे" },
+    units: { h: "तास", min: "मिनिटे", min1: "मिनिट" },
     drillTitle: "माहिती सराव",
     drillHint: "सागरी स्रोताची स्थिती बदलते — समुद्र तोच राहतो.",
     drills: {
