@@ -85,6 +85,9 @@ function runDashes(layer: L.Path, dashArray: string) {
  */
 const NONE: never[] = [];
 
+/** How long the arrow keys must rest before the outlook follows the boat. */
+const KEY_SETTLE_MS = 600;
+
 /**
  * The chart hint is spent once per session: after the first successful
  * position check or tap it stays dismissed, even across remounts (PM4).
@@ -143,6 +146,12 @@ export default function MarineMap({
   const flowButtons = useRef<(HTMLButtonElement | null)[]>([]);
   const [flowMode, setFlowMode] = useState<FlowMode>("wind");
   const [probe, setProbe] = useState<PositionCheck | null>(null);
+  // The boat is built inside the redraw effect, so it reads the latest
+  // re-centre callback through this ref instead of the one it was built with.
+  const pickRef = useRef(onPickLocation);
+  // Where the boat last re-centred the outlook: the redraw that follows keeps
+  // the probe's banner when it lands on that very point.
+  const heldProbeAt = useRef<{ lat: number; lon: number; language: Language } | null>(null);
   const [dragging, setDragging] = useState(false);
   const [keyOpen, setKeyOpen] = useState(() => !startsNarrow());
   // The key's rise is for the reader opening it, not for the chart mounting.
@@ -231,6 +240,10 @@ export default function MarineMap({
     flowRef.current?.setMode(flowMode);
   }, [flowMode]);
 
+  useEffect(() => {
+    pickRef.current = onPickLocation;
+  }, [onPickLocation]);
+
   // The zoom buttons are Leaflet's; their names follow the language.
   useEffect(() => {
     const root = containerRef.current;
@@ -283,7 +296,21 @@ export default function MarineMap({
     if (!map || !group) return;
     group.clearLayers();
     boatRef.current = null;
-    setProbe(null);
+    // A redraw clears the probe, except the one that re-centred the outlook
+    // on the boat's drop point: that check still describes where it sits.
+    const held = heldProbeAt.current;
+    if (
+      !(
+        held &&
+        origin &&
+        held.lat === origin.latitude &&
+        held.lon === origin.longitude &&
+        held.language === language
+      )
+    ) {
+      heldProbeAt.current = null;
+      setProbe(null);
+    }
 
     const t = MAP[language] ?? MAP.en;
     const zoneType = ZONE_TYPE[language] ?? ZONE_TYPE.en;
@@ -616,6 +643,7 @@ export default function MarineMap({
     }
 
     // draggable vessel — ink boat on a paper disc
+    let keySettle: number | undefined;
     if (origin) {
       const boat = L.marker([origin.latitude, origin.longitude], {
         draggable: true,
@@ -649,21 +677,42 @@ export default function MarineMap({
 
       // One probe for every way of moving the boat (W5): the drag and the
       // arrow keys end in the same position check.
+      // Each move is numbered so a slow answer for an older position can
+      // neither overwrite the banner nor re-centre the outlook.
+      let moves = 0;
       const probeAt = async () => {
-        const { lat, lng } = boat.getLatLng();
+        const move = ++moves;
+        const { lat: rawLat, lng: rawLng } = boat.getLatLng();
+        const lat = +rawLat.toFixed(4);
+        const lon = +rawLng.toFixed(4);
+        let check: PositionCheck | null = null;
         try {
-          setProbe(await api.checkPosition(+lat.toFixed(4), +lng.toFixed(4), language));
+          check = await api.checkPosition(lat, lon, language);
+          if (move === moves) setProbe(check);
           hintSpent = true;
           setHintDone(true);
         } catch {
-          setProbe(null);
+          if (move === moves) setProbe(null);
         }
+        return { move, lat, lon, check };
+      };
+
+      // Where the boat comes to rest, the outlook follows, exactly as a tap
+      // on the water there would move it (views that re-centre only). A drag
+      // is deliberate, so no confirm popup; on land the probe's message
+      // stands and the outlook stays where it was.
+      const recentre = async (probed: ReturnType<typeof probeAt>) => {
+        const { move, lat, lon, check } = await probed;
+        const pick = pickRef.current;
+        if (!pick || move !== moves || check?.on_land) return;
+        heldProbeAt.current = { lat, lon, language };
+        pick(lat, lon);
       };
 
       boat.on("dragstart", () => setDragging(true));
       boat.on("dragend", () => {
         setDragging(false);
-        void probeAt();
+        void recentre(probeAt());
       });
 
       // The marker is focusable but was nameless and pointer-only: it gets a
@@ -687,7 +736,11 @@ export default function MarineMap({
           e.stopPropagation(); // or Leaflet pans the map instead
           const p = boat.getLatLng();
           boat.setLatLng([p.lat + d[0] * KEY_STEP, p.lng + d[1] * KEY_STEP]);
-          void probeAt();
+          // Probe every press; re-centre once the keys settle, so a held key
+          // does not ask for a fresh outlook per step.
+          const probed = probeAt();
+          window.clearTimeout(keySettle);
+          keySettle = window.setTimeout(() => void recentre(probed), KEY_SETTLE_MS);
         });
       }
 
@@ -774,6 +827,7 @@ export default function MarineMap({
 
     return () => {
       map.off("zoomend moveend", onScaleChange);
+      window.clearTimeout(keySettle);
     };
   }, [origin, zones, pfz, areas, routes, radiusKm, focusRank, alerts, language, severe]);
 

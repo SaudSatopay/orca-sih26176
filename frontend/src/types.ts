@@ -184,6 +184,8 @@ export interface PositionCheck {
   geofence_alerts: GeofenceAlert[];
   official_warning_active: boolean;
   checked_at: string;
+  /** The point is on the landmass: the chart keeps the outlook where it was. */
+  on_land?: boolean;
 }
 
 export interface TimelinePoint {
