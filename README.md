@@ -68,7 +68,8 @@ problem can ever lower an official-warning floor.
 Try it: `/?tab=ask&demo=safe`, then the **Data drill** chips (Healthy · Stale ·
 Unavailable · Recovery), or `python -m pytest backend/tests/test_safety_gate.py -v`.
 The whole design, the four scenarios and the test output:
-**[docs/SAFETY-GATE.md](docs/SAFETY-GATE.md)**.
+**[docs/SAFETY-GATE.md](docs/SAFETY-GATE.md)**. The showcase page, with a live
+demo against the real backend: **[/challenge.html](https://orca-psi-one.vercel.app/challenge.html)**.
 
 ---
 

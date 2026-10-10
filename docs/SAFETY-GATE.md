@@ -4,6 +4,8 @@
 
 > **ORCA already knew when the sea was dangerous. Now it also knows when it doesn't know.**
 
+The showcase page walks through the challenge, the before and after, and the pipeline, and has a live demo against the real backend: **[orca-psi-one.vercel.app/challenge.html](https://orca-psi-one.vercel.app/challenge.html)** (`/challenge.html` on any ORCA server).
+
 Before this change, ORCA treated a four-hour-old wave forecast exactly like a fresh one. A silent marine feed was papered over with an assumed value. Now every input of the go/no-go decision carries a **data-health record**: source, when it was observed, age, freshness limit, status, and whether it is critical. A small **deterministic safety gate** runs after the risk engine and its floors, and before the answer. It chooses one of four states:
 
 | State | When | What the fisher is told |
@@ -204,9 +206,7 @@ Then open the app (`RUN-ORCA.bat`, or `cd backend; python -m uvicorn app.main:ap
 - `http://127.0.0.1:8000/?tab=home&at=15.40,73.70&drill=unavailable`;
 - `http://127.0.0.1:8000/?m=1&drill=unavailable&lang=mr`.
 
-When done, set the drill back to `healthy`. It is server-wide, like the LIVE/DEMO switch.
-
-A single request can also carry its own drill, leaving the server's alone: `"drill"` in the `/api/chat` body, or `?drill=` on `/api/fishing` and `/api/authority/dashboard`. The app's chips and `?drill=` links send it with every question, so the demo behaves the same on a serverless host.
+The chips and `?drill=` links send the drill with every request: `"drill"` in the `/api/chat` body, or `?drill=` on `/api/fishing` and `/api/authority/dashboard`. They leave the server's own drill alone, so one person's demo never changes another person's answer, and the demo behaves the same on a serverless host. Only `POST /api/config/data-health` and `ORCA_DATA_DRILL` change the server-wide drill. If you use them, set the drill back to `healthy` when you are done.
 
 ## The 2–3 minute demo
 
@@ -215,7 +215,8 @@ A single request can also carry its own drill, leaving the server's alone: `"dri
 3. **Unavailable.** **Insufficient data · Follow the official advisory**. The dial becomes sonar rings with no number, and the wave readout shows "—". The inputs table names the missing reading.
 4. **The floor holds.** With the feed still down, ask about Paradip: still **92 EXTREME · Do not launch**.
 5. **Recovery.** Back to **GO, normal confidence**, "marine feed reconnected 1 min ago". No restart.
-6. **Proof.** Run `python -m pytest backend/tests/test_safety_gate.py -v`.
+6. **Optional: where and when.** Ask *"Can I go fishing near Malvan tomorrow?"*. The answer is **Insufficient data**: ORCA does not know Malvan, so it computes no score for the wrong harbour.
+7. **Proof.** Run `python -m pytest backend/tests/test_safety_gate.py -v`.
 
 ## Design decisions to defend
 
