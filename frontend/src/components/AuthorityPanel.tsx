@@ -6,6 +6,8 @@ import { RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
 import { dec1, int } from "../format";
 import { PORTS } from "../ports";
 import { BAND, T } from "../i18n/authority";
+import { GATE } from "../i18n/gate";
+import SafetyGate from "./SafetyGate";
 import { WarnGlyph } from "./glyphs";
 import { DownloadGlyph, SortGlyph } from "./viewGlyphs";
 import { Draft, DraftSheet, OfflineNotice } from "./SheetStates";
@@ -140,6 +142,19 @@ export default function AuthorityPanel({ language = "en" }: { language?: Languag
   return (
     <div className="flex min-w-0 flex-col gap-4">
       {state === "stale" && <OfflineNotice language={language} onRetry={load} busy={loading} />}
+      {/* the same safety gate as a fisher's own question: when any centre
+          rests on stale or missing readings, the board says so first */}
+      {data.decision && (
+        <section className="panel overflow-hidden">
+          <SafetyGate
+            key={data.decision.timestamp}
+            decision={data.decision}
+            health={data.data_health}
+            language={language}
+            answerLang={language}
+          />
+        </section>
+      )}
       <Summary data={data} language={language} t={t} />
       {data.locations.length > 0 && <CoastProfile rows={data.locations} language={language} t={t} />}
       <BoardTable
@@ -435,6 +450,7 @@ function BoardTable({
 }) {
   const titleId = useId();
   const band = BAND[language] ?? BAND.en;
+  const gateWords = GATE[language] ?? GATE.en;
   const rows = useMemo(() => sortRows(data.locations, sort), [data.locations, sort]);
   const time = data.generated_at.slice(11, 19);
 
@@ -553,6 +569,13 @@ function BoardTable({
                           <span className="h-2 w-2 shrink-0" style={{ background: color }} aria-hidden />
                           {band[row.risk_category]}
                         </span>
+                        {row.evidence && row.evidence !== "fresh" && (
+                          <span className="whitespace-nowrap border border-dashed border-ink-400 px-1 font-mono text-label uppercase tracking-[0.06em] text-ink-700">
+                            {row.gate === "INSUFFICIENT_DATA"
+                              ? gateWords.state.INSUFFICIENT_DATA
+                              : gateWords.unconfirmed}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="whitespace-nowrap px-3 py-2.5 text-right font-mono tabular-nums text-ink-900">

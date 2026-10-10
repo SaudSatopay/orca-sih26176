@@ -10,7 +10,7 @@ import RiskDial from "./RiskDial";
 import SafetyGate from "./SafetyGate";
 import { SonarDial } from "../ui/console/SonarDial";
 import { GATE } from "../i18n/gate";
-import { gateTempers, gateWithholds } from "../gateModel";
+import { gateTempers, gateWithholds, scoreUnconfirmed } from "../gateModel";
 import { FACTORS, RATING_WORD, T } from "../i18n/fishing";
 import { VERDICT } from "../i18n/riskCard";
 import { returnLabel } from "../i18n/mobile";
@@ -246,7 +246,7 @@ function Advice({
           <span className="stamp" style={{ color: verdictInk }}>
             {verdictWord}
           </span>
-          {tempered && (
+          {scoreUnconfirmed(data.decision) && (
             <span className="ml-2.5 font-mono text-label uppercase tracking-[0.12em] text-ink-500">
               {data.safety.score}/100 · {gate.unconfirmed}
             </span>

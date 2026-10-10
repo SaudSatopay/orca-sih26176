@@ -152,3 +152,44 @@ describe("a failed first reading keeps the board's frame (AU3)", () => {
     expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(40);
   });
 });
+
+describe("the board passes the same safety gate as a fisher's question", () => {
+  it("says first when a centre rests on missing readings, and marks those rows", async () => {
+    const api = vi.mocked(await import("../api"));
+    api.authority.mockResolvedValue({
+      ...board,
+      locations: [
+        { ...board.locations[0], gate: "INSUFFICIENT_DATA", evidence: "missing" },
+        { ...board.locations[1], gate: "GO", evidence: "fresh" },
+        { ...board.locations[2], gate: "NO_GO", evidence: "missing" },
+      ],
+      decision: {
+        state: "INSUFFICIENT_DATA",
+        confidence: "insufficient",
+        headline: "",
+        reasons: ["Wave height: no reading — the marine forecast feed did not respond."],
+        blocking_inputs: ["wave"],
+        stale_inputs: [],
+        risk_go: true,
+        drill: "unavailable",
+        timestamp: "t-board",
+      },
+      data_health: [],
+    });
+    render(<AuthorityPanel language="en" />);
+    expect(
+      await screen.findByText("Wave height: no reading — the marine forecast feed did not respond."),
+    ).toBeInTheDocument();
+    const table = screen.getByRole("table");
+    // the insufficient centre says so; the warned one keeps NO-GO, marked unconfirmed
+    expect(within(table).getAllByText("Insufficient data")).toHaveLength(1);
+    expect(within(table).getAllByText("unconfirmed")).toHaveLength(1);
+  });
+
+  it("adds nothing when every centre rests on fresh readings", async () => {
+    await openBoard();
+    await screen.findAllByText("Paradip");
+    expect(screen.queryByText("Evidence check")).not.toBeInTheDocument();
+    expect(screen.queryByText("unconfirmed")).not.toBeInTheDocument();
+  });
+});

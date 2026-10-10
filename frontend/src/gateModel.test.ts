@@ -6,6 +6,7 @@ import {
   gateTone,
   gateWithholds,
   isDrill,
+  scoreUnconfirmed,
   shownReasons,
 } from "./gateModel";
 import type { SafetyDecision } from "./types";
@@ -52,5 +53,20 @@ describe("the safety gate's small arithmetic", () => {
     expect(shownReasons(clean)).toEqual(["reconnected"]);
     const stale = { ...clean, state: "CAUTION", stale_inputs: ["wave"] } as SafetyDecision;
     expect(shownReasons(stale)).toEqual(["reconnected", "all fresh"]);
+  });
+});
+
+describe("when a shown score is unconfirmed", () => {
+  const d = (state: SafetyDecision["state"], blocking: string[] = [], stale: string[] = []) =>
+    ({ state, blocking_inputs: blocking, stale_inputs: stale }) as unknown as SafetyDecision;
+  it("marks stale evidence, and a NO-GO resting on a missing reading", () => {
+    expect(scoreUnconfirmed(d("CAUTION", [], ["wave"]))).toBe(true);
+    expect(scoreUnconfirmed(d("NO_GO", ["wave"]))).toBe(true);
+  });
+  it("leaves clean answers, and the withheld score, alone", () => {
+    expect(scoreUnconfirmed(d("GO"))).toBe(false);
+    expect(scoreUnconfirmed(d("NO_GO"))).toBe(false);
+    expect(scoreUnconfirmed(d("INSUFFICIENT_DATA", ["wave"]))).toBe(false);
+    expect(scoreUnconfirmed(null)).toBe(false);
   });
 });

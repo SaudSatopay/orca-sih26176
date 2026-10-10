@@ -35,6 +35,17 @@ export function gateTempers(d: SafetyDecision | null | undefined): boolean {
   return d?.state === "CAUTION";
 }
 
+/**
+ * A score is on screen but its evidence is incomplete: stale (CAUTION), or a
+ * NO-GO that a missing reading did not weaken but may have under-counted (the
+ * engine assumes a mid hazard for an unknown value; the warning floor holds).
+ * Such a number is printed as unconfirmed, never as a plain verdict.
+ */
+export function scoreUnconfirmed(d: SafetyDecision | null | undefined): boolean {
+  if (!d || d.state === "INSUFFICIENT_DATA") return false;
+  return d.blocking_inputs.length > 0 || d.stale_inputs.length > 0;
+}
+
 export type GateTone = "go" | "caution" | "insufficient" | "nogo";
 
 export function gateTone(state: GateState): GateTone {

@@ -47,7 +47,7 @@ import {
 } from "../i18n/mobile";
 import { INSTRUCTION, VERDICT } from "../i18n/riskCard";
 import { GATE } from "../i18n/gate";
-import { gateTempers, gateWithholds } from "../gateModel";
+import { gateTempers, gateWithholds, scoreUnconfirmed } from "../gateModel";
 import { waveM, windKmh } from "../format";
 import { PORTS } from "../ports";
 import { RATING_COLOR, RATING_INK, RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
@@ -667,7 +667,7 @@ function Verdict({
           <p className="mt-3 text-lead font-semibold leading-tight text-ink-900">
             {withheld
               ? gate.instruction.INSUFFICIENT_DATA
-              : tempered
+              : scoreUnconfirmed(outlook.decision)
                 ? `${CATEGORY[language][category]} · ${gate.unconfirmed}`
                 : CATEGORY[language][category]}
           </p>

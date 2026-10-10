@@ -481,3 +481,38 @@ def test_live_outage_recovers_by_itself_after_the_failure_cache_expires(monkeypa
         assert next(h for h in back.data_health if h.input == "wave").status == "FRESH"
     finally:
         live_client.clear_cache()
+
+
+# ---- the authority board: the same gate for every landing centre --------------------
+
+def test_the_authority_board_is_clean_when_the_evidence_is(client):
+    j = client.get("/api/authority/dashboard").json()
+    assert j["decision"] is None, "nothing to flag on fresh evidence"
+    assert {row["gate"] for row in j["locations"]} <= {"GO", "NO_GO"}
+    assert {row["evidence"] for row in j["locations"]} == {"fresh"}
+
+
+@pytest.mark.parametrize("drill,state", [("stale", "CAUTION"), ("unavailable", "INSUFFICIENT_DATA")])
+def test_the_authority_board_flags_weak_evidence_without_touching_a_score(client, drill, state):
+    healthy = {r["name"]: r for r in client.get("/api/authority/dashboard").json()["locations"]}
+    feeds.set_drill(drill)
+    j = client.get("/api/authority/dashboard").json()
+    assert j["decision"]["state"] == state
+    assert j["decision"]["blocking_inputs"] or j["decision"]["stale_inputs"]
+    assert len(j["data_health"]) == 6
+    for row in j["locations"]:
+        before = healthy[row["name"]]
+        if before["official_warning"]:
+            # A warned centre stays NO-GO and never drops below its warning
+            # floor. A missing wave reading can lower the model's own share of
+            # the score (the engine assumes a mid hazard for an unknown value),
+            # which is why such a row is marked: its evidence is not complete.
+            assert row["gate"] == "NO_GO"
+            assert row["risk_score"] >= 70 and row["risk_category"] in ("HIGH", "EXTREME")
+            assert row["evidence"] == ("missing" if state == "INSUFFICIENT_DATA" else "stale")
+        else:
+            assert row["gate"] == state
+        if row["name"] == "Paradip":
+            assert (row["risk_score"], row["gate"]) == (92, "NO_GO")
+    assert j["summary"]["evidence_flagged"] == sum(
+        1 for r in j["locations"] if r["gate"] in ("CAUTION", "INSUFFICIENT_DATA"))

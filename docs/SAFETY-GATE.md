@@ -96,6 +96,7 @@ otherwise               -> GO
 4. An input nobody reported is MISSING, never assumed fine.
 5. In the "unavailable" drill the wave height is `None`. No value is invented.
 6. Supporting inputs (rain, current) never gate the decision. They show in the inputs table.
+7. A missing reading can lower the model's own share of a score, because the engine assumes a mid hazard (0.3) for an unknown value. It can never push a score below an official-warning floor or into a GO. Any score shown on incomplete evidence is printed **unconfirmed**. Example, Digha under an IMD warning: 80 EXTREME with fresh data. With the marine feed down it reads 70 HIGH (the warning floor), stays NO-GO, and is marked unconfirmed.
 
 ## The four deterministic drills
 
@@ -127,6 +128,8 @@ The fisher's own phone follows the same gate. Marathi on the left, English on th
 | Phone, unavailable (मराठी) | Phone, stale |
 |---|---|
 | ![Phone unavailable](safety-gate/phone-unavailable-mr.webp) | ![Phone stale](safety-gate/phone-stale-en.webp) |
+
+The **Authority board** runs the same gate for every landing centre. When any centre rests on stale or missing readings, the evidence check heads the board. Each affected row is marked *Insufficient data* or *unconfirmed*, and a warned centre stays NO-GO.
 
 With missing data, the Today console plans no trip. Its first spoken sentence is the gate's:
 
@@ -202,7 +205,7 @@ When done, set the drill back to `healthy`. It is server-wide, like the LIVE/DEM
 
 - **Stale is CAUTION, too old is INSUFFICIENT.** A forecast a little past one model cycle still describes the sea, but not confidently. One more than two cycles old (6 h for waves) is treated as missing.
 - **No score when data is missing.** For an unknown wave the risk engine assumes a 0.3 hazard. That is an assumption, not a reading, so ORCA prints no number it cannot stand behind.
-- **NO-GO dominates.** Bad data can only push ORCA toward caution. An old reading that says *danger* is still honoured.
+- **NO-GO dominates.** Bad data can only push ORCA's *decision* toward caution. An old reading that says *danger* is still honoured. A missing one cannot lift a warning, and the score it leaves behind is marked unconfirmed.
 - **Only critical inputs gate.** Rain and current are supporting: missing them lowers what the inputs table shows, not the verdict. All four critical inputs carry a safety floor.
 - **The drill is runtime state, like LIVE/DEMO.** It needs no restart, and the next question sees it. It is deterministic because ages are relative to the clock and the tests freeze the clock.
 - **Out of scope, on purpose:** no UI redesign, no risk-engine rewrite, no LLM, no new languages, no IMD/INCOIS/MOSDAC integration.

@@ -198,12 +198,18 @@ export interface AuthorityRow {
   wave_height_m: number | null;
   wind_speed_kmh: number | null;
   headline: string | null;
+  /** The safety gate for this centre, and how complete its evidence is. */
+  gate?: GateState;
+  evidence?: "fresh" | "stale" | "missing";
 }
 
 export interface AuthorityDashboard {
   generated_at: string;
   summary: Record<string, number>;
   locations: AuthorityRow[];
+  /** The first centre resting on stale or missing evidence; null when none is. */
+  decision?: SafetyDecision | null;
+  data_health?: DataHealth[];
 }
 
 export interface ZoneFeature {

@@ -16,7 +16,7 @@ import { CATEGORY, FACTOR, INSTRUCTION, UI, VERDICT } from "../i18n/riskCard";
 import { GATE } from "../i18n/gate";
 import { T as TRACE_T } from "../i18n/agentTrace";
 import { LANG_NAME } from "../i18n/app";
-import { gateTempers, gateWithholds } from "../gateModel";
+import { gateTempers, gateWithholds, scoreUnconfirmed } from "../gateModel";
 import { BorderBeam } from "../ui/magicui/border-beam";
 import { SonarDial } from "../ui/console/SonarDial";
 import { ink } from "../tokens";
@@ -142,7 +142,7 @@ export default function RiskCard({
               <p className="label">
                 {ui.verdict} · <span style={{ color: printed }}>{band}</span> ·{" "}
                 <span className="tabular-nums">{risk.score}/100</span>
-                {tempered && <> · {gate.unconfirmed}</>}
+                {scoreUnconfirmed(decision) && <> · {gate.unconfirmed}</>}
               </p>
             )}
             <h2
