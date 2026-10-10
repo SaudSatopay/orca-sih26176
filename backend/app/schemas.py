@@ -13,6 +13,9 @@ from pydantic import BaseModel, Field
 Language = Literal["en", "hi", "mr"]
 DataMode = Literal["LIVE", "DEMO", "CACHE"]
 RiskCategory = Literal["LOW", "MODERATE", "HIGH", "EXTREME"]
+HealthStatus = Literal["FRESH", "STALE", "MISSING", "ERROR"]
+GateState = Literal["GO", "CAUTION", "NO_GO", "INSUFFICIENT_DATA"]
+Confidence = Literal["normal", "degraded", "insufficient"]
 
 
 class Provenance(BaseModel):
@@ -58,6 +61,51 @@ class Intent(BaseModel):
     missing: List[str] = Field(default_factory=list)
 
 
+class DataHealth(BaseModel):
+    """Is one input of the safety decision fit to decide on? (data sufficiency)
+
+    One record per input (wave, wind, warnings, position, rain, current), made
+    where the agent reads its provider: who delivered it, when, how old it is
+    against its configured limits, and whether a decision may rest on it.
+    """
+
+    input: str                                     # stable key, e.g. "wave"
+    label: str                                     # in the reader's language
+    source: str                                    # provider, in the reader's language
+    feed: str                                      # marine | weather | warnings | chart
+    available: bool
+    observed_at: Optional[str] = None              # when the provider delivered it
+    age_seconds: Optional[int] = None
+    freshness_limit_seconds: Optional[int] = None  # None: static, bundled layer
+    max_age_seconds: Optional[int] = None
+    status: HealthStatus
+    critical: bool
+    usable: bool                                   # may a decision rest on it?
+    detail: str = ""                               # why, in the reader's language
+    mode: DataMode = "DEMO"
+
+
+class SafetyDecision(BaseModel):
+    """The safety gate's verdict on the evidence, made before the final answer.
+
+    GO: every critical input is fresh, and the existing verdict stands at normal
+    confidence. CAUTION: a critical input is stale but usable (degraded
+    confidence). INSUFFICIENT_DATA: a critical input is missing or too old, so
+    ORCA will not clear a trip (follow the official advisory). NO_GO: the
+    existing safety logic already says do not go, whatever the data health.
+    """
+
+    state: GateState
+    confidence: Confidence
+    headline: str
+    reasons: List[str] = Field(default_factory=list)
+    blocking_inputs: List[str] = Field(default_factory=list)
+    stale_inputs: List[str] = Field(default_factory=list)
+    risk_go: Optional[bool] = None                 # what the risk engine said
+    drill: str = "healthy"                         # the active data drill
+    timestamp: str = ""
+
+
 class AgentResult(BaseModel):
     """Uniform envelope returned by every specialist agent."""
 
@@ -74,6 +122,8 @@ class AgentResult(BaseModel):
     mode: DataMode = "DEMO"
     latency_ms: Optional[int] = None
     error: Optional[str] = None
+    # The health of every input this agent delivered (data sufficiency).
+    health: List[DataHealth] = Field(default_factory=list)
 
 
 class RiskFactor(BaseModel):
@@ -189,3 +239,6 @@ class ChatResponse(BaseModel):
     mode: DataMode = "DEMO"
     disclaimer: str = ""
     elapsed_ms: int = 0
+    # The safety gate: may ORCA give its normal-confidence answer, and why.
+    decision: Optional[SafetyDecision] = None
+    data_health: List[DataHealth] = Field(default_factory=list)

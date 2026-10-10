@@ -42,6 +42,7 @@ from typing import Dict, Optional, Tuple
 import httpx
 
 from ..config import LIVE_TIMEOUT_SECONDS
+from .demo_store import now_ist
 
 MARINE_URL = "https://marine-api.open-meteo.com/v1/marine"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
@@ -98,6 +99,9 @@ def _series(kind: str, url: str, hourly_fields: str, lat: float, lon: float,
         hourly = r.json().get("hourly") or {}
         if hourly.get("time"):
             data = hourly
+            # When the provider delivered this series: the freshness check
+            # measures every reading answered from it against this time.
+            data["_fetched_at"] = now_ist().isoformat(timespec="seconds")
     except Exception:
         data = None
 
@@ -148,6 +152,7 @@ def fetch_marine(lat: float, lon: float, when: datetime) -> Optional[Dict]:
         "sst_c": at("sea_surface_temperature"),
         "valid_time": times[i],
         "provider": "Open-Meteo Marine",
+        "fetched_at": h.get("_fetched_at"),
     }
 
 
@@ -175,4 +180,5 @@ def fetch_weather(lat: float, lon: float, when: datetime) -> Optional[Dict]:
         "visibility_km": round(visibility_m / 1000.0, 1) if visibility_m is not None else None,
         "valid_time": times[i],
         "provider": "Open-Meteo",
+        "fetched_at": h.get("_fetched_at"),
     }

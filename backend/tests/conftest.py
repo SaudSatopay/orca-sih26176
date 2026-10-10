@@ -19,7 +19,7 @@ if str(BACKEND) not in sys.path:  # also set by pytest.ini; kept for direct runs
     sys.path.insert(0, str(BACKEND))
 
 from app import config  # noqa: E402
-from app.data import demo_store  # noqa: E402
+from app.data import demo_store, feeds  # noqa: E402
 import app.main as app_main  # noqa: E402  (imports every module that reads the clock)
 
 FROZEN_NOW = datetime(2026, 10, 1, 14, 0, tzinfo=demo_store.IST)
@@ -29,7 +29,8 @@ _session_ids = itertools.count(1)
 
 @pytest.fixture(autouse=True)
 def frozen_demo_world(monkeypatch):
-    """Freeze `now_ist` everywhere it was imported and pin DEMO mode."""
+    """Freeze `now_ist` everywhere it was imported, pin DEMO mode and the
+    healthy data drill (a drill set by one test never leaks into the next)."""
     def fake_now() -> datetime:
         return FROZEN_NOW
 
@@ -37,9 +38,12 @@ def frozen_demo_world(monkeypatch):
         if name.startswith("app.") and hasattr(module, "now_ist"):
             monkeypatch.setattr(module, "now_ist", fake_now)
     previous = config.get_data_mode()
+    previous_drill = feeds.active_drill()
     config.set_data_mode("DEMO")
+    feeds.set_drill("healthy")
     yield
     config.set_data_mode(previous)
+    feeds.set_drill(previous_drill)
 
 
 @pytest.fixture

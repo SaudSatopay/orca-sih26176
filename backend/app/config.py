@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Dict
+from typing import Dict, List, Optional
 
 
 # --------------------------------------------------------------------------
@@ -105,6 +105,75 @@ class RiskConfig:
 
 
 RISK = RiskConfig()
+
+
+# --------------------------------------------------------------------------
+# Data sufficiency: how old may the evidence behind a decision be?
+# --------------------------------------------------------------------------
+def _secs(name: str, default: Optional[int]) -> Optional[int]:
+    """A limit in seconds from the environment; a bad or missing value keeps the default."""
+    raw = os.getenv(name)
+    if raw is None or default is None:
+        return default
+    try:
+        return max(1, int(raw))
+    except ValueError:
+        return default
+
+
+@dataclass(frozen=True)
+class InputPolicy:
+    """One input of the go/no-go decision: where it comes from, whether a
+    normal-confidence decision needs it, and how old it may be.
+
+    `fresh_s`: at or under this age the reading is FRESH. `max_age_s`: over this
+    it is too old to use at all, and counts as missing. Both None for a static
+    layer bundled with the app (the chart), which does not age by the minute.
+    """
+
+    label: str
+    feed: str
+    critical: bool
+    fresh_s: Optional[int]
+    max_age_s: Optional[int]
+
+
+def _policy(key: str, label: str, feed: str, critical: bool,
+            fresh: Optional[int], max_age: Optional[int]) -> InputPolicy:
+    k = key.upper()
+    return InputPolicy(label, feed, critical, _secs(f"ORCA_FRESH_{k}_S", fresh),
+                       _secs(f"ORCA_MAXAGE_{k}_S", max_age))
+
+
+@dataclass(frozen=True)
+class DataHealthConfig:
+    """Freshness limits for every input of the safety decision, kept in this one
+    place rather than scattered as checks across the agents.
+
+    Like the risk weights these are an engineering baseline, not a certified
+    standard: marine and weather forecast models refresh every 1-6 hours, so a
+    forecast older than one cycle is stale; an official warning can be issued at
+    any hour, so the warnings check is held to one hour. The four critical inputs
+    are the ones that carry a safety floor (wave 4 m, gale, the official
+    warnings, the restricted zones). Override any limit with
+    ORCA_FRESH_<INPUT>_S / ORCA_MAXAGE_<INPUT>_S (seconds).
+    """
+
+    inputs: Dict[str, InputPolicy] = field(default_factory=lambda: {
+        "wave": _policy("wave", "Wave height", "marine", True, 3 * 3600, 6 * 3600),
+        "wind": _policy("wind", "Wind", "weather", True, 3 * 3600, 6 * 3600),
+        "warnings": _policy("warnings", "Official warnings", "warnings", True, 3600, 3 * 3600),
+        "position": _policy("position", "Position and restricted zones", "chart", True,
+                            None, None),
+        "rain": _policy("rain", "Rain and visibility", "weather", False, 3 * 3600, 6 * 3600),
+        "current": _policy("current", "Surface current", "marine", False, 6 * 3600, 12 * 3600),
+    })
+
+    def critical_inputs(self) -> List[str]:
+        return [key for key, policy in self.inputs.items() if policy.critical]
+
+
+DATA_HEALTH = DataHealthConfig()
 
 
 # --------------------------------------------------------------------------

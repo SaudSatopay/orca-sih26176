@@ -5,8 +5,11 @@ from datetime import datetime
 from typing import List
 
 from ..config import GEOFENCE_ALERT_KM, GEOFENCE_WARN_KM
+from ..data import feeds
+from ..data.demo_store import now_ist
 from ..data.geo import distance_from_shore_km, nearest_port, zones_near
 from ..schemas import AgentResult, GeofenceAlert, Language, Location
+from ..services import data_health
 from ..services.i18n import t, zone_name
 from .base import timed
 
@@ -61,4 +64,6 @@ def run(location: Location, when: datetime, lang: Language = "en") -> AgentResul
         timestamp=stamp,
         confidence=0.9,
         mode="DEMO",
+        # The chart layer ships with the app: present and static.
+        health=[data_health.check("position", feeds.chart_feed(), now_ist(), lang=lang)],
     )
