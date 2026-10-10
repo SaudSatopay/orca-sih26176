@@ -220,7 +220,13 @@ function Advice({
       </div>
 
       {data.decision && (
-        <SafetyGate decision={data.decision} health={data.data_health} language={language} answerLang={language} />
+        <SafetyGate
+          key={data.decision.timestamp}
+          decision={data.decision}
+          health={data.data_health}
+          language={language}
+          answerLang={language}
+        />
       )}
 
       {/* the verdict leads: dial, stamp, then the plain instruction (L1) */}

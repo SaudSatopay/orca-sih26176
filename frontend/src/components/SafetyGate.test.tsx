@@ -102,7 +102,7 @@ describe("the evidence check on a verdict", () => {
         max_age_seconds: null,
       }),
     ];
-    render(<SafetyGate decision={decision("CAUTION")} health={health} language="en" />);
+    render(<SafetyGate decision={decision("GO")} health={health} language="en" />);
     const toggle = screen.getByRole("button", { name: "Show the inputs" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(toggle);
@@ -112,6 +112,18 @@ describe("the evidence check on a verdict", () => {
     expect(table).toHaveTextContent("3 h");
     expect(table).toHaveTextContent("out of date");
     expect(table).toHaveTextContent("bundled");
+  });
+
+  it("opens the table by itself when an input is stale or missing, and keeps a clean GO to one line", () => {
+    const stale = decision("CAUTION", { stale_inputs: ["wave"], reasons: ["Wave height is 4 h 10 min old."] });
+    const { unmount } = render(
+      <SafetyGate decision={stale} health={[reading("wave", { status: "STALE" })]} language="en" />,
+    );
+    expect(screen.getByRole("button", { name: "Hide the inputs" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("table")).toBeVisible();
+    unmount();
+    render(<SafetyGate decision={decision("GO")} health={[reading("wave")]} language="en" />);
+    expect(screen.getByRole("button", { name: "Show the inputs" })).toHaveAttribute("aria-expanded", "false");
   });
 
   it("names every button in all three languages", () => {

@@ -113,7 +113,13 @@ export default function RiskCard({
         </div>
       )}
       {decision && (
-        <SafetyGate decision={decision} health={health} language={language} answerLang={answerLang} />
+        <SafetyGate
+          key={decision.timestamp}
+          decision={decision}
+          health={health}
+          language={language}
+          answerLang={answerLang}
+        />
       )}
       <div className="verdict-body">
         <div className="flex items-start gap-5 p-5">

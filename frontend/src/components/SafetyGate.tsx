@@ -51,7 +51,10 @@ export default function SafetyGate({
   const tone = gateTone(decision.state);
   const { fresh, total } = freshCount(health);
   const reasons = shownReasons(decision);
-  const [open, setOpen] = useState(false);
+  // When an input is stale or missing, the table that shows which one (and
+  // how old, against what limit) opens by itself; a clean answer stays one line.
+  const troubled = decision.blocking_inputs.length > 0 || decision.stale_inputs.length > 0;
+  const [open, setOpen] = useState(troubled);
   const tableId = useId();
   // The stamp lands when this decision first appears, not on every remount.
   const stamped = useFirstSight(`gate:${decision.timestamp}:${decision.state}:${decision.drill}`);
