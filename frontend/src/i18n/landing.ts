@@ -12,6 +12,8 @@ export const L10N: Record<
     ctaTour: string;
     ctaPhone: string;
     openOrca: string;
+    /** The hero's link to the hackathon page (/challenge.html, in English). */
+    ctaChallenge: string;
     openWord: string;
     watchLive: string;
     pipelineTitle: string;
@@ -43,6 +45,7 @@ export const L10N: Record<
     ctaTour: "Watch the guided tour",
     ctaPhone: "Phone version",
     openOrca: "Open ORCA",
+    ctaChallenge: "Hackathon challenge",
     openWord: "Open",
     watchLive: "watch it run live →",
     pipelineTitle: "How ORCA decides",
@@ -111,6 +114,7 @@ export const L10N: Record<
     ctaTour: "गाइडेड टूर देखें",
     ctaPhone: "फ़ोन संस्करण",
     openOrca: "ORCA खोलें",
+    ctaChallenge: "हैकथॉन चुनौती",
     openWord: "खोलें",
     watchLive: "इसे चलते हुए देखें →",
     pipelineTitle: "ORCA फ़ैसला कैसे करता है",
@@ -179,6 +183,7 @@ export const L10N: Record<
     ctaTour: "गाइडेड टूर पाहा",
     ctaPhone: "फोन आवृत्ती",
     openOrca: "ORCA उघडा",
+    ctaChallenge: "हॅकेथॉन आव्हान",
     openWord: "उघडा",
     watchLive: "हे चालताना पाहा →",
     pipelineTitle: "ORCA निर्णय कसा घेते",

@@ -99,6 +99,15 @@ describe("how ORCA decides, as a live pipeline", () => {
   });
 });
 
+describe("the hero's calls to action", () => {
+  it.each(["en", "hi", "mr"] as const)("links to the hackathon challenge page, in %s", async (lang) => {
+    await openLanding("pending", lang);
+    const link = screen.getByRole("link", { name: L10N[lang].ctaChallenge });
+    expect(link).toHaveAttribute("href", "/challenge.html");
+    expect(link).toHaveAttribute("hreflang", "en");
+  });
+});
+
 describe("the compass ring beside the cartouche", () => {
   it.each(["en", "mr"] as const)("letters the brand line round a compass, untranslated, as decoration (%s)", async (lang) => {
     const { container } = await openLanding("pending", lang);

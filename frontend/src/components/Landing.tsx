@@ -602,6 +602,11 @@ export default function Landing({
               <button onClick={onTour} className="btn-line !px-5 !py-3">
                 <PlayGlyph size={11} /> {t.ctaTour}
               </button>
+              {/* the mentor challenge's showcase: its own page, in English */}
+              <a href="/challenge.html" hrefLang="en" className="btn-line group !px-5 !py-3">
+                {t.ctaChallenge}
+                <CourseArrow size={13} className="transition-transform group-hover:translate-x-1" />
+              </a>
             </div>
           </Reveal>
         </div>
