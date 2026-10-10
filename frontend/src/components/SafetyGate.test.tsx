@@ -103,7 +103,7 @@ describe("the evidence check on a verdict", () => {
       }),
     ];
     render(<SafetyGate decision={decision("GO")} health={health} language="en" />);
-    const toggle = screen.getByRole("button", { name: "Show the inputs" });
+    const toggle = screen.getByRole("button", { name: GATE.en.show });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
@@ -114,16 +114,47 @@ describe("the evidence check on a verdict", () => {
     expect(table).toHaveTextContent("bundled");
   });
 
+  it.each(LANGS)("is the Evidence Confidence panel: named, labelled and drawn to scale (%s)", (lang) => {
+    const health = [
+      reading("wave", { status: "STALE", age_seconds: 4 * 3600 + 600 }),
+      reading("current", { critical: false, status: "MISSING", available: false, age_seconds: null }),
+      reading("position", { age_seconds: null, freshness_limit_seconds: null, max_age_seconds: null }),
+    ];
+    const { container } = render(
+      <SafetyGate decision={decision("CAUTION", { stale_inputs: ["wave"] })} health={health} language={lang} />,
+    );
+    const panel = container.querySelector('[data-panel="evidence-confidence"]') as HTMLElement;
+    expect(panel).toHaveTextContent(GATE[lang].panel);
+    expect(panel).toHaveTextContent(GATE[lang].panelNote);
+    expect(screen.getByRole("table", { name: GATE[lang].panel })).toBeVisible();
+    // only a reading with an age and both limits gets a bar: 4 h 10 min of a 6 h maximum
+    const bars = panel.querySelectorAll("[data-fresh-bar]");
+    expect(bars).toHaveLength(1);
+    expect(bars[0]).toHaveAttribute("data-fresh-bar", "0.694");
+    expect(panel).toHaveTextContent(`${GATE[lang].limit} 3 ${GATE[lang].units.h}`);
+  });
+
+  it("pins a reading older than its maximum at the end of the bar, never past it", () => {
+    render(
+      <SafetyGate
+        decision={decision("INSUFFICIENT_DATA", { blocking_inputs: ["wave"] })}
+        health={[reading("wave", { status: "STALE", usable: false, age_seconds: 9 * 3600 })]}
+        language="en"
+      />,
+    );
+    expect(document.querySelector("[data-fresh-bar]")).toHaveAttribute("data-fresh-bar", "1.000");
+  });
+
   it("opens the table by itself when an input is stale or missing, and keeps a clean GO to one line", () => {
     const stale = decision("CAUTION", { stale_inputs: ["wave"], reasons: ["Wave height is 4 h 10 min old."] });
     const { unmount } = render(
       <SafetyGate decision={stale} health={[reading("wave", { status: "STALE" })]} language="en" />,
     );
-    expect(screen.getByRole("button", { name: "Hide the inputs" })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: GATE.en.hide })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("table")).toBeVisible();
     unmount();
     render(<SafetyGate decision={decision("GO")} health={[reading("wave")]} language="en" />);
-    expect(screen.getByRole("button", { name: "Show the inputs" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: GATE.en.show })).toHaveAttribute("aria-expanded", "false");
   });
 
   it("names every button in all three languages", () => {

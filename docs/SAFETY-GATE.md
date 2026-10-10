@@ -23,7 +23,7 @@ Before this change, ORCA treated a four-hour-old wave forecast exactly like a fr
 | Marine feed silent | DEMO had no way to show it. LIVE swapped in demo values, and the engine assumes a 0.3 hazard for an unknown wave, so it could still say "Safe to go" | **INSUFFICIENT DATA**: no wave height is invented, no score is shown, *follow the official advisory* |
 | Official warning in force | NO-GO, floor 70 / 92 | **identical**: NO-GO with the same floor, under every data condition |
 | Feed comes back | n/a | **GO** again on the next question, with no restart and no code change |
-| Where it shows | the verdict | the verdict stamp, the evidence-check strip, the inputs table, the evidence ledger, the answer text, the spoken phone plan |
+| Where it shows | the verdict | the verdict stamp, the evidence-check strip, the Evidence Confidence panel, the evidence ledger, the answer text, the spoken phone plan |
 
 ## Where the gate sits
 
@@ -97,7 +97,7 @@ otherwise               -> GO
 3. GO is only possible when every critical input is FRESH.
 4. An input nobody reported is MISSING, never assumed fine.
 5. In the "unavailable" drill the wave height is `None`. No value is invented.
-6. Supporting inputs (rain, current) never gate the decision. They show in the inputs table.
+6. Supporting inputs (rain, current) never gate the decision. They show in the Evidence Confidence panel.
 7. A missing reading can lower the model's own share of a score, because the engine assumes a mid hazard (0.3) for an unknown value. It can never push a score below an official-warning floor or into a GO. Any score shown on incomplete evidence is printed **unconfirmed**. Example, Digha under an IMD warning: 80 EXTREME with fresh data. With the marine feed down it reads 70 HIGH (the warning floor), stays NO-GO, and is marked unconfirmed.
 8. **Nothing plans a trip on a withheld verdict.** When a reading is missing, every surface drops the plan: no fishing grounds, no course, no best hours, no stay or catch figures, no next-day sea claims and no 24-hour score timeline. That covers desktop Ask and Today, the phone's Today and Ask cards, the spoken plan, the stat row and the Authority board.
 9. **LIVE mode never invents a warning, and never claims there is none.** There is no open IMD/INCOIS feed. In LIVE mode the scripted demo bulletins are never shown, because a flat sea under a fake "IMD warning" teaches a fisher to ignore the next one. The warnings input reads **"not connected — check IMD / INCOIS"** and is never "none". It is MISSING, so a LIVE answer is INSUFFICIENT DATA, unless the live sea itself already says NO-GO (waves ≥ 4 m, a gale). The scripted "improves after 11:00" is also DEMO-only.
@@ -136,7 +136,7 @@ Every row below is the same question, *"Is it safe to go fishing tomorrow mornin
 | Healthy: GO | Stale: CAUTION |
 |---|---|
 | ![Healthy](safety-gate/ask-healthy.webp) | ![Stale](safety-gate/ask-stale.webp) |
-| **Unavailable: INSUFFICIENT DATA** (the inputs table opens by itself) | **Recovery: GO again** |
+| **Unavailable: INSUFFICIENT DATA** (the Evidence Confidence panel opens by itself) | **Recovery: GO again** |
 | ![Unavailable](safety-gate/ask-unavailable.webp) | ![Recovery](safety-gate/ask-recovery.webp) |
 
 The fisher's own phone follows the same gate. Marathi on the left, English on the right:
@@ -150,6 +150,20 @@ The **Authority board** runs the same gate for every landing centre. When any ce
 With missing data, the Today console plans no trip. Its first spoken sentence is the gate's:
 
 ![Today, unavailable](safety-gate/today-unavailable.webp)
+
+## Stretch goal: the Evidence Confidence panel
+
+The brief's stretch goal asks for *a small "Evidence Confidence" panel showing source, freshness and status for major inputs*, built for transparency rather than fake accuracy.
+
+The panel sits under the evidence check of every verdict: in Ask, in Today and on the Authority board, in English, Hindi and Marathi. It opens by itself when an input is stale or missing; a clean GO keeps it folded to one line.
+
+- **Source:** where each reading came from: the demo dataset, Open-Meteo, or the chart layer bundled with the app.
+- **Freshness:** the reading's age against its own limit (*4 h 10 min · limit 3 h*), and a bar drawn to scale. The bar shows the fresh span, then the stale span up to the maximum age, with a tick at the reading's age. A reading with no age (bundled) or no reading at all gets no bar.
+- **Status:** fresh, out of date, missing or error.
+
+It shows nothing that isn't measured: no confidence percentage and no invented accuracy.
+
+![The Evidence Confidence panel on the stale drill](safety-gate/evidence-confidence.webp)
 
 ## Recovery in LIVE mode
 
@@ -212,7 +226,7 @@ The chips and `?drill=` links send the drill with every request: `"drill"` in th
 
 1. **Healthy.** Ask view, Goa question: 9 / 100, *Safe to go*, and the strip reads *4 of 4 critical inputs fresh*.
 2. **Stale.** Same sea, same 9 / 100, but the stamp flips to **Caution — data stale**: the wave forecast is 4 h 10 min old.
-3. **Unavailable.** **Insufficient data · Follow the official advisory**. The dial becomes sonar rings with no number, and the wave readout shows "—". The inputs table names the missing reading.
+3. **Unavailable.** **Insufficient data · Follow the official advisory**. The dial becomes sonar rings with no number, and the wave readout shows "—". The Evidence Confidence panel names the missing reading.
 4. **The floor holds.** With the feed still down, ask about Paradip: still **92 EXTREME · Do not launch**.
 5. **Recovery.** Back to **GO, normal confidence**, "marine feed reconnected 1 min ago". No restart.
 6. **Optional: where and when.** Ask *"Can I go fishing near Malvan tomorrow?"*. The answer is **Insufficient data**: ORCA does not know Malvan, so it computes no score for the wrong harbour.
@@ -223,7 +237,7 @@ The chips and `?drill=` links send the drill with every request: `"drill"` in th
 - **Stale is CAUTION, too old is INSUFFICIENT.** A forecast a little past one model cycle still describes the sea, but not confidently. One more than two cycles old (6 h for waves) is treated as missing.
 - **No score when data is missing.** For an unknown wave the risk engine assumes a 0.3 hazard. That is an assumption, not a reading, so ORCA prints no number it cannot stand behind.
 - **NO-GO dominates.** Bad data can only push ORCA's *decision* toward caution. An old reading that says *danger* is still honoured. A missing one cannot lift a warning, and the score it leaves behind is marked unconfirmed.
-- **Only critical inputs gate.** Rain and current are supporting: missing them lowers what the inputs table shows, not the verdict. All four critical inputs carry a safety floor.
+- **Only critical inputs gate.** Rain and current are supporting: missing them lowers what the Evidence Confidence panel shows, not the verdict. All four critical inputs carry a safety floor.
 - **The drill is runtime state, like LIVE/DEMO.** It needs no restart, and the next question sees it. It is deterministic because ages are relative to the clock and the tests freeze the clock.
 - **Out of scope, on purpose:** no UI redesign, no risk-engine rewrite, no LLM, no new languages, no IMD/INCOIS/MOSDAC integration.
 
@@ -238,5 +252,5 @@ The chips and `?drill=` links send the drill with every request: `"drill"` in th
 | Agents | `ocean_agent.py`, `weather_agent.py`, `cyclone_agent.py`, `gis_agent.py` report their inputs' health |
 | Decision and words | `planner.py` (gate node), `explanation_agent.py` (answer and evidence), `plain_language.py`, `api/fishing.py`, `api/routes.py` (`/api/config/data-health`) |
 | Words, en/hi/mr | `backend/app/services/i18n.py` (`dh_*`, `gate_*`), `frontend/src/i18n/gate.ts` |
-| UI | `frontend/src/components/SafetyGate.tsx` (evidence check and inputs table), `DataDrill.tsx`, `RiskCard.tsx`, `FishingPanel.tsx`, `MobileApp.tsx`, `gateModel.ts`, `boot.ts` (`?drill=`) |
-| Tests | `backend/tests/test_safety_gate.py` (74), `frontend/src/components/SafetyGate.test.tsx`, `DataDrill.test.tsx`, `RiskCard.test.tsx`, `FishingPanel.test.tsx`, `MobileApp.test.tsx`, `gateModel.test.ts`, `boot.test.ts` |
+| UI | `frontend/src/components/SafetyGate.tsx` (evidence check and the Evidence Confidence panel), `DataDrill.tsx`, `RiskCard.tsx`, `FishingPanel.tsx`, `MobileApp.tsx`, `gateModel.ts`, `boot.ts` (`?drill=`) |
+| Tests | `backend/tests/test_safety_gate.py` (105), `frontend/src/components/SafetyGate.test.tsx`, `DataDrill.test.tsx`, `RiskCard.test.tsx`, `FishingPanel.test.tsx`, `MobileApp.test.tsx`, `gateModel.test.ts`, `boot.test.ts` |

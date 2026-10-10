@@ -28,11 +28,33 @@ const STATUS_INK: Record<HealthStatus, string> = {
 };
 
 /**
+ * A reading's age against its own limits, drawn to scale: the fresh span,
+ * then the stale span up to the age past which the reading is not used, and
+ * a tick at the reading's age. Only real numbers are drawn; a reading with no
+ * age or no limit gets no bar.
+ */
+function FreshnessBar({ age, fresh, max }: { age: number; fresh: number; max: number }) {
+  const at = Math.min(1, Math.max(0, age / max));
+  const edge = Math.min(1, fresh / max);
+  return (
+    <span
+      aria-hidden="true"
+      data-fresh-bar={at.toFixed(3)}
+      className="relative mt-1 block h-1.5 w-28 rounded-[1px] bg-risk-moderate/25"
+    >
+      <span className="absolute inset-y-0 left-0 rounded-l-[1px] bg-risk-low/30" style={{ width: `${edge * 100}%` }} />
+      <span className="absolute -inset-y-0.5 w-0.5 bg-ink-900" style={{ left: `calc(${at * 100}% - 1px)` }} />
+    </span>
+  );
+}
+
+/**
  * The evidence check: the safety gate's verdict on the readings behind an
  * answer. One quiet line when every critical input is fresh; the gate's
- * reasons, in the answer's language, when one is stale or missing. The
- * inputs table (source, age, limit, status) opens on request: transparency,
- * not precision ORCA does not have.
+ * reasons, in the answer's language, when one is stale or missing. Below it,
+ * the Evidence Confidence panel (source, freshness against its limit, status
+ * of every input) opens on request, and by itself when an input is stale or
+ * missing: transparency, not precision ORCA does not have.
  */
 export default function SafetyGate({
   decision,
@@ -58,7 +80,8 @@ export default function SafetyGate({
   const tableId = useId();
   // The stamp lands when this decision first appears, not on every remount.
   const stamped = useFirstSight(`gate:${decision.timestamp}:${decision.state}:${decision.drill}`);
-  const [colInput, colSource, colAge, colLimit, colStatus] = g.cols.split("|");
+  const [colInput, colSource, colFresh, colStatus] = g.cols.split("|");
+  const headingId = `${tableId}-heading`;
 
   return (
     <section
@@ -107,50 +130,66 @@ export default function SafetyGate({
       )}
 
       {health.length > 0 && (
-        <div id={tableId} hidden={!open} className="overflow-x-auto px-5 pb-3">
-          <table className="w-full min-w-[560px] text-left font-mono text-label">
-            <thead>
-              <tr className="border-b" style={{ borderColor: "var(--rule)" }}>
-                {[colInput, colSource, colAge, colLimit, colStatus].map((c) => (
-                  <th
-                    key={c}
-                    scope="col"
-                    className="py-1.5 pr-3 font-bold uppercase tracking-[0.12em] text-ink-400 last:pr-0"
-                  >
-                    {c}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="text-ink-800" lang={answerLang}>
-              {health.map((h) => (
-                <tr key={h.input} className="border-t" style={{ borderColor: "var(--rule-faint)" }}>
-                  <th scope="row" className="py-1.5 pr-3 font-sans font-normal">
-                    {h.label}
-                    {h.critical && (
-                      <span className="ml-2 font-mono uppercase tracking-[0.1em] text-ink-400">
-                        {g.critical}
-                      </span>
-                    )}
-                  </th>
-                  <td className="py-1.5 pr-3 text-ink-500">{h.source}</td>
-                  <td className="whitespace-nowrap py-1.5 pr-3 tabular-nums">
-                    {h.age_seconds != null
-                      ? ageText(h.age_seconds, language)
-                      : h.available && h.freshness_limit_seconds == null
-                        ? g.bundled
-                        : "—"}
-                  </td>
-                  <td className="whitespace-nowrap py-1.5 pr-3 tabular-nums text-ink-500">
-                    {h.freshness_limit_seconds != null ? ageText(h.freshness_limit_seconds, language) : "—"}
-                  </td>
-                  <td className={`whitespace-nowrap py-1.5 font-bold ${STATUS_INK[h.status]}`}>
-                    {g.status[h.status]}
-                  </td>
+        <div id={tableId} hidden={!open} className="px-5 pb-3" data-panel="evidence-confidence">
+          {/* the brief's "Evidence Confidence" panel: source, freshness and
+              status of every input, and nothing more precise than that */}
+          <p id={headingId} className="label">
+            {g.panel}
+          </p>
+          <p className="mt-1 max-w-[78ch] text-label leading-snug text-ink-500">{g.panelNote}</p>
+          <div className="mt-2 overflow-x-auto">
+            <table aria-labelledby={headingId} className="w-full min-w-[520px] text-left font-mono text-label">
+              <thead>
+                <tr className="border-b" style={{ borderColor: "var(--rule)" }}>
+                  {[colInput, colSource, colFresh, colStatus].map((c) => (
+                    <th
+                      key={c}
+                      scope="col"
+                      className="py-1.5 pr-3 font-bold uppercase tracking-[0.12em] text-ink-400 last:pr-0"
+                    >
+                      {c}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="text-ink-800" lang={answerLang}>
+                {health.map((h) => (
+                  <tr key={h.input} className="border-t" style={{ borderColor: "var(--rule-faint)" }}>
+                    <th scope="row" className="py-1.5 pr-3 font-sans font-normal">
+                      {h.label}
+                      {h.critical && (
+                        <span className="ml-2 font-mono uppercase tracking-[0.1em] text-ink-400">
+                          {g.critical}
+                        </span>
+                      )}
+                    </th>
+                    <td className="py-1.5 pr-3 text-ink-500">{h.source}</td>
+                    <td className="py-1.5 pr-3">
+                      <span className="whitespace-nowrap tabular-nums">
+                        {h.age_seconds != null
+                          ? ageText(h.age_seconds, language)
+                          : h.available && h.freshness_limit_seconds == null
+                            ? g.bundled
+                            : "—"}
+                        {h.freshness_limit_seconds != null && (
+                          <span className="text-ink-500">
+                            {" · "}
+                            {g.limit} {ageText(h.freshness_limit_seconds, language)}
+                          </span>
+                        )}
+                      </span>
+                      {h.age_seconds != null && h.freshness_limit_seconds != null && h.max_age_seconds != null && (
+                        <FreshnessBar age={h.age_seconds} fresh={h.freshness_limit_seconds} max={h.max_age_seconds} />
+                      )}
+                    </td>
+                    <td className={`whitespace-nowrap py-1.5 font-bold ${STATUS_INK[h.status]}`}>
+                      {g.status[h.status]}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </section>

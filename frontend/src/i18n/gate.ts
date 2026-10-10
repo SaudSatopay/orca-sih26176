@@ -16,6 +16,12 @@ interface GateText {
   unconfirmed: string;
   show: string;
   hide: string;
+  /** The panel's heading: the brief's "Evidence Confidence" panel. */
+  panel: string;
+  /** One line under the heading: what the panel is, and what it is not. */
+  panelNote: string;
+  /** Before a reading's freshness limit: "limit 3 h". */
+  limit: string;
   /** The inputs table's columns. */
   cols: string;
   critical: string;
@@ -55,9 +61,12 @@ export const GATE: Record<Language, GateText> = {
     },
     noScore: "No score — ORCA will not guess",
     unconfirmed: "unconfirmed",
-    show: "Show the inputs",
-    hide: "Hide the inputs",
-    cols: "Input|Source|Age|Limit|Status",
+    show: "Show evidence confidence",
+    hide: "Hide evidence confidence",
+    panel: "Evidence confidence",
+    panelNote: "Where each reading came from, how old it is against its limit, and whether ORCA could use it. Transparency, not precision.",
+    limit: "limit",
+    cols: "Input|Source|Freshness|Status",
     critical: "critical",
     bundled: "bundled",
     status: { FRESH: "fresh", STALE: "out of date", MISSING: "missing", ERROR: "error" },
@@ -91,9 +100,12 @@ export const GATE: Record<Language, GateText> = {
     },
     noScore: "कोई स्कोर नहीं — ORCA अनुमान नहीं लगाएगा",
     unconfirmed: "अपुष्ट",
-    show: "आँकड़े दिखाएँ",
-    hide: "आँकड़े छिपाएँ",
-    cols: "आँकड़ा|स्रोत|कितना पुराना|सीमा|स्थिति",
+    show: "प्रमाण पर भरोसा दिखाएँ",
+    hide: "प्रमाण पर भरोसा छिपाएँ",
+    panel: "प्रमाण पर भरोसा",
+    panelNote: "हर आँकड़ा कहाँ से आया, अपनी सीमा के मुकाबले कितना पुराना है, और ORCA उसे इस्तेमाल कर सका या नहीं। पारदर्शिता, सटीकता का दावा नहीं।",
+    limit: "सीमा",
+    cols: "आँकड़ा|स्रोत|ताज़गी|स्थिति",
     critical: "ज़रूरी",
     bundled: "साथ में",
     status: { FRESH: "ताज़ा", STALE: "पुराना", MISSING: "उपलब्ध नहीं", ERROR: "त्रुटि" },
@@ -127,9 +139,12 @@ export const GATE: Record<Language, GateText> = {
     },
     noScore: "गुण नाहीत — ORCA अंदाज लावणार नाही",
     unconfirmed: "अपुष्ट",
-    show: "नोंदी दाखवा",
-    hide: "नोंदी लपवा",
-    cols: "नोंद|स्रोत|किती जुनी|मर्यादा|स्थिती",
+    show: "पुराव्यावरील विश्वास दाखवा",
+    hide: "पुराव्यावरील विश्वास लपवा",
+    panel: "पुराव्यावरील विश्वास",
+    panelNote: "प्रत्येक नोंद कुठून आली, तिच्या मर्यादेच्या तुलनेत किती जुनी आहे, आणि ORCA ती वापरू शकले का. पारदर्शकता, अचूकतेचा दावा नाही.",
+    limit: "मर्यादा",
+    cols: "नोंद|स्रोत|ताजेपणा|स्थिती",
     critical: "आवश्यक",
     bundled: "सोबत",
     status: { FRESH: "ताजी", STALE: "जुनी", MISSING: "उपलब्ध नाही", ERROR: "त्रुटी" },
