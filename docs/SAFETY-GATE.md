@@ -155,7 +155,7 @@ With missing data, the Today console plans no trip. Its first spoken sentence is
 
 The brief's stretch goal asks for *a small "Evidence Confidence" panel showing source, freshness and status for major inputs*, built for transparency rather than fake accuracy.
 
-The panel sits under the evidence check of every verdict: in Ask, in Today and on the Authority board, in English, Hindi and Marathi. It opens by itself when an input is stale or missing; a clean GO keeps it folded to one line.
+The panel sits under the evidence check of every verdict: in Ask, in Today and on the Authority board, and on the fisher's phone under the Today verdict and every answer. It is in English, Hindi and Marathi. It opens by itself when an input is stale or missing; a clean GO keeps it folded to one line.
 
 - **Source:** where each reading came from: the demo dataset, Open-Meteo, or the chart layer bundled with the app.
 - **Freshness:** the reading's age against its own limit (*4 h 10 min · limit 3 h*), and a bar drawn to scale. The bar shows the fresh span, then the stale span up to the maximum age, with a tick at the reading's age. A reading with no age (bundled) or no reading at all gets no bar.

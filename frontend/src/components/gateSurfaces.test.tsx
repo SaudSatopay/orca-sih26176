@@ -80,6 +80,11 @@ describe("the phone", () => {
     expect(screen.getAllByText("Insufficient data").length).toBeGreaterThan(0);
     expect(screen.queryByText("/ 100")).not.toBeInTheDocument();
     for (const word of PLANNING) expect(container).not.toHaveTextContent(word);
+    // the Evidence Confidence panel is open by itself, naming the missing reading
+    const panel = container.querySelector('[data-panel="evidence-confidence"]') as HTMLElement;
+    expect(panel.querySelector('[aria-expanded="true"]')).not.toBeNull();
+    expect(panel).toHaveTextContent("Wave height");
+    expect(panel).toHaveTextContent("missing");
   });
 
   it("Ask: the answer card never stamps 'Safe to go' on a withheld verdict", async () => {
@@ -101,6 +106,9 @@ describe("the phone", () => {
     expect((await screen.findAllByText("Caution — data stale")).length).toBeGreaterThan(0);
     expect(screen.getByText(/· unconfirmed/)).toBeInTheDocument();
     expect(screen.queryByText("Safe to go")).not.toBeInTheDocument();
+    // the answer's own Evidence Confidence panel says which reading is old
+    const panels = document.querySelectorAll('[data-panel="evidence-confidence"]');
+    expect([...panels].some((p) => p.textContent?.includes("out of date"))).toBe(true);
   });
 });
 

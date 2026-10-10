@@ -1,9 +1,11 @@
 import { useId, useState } from "react";
-import type { DataHealth, HealthStatus, Language, SafetyDecision } from "../types";
+import type { DataHealth, Language, SafetyDecision } from "../types";
 import { GATE } from "../i18n/gate";
 import { useFirstSight } from "../firstSight";
-import { ageText, freshCount, gateTone, shownReasons, type GateTone } from "../gateModel";
+import { freshCount, gateTone, shownReasons, type GateTone } from "../gateModel";
 import { fill } from "./todayModel";
+import FreshnessBar from "./FreshnessBar";
+import { STATUS_INK, freshnessLabel, freshnessScale } from "./evidence";
 
 /** The strip's ground and rule per state: status colours, never decoration. */
 const TONE_CLASS: Record<GateTone, string> = {
@@ -19,34 +21,6 @@ const TONE_INK: Record<GateTone, string> = {
   insufficient: "text-ink-700",
   nogo: "text-risk-extreme",
 };
-
-const STATUS_INK: Record<HealthStatus, string> = {
-  FRESH: "text-risk-low",
-  STALE: "text-risk-moderate",
-  MISSING: "text-risk-extreme",
-  ERROR: "text-risk-extreme",
-};
-
-/**
- * A reading's age against its own limits, drawn to scale: the fresh span,
- * then the stale span up to the age past which the reading is not used, and
- * a tick at the reading's age. Only real numbers are drawn; a reading with no
- * age or no limit gets no bar.
- */
-function FreshnessBar({ age, fresh, max }: { age: number; fresh: number; max: number }) {
-  const at = Math.min(1, Math.max(0, age / max));
-  const edge = Math.min(1, fresh / max);
-  return (
-    <span
-      aria-hidden="true"
-      data-fresh-bar={at.toFixed(3)}
-      className="relative mt-1 block h-1.5 w-28 rounded-[1px] bg-risk-moderate/25"
-    >
-      <span className="absolute inset-y-0 left-0 rounded-l-[1px] bg-risk-low/30" style={{ width: `${edge * 100}%` }} />
-      <span className="absolute -inset-y-0.5 w-0.5 bg-ink-900" style={{ left: `calc(${at * 100}% - 1px)` }} />
-    </span>
-  );
-}
 
 /**
  * The evidence check: the safety gate's verdict on the readings behind an
@@ -153,40 +127,33 @@ export default function SafetyGate({
                 </tr>
               </thead>
               <tbody className="text-ink-800" lang={answerLang}>
-                {health.map((h) => (
-                  <tr key={h.input} className="border-t" style={{ borderColor: "var(--rule-faint)" }}>
-                    <th scope="row" className="py-1.5 pr-3 font-sans font-normal">
-                      {h.label}
-                      {h.critical && (
-                        <span className="ml-2 font-mono uppercase tracking-[0.1em] text-ink-400">
-                          {g.critical}
-                        </span>
-                      )}
-                    </th>
-                    <td className="py-1.5 pr-3 text-ink-500">{h.source}</td>
-                    <td className="py-1.5 pr-3">
-                      <span className="whitespace-nowrap tabular-nums">
-                        {h.age_seconds != null
-                          ? ageText(h.age_seconds, language)
-                          : h.available && h.freshness_limit_seconds == null
-                            ? g.bundled
-                            : "—"}
-                        {h.freshness_limit_seconds != null && (
-                          <span className="text-ink-500">
-                            {" · "}
-                            {g.limit} {ageText(h.freshness_limit_seconds, language)}
+                {health.map((h) => {
+                  const { age, limit } = freshnessLabel(h, language);
+                  const scale = freshnessScale(h);
+                  return (
+                    <tr key={h.input} className="border-t" style={{ borderColor: "var(--rule-faint)" }}>
+                      <th scope="row" className="py-1.5 pr-3 font-sans font-normal">
+                        {h.label}
+                        {h.critical && (
+                          <span className="ml-2 font-mono uppercase tracking-[0.1em] text-ink-400">
+                            {g.critical}
                           </span>
                         )}
-                      </span>
-                      {h.age_seconds != null && h.freshness_limit_seconds != null && h.max_age_seconds != null && (
-                        <FreshnessBar age={h.age_seconds} fresh={h.freshness_limit_seconds} max={h.max_age_seconds} />
-                      )}
-                    </td>
-                    <td className={`whitespace-nowrap py-1.5 font-bold ${STATUS_INK[h.status]}`}>
-                      {g.status[h.status]}
-                    </td>
-                  </tr>
-                ))}
+                      </th>
+                      <td className="py-1.5 pr-3 text-ink-500">{h.source}</td>
+                      <td className="py-1.5 pr-3">
+                        <span className="whitespace-nowrap tabular-nums">
+                          {age}
+                          {limit && <span className="text-ink-500"> · {limit}</span>}
+                        </span>
+                        {scale && <FreshnessBar {...scale} />}
+                      </td>
+                      <td className={`whitespace-nowrap py-1.5 font-bold ${STATUS_INK[h.status]}`}>
+                        {g.status[h.status]}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

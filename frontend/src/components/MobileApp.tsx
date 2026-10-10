@@ -69,6 +69,7 @@ import { tripIsOff } from "./todayModel";
 import { locationAlreadyAllowed } from "../locate";
 import { agePlan, isNetworkFailure, loadPlan, regateOutlook, savePlan, type SavedPlan } from "../offline";
 import { AskOfflineNotice, OfflinePlanNotice } from "./OfflinePlan";
+import EvidenceList from "./EvidenceList";
 
 // `/?debug=1`: an on-screen list of over-wide elements, for layout checks.
 const LayoutProbe = lazy(() => import("./LayoutProbe"));
@@ -702,6 +703,9 @@ function Verdict({
       <div className="px-4 pb-4 pt-3.5">
         <ListenButton t={t} speaking={speaking} canSpeak={canSpeak} onToggle={onListen} />
       </div>
+
+      {/* what the verdict rests on: source, freshness, status (the brief's stretch) */}
+      <EvidenceList key={`${reading}:${outlook.decision?.state}`} health={outlook.data_health} language={language} />
     </section>
   );
 }
@@ -831,8 +835,12 @@ function AnswerCard({
         </div>
       )}
 
+      <div className="mt-3">
+        <EvidenceList health={res.data_health} language={language} answerLang={language} />
+      </div>
+
       <p
-        className="mt-3 border-t px-4 py-2.5 text-body leading-relaxed text-ink-700"
+        className="border-t px-4 py-2.5 text-body leading-relaxed text-ink-700"
         style={{ borderColor: "var(--rule-faint)" }}
       >
         {res.mode !== "LIVE" && <span className="block">{t.simulated}</span>}
