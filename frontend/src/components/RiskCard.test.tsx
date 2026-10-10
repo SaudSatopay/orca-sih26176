@@ -1,6 +1,6 @@
 import { act, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { RiskAssessment } from "../types";
+import type { RiskAssessment, SafetyDecision } from "../types";
 import RiskCard from "./RiskCard";
 
 afterEach(() => vi.useRealTimers());
@@ -35,5 +35,56 @@ describe("a verdict lands with a beam", () => {
     first.unmount();
     const again = render(<RiskCard risk={reading("2026-10-03T07:00:00")} evidence={[]} language="en" />);
     expect(again.container.querySelector(".border-beam-spin")).toBeNull();
+  });
+});
+
+describe("the safety gate on the verdict", () => {
+  const goa = (at: string): RiskAssessment => ({
+    score: 9,
+    category: "LOW",
+    factors: [{ key: "wave", label: "Wave height", factor: 0.3, weight: 0.25, contribution: 7.5, detail: "Wave height not available" }],
+    overrides: [],
+    official_warning: false,
+    go: true,
+    window: null,
+    sources: [],
+    generated_at: at,
+    mode: "DEMO",
+  });
+  const decision = (state: SafetyDecision["state"]): SafetyDecision => ({
+    state,
+    confidence: state === "GO" ? "normal" : state === "CAUTION" ? "degraded" : "insufficient",
+    headline: "",
+    reasons: state === "GO" ? ["All 4 critical inputs are fresh."] : ["Wave height: no reading."],
+    blocking_inputs: state === "INSUFFICIENT_DATA" ? ["wave"] : [],
+    stale_inputs: state === "CAUTION" ? ["wave"] : [],
+    risk_go: true,
+    drill: "healthy",
+    timestamp: `t-${state}`,
+  });
+
+  it("withholds the score and the go stamp when a critical input is missing", () => {
+    render(<RiskCard risk={goa("a")} evidence={[]} language="en" decision={decision("INSUFFICIENT_DATA")} />);
+    expect(screen.queryByRole("img", { name: /9 \/ 100/ })).not.toBeInTheDocument();
+    expect(screen.queryByText("Safe to go")).not.toBeInTheDocument();
+    expect(screen.getByText("No score — ORCA will not guess")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Follow the official advisory" })).toBeInTheDocument();
+    // the points would rest on a reading that never arrived
+    expect(screen.queryByText("+7.5")).not.toBeInTheDocument();
+  });
+
+  it("keeps the number but marks it unconfirmed on stale evidence", () => {
+    render(<RiskCard risk={goa("b")} evidence={[]} language="en" decision={decision("CAUTION")} />);
+    expect(screen.getByRole("img", { name: "9 / 100 · LOW" })).toBeInTheDocument();
+    expect(screen.getByText(/unconfirmed/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Check the latest bulletin before you go" })).toBeInTheDocument();
+    expect(screen.getAllByText("Caution — data stale").length).toBeGreaterThan(0);
+  });
+
+  it("leaves a fresh GO verdict exactly as it was, with the evidence check above it", () => {
+    render(<RiskCard risk={goa("c")} evidence={[]} language="en" decision={decision("GO")} />);
+    expect(screen.getByRole("img", { name: "9 / 100 · LOW" })).toBeInTheDocument();
+    expect(screen.getByText("Safe to go", { selector: ".stamp" })).toBeInTheDocument();
+    expect(screen.getByText("Evidence fresh")).toBeInTheDocument();
   });
 });

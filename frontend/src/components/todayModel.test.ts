@@ -240,6 +240,13 @@ describe("a day with no trip in it", () => {
     expect(tripIsOff(day("MODERATE", false))).toBe(true);
   });
 
+  it("is off when the safety gate cannot clear the day, however calm it looks", () => {
+    expect(tripIsOff({ ...day("LOW", true), decision: { state: "INSUFFICIENT_DATA" } })).toBe(true);
+    // stale evidence keeps the plan, marked with caution; a fresh GO keeps it plainly
+    expect(tripIsOff({ ...day("LOW", true), decision: { state: "CAUTION" } })).toBe(false);
+    expect(tripIsOff({ ...day("LOW", true), decision: { state: "GO" } })).toBe(false);
+  });
+
   it("keeps the plan on a day that still has a safe window", () => {
     expect(tripIsOff(day("LOW", true))).toBe(false);
     expect(tripIsOff(day("MODERATE", true))).toBe(false);

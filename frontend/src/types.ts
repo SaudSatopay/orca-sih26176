@@ -1,6 +1,50 @@
 export type Language = "en" | "hi" | "mr";
 export type DataMode = "LIVE" | "DEMO" | "CACHE";
 export type RiskCategory = "LOW" | "MODERATE" | "HIGH" | "EXTREME";
+export type HealthStatus = "FRESH" | "STALE" | "MISSING" | "ERROR";
+export type GateState = "GO" | "CAUTION" | "NO_GO" | "INSUFFICIENT_DATA";
+export type GateConfidence = "normal" | "degraded" | "insufficient";
+/** The four rehearsed states of the marine feed (backend data/feeds.py). */
+export type DataDrill = "healthy" | "stale" | "unavailable" | "recovery";
+
+/** Is one input of the safety decision fit to decide on? (backend schemas.DataHealth) */
+export interface DataHealth {
+  input: string;
+  label: string;
+  source: string;
+  feed: string;
+  available: boolean;
+  observed_at: string | null;
+  age_seconds: number | null;
+  /** Fresh at or under this age; null for the bundled, static chart layer. */
+  freshness_limit_seconds: number | null;
+  /** Over this age a reading is unusable and counts as missing. */
+  max_age_seconds: number | null;
+  status: HealthStatus;
+  critical: boolean;
+  usable: boolean;
+  detail: string;
+  note?: string | null;
+  mode: DataMode;
+}
+
+/**
+ * The safety gate's verdict on the evidence behind an answer (backend
+ * schemas.SafetyDecision): GO at normal confidence, CAUTION when a critical
+ * input is stale, INSUFFICIENT_DATA when one is missing (no score, follow the
+ * official advisory), NO_GO when the existing safety rules already decide.
+ */
+export interface SafetyDecision {
+  state: GateState;
+  confidence: GateConfidence;
+  headline: string;
+  reasons: string[];
+  blocking_inputs: string[];
+  stale_inputs: string[];
+  risk_go: boolean | null;
+  drill: string;
+  timestamp: string;
+}
 
 export interface Location {
   name: string;
@@ -138,6 +182,9 @@ export interface ChatResponse {
   mode: DataMode;
   disclaimer: string;
   elapsed_ms: number;
+  /** The safety gate: may ORCA give its normal-confidence answer, and why. */
+  decision?: SafetyDecision | null;
+  data_health?: DataHealth[];
 }
 
 export interface AuthorityRow {
@@ -302,6 +349,9 @@ export interface FishingOutlook {
   advice: string[];
   mode: DataMode;
   method: string;
+  /** The safety gate on today's evidence (see ChatResponse.decision). */
+  decision?: SafetyDecision | null;
+  data_health?: DataHealth[];
 }
 
 export interface ChatMessage {

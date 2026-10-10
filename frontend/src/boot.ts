@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import type { AppTab } from "./i18n/app";
-import type { Language } from "./types";
+import type { DataDrill, Language } from "./types";
 
 /** The width at and below which the fisher's phone app renders. */
 export const PHONE_QUERY = "(max-width: 640px)";
@@ -46,6 +46,8 @@ export interface BootParams {
   demo: string | null;
   /** `?tour=1` — start the guided tour. */
   tour: boolean;
+  /** `?drill=` — the rehearsed marine feed's health, for the safety-gate demo. */
+  drill: DataDrill | null;
 }
 
 /** Everything a deep link can ask for, parsed from `location.search`. */
@@ -54,6 +56,7 @@ export function readBootParams(search: string): BootParams {
   const at = (params.get("at") ?? "").split(",").map(Number);
   const tab = params.get("tab");
   const lang = params.get("lang");
+  const drill = params.get("drill");
   return {
     tab: tab === "home" || tab === "ask" || tab === "authority" || tab === "system" ? tab : null,
     at:
@@ -61,7 +64,23 @@ export function readBootParams(search: string): BootParams {
     lang: lang === "en" || lang === "hi" || lang === "mr" ? lang : null,
     demo: params.get("demo"),
     tour: params.get("tour") === "1",
+    drill:
+      drill === "healthy" || drill === "stale" || drill === "unavailable" || drill === "recovery"
+        ? drill
+        : null,
   };
+}
+
+/**
+ * A `?drill=` link sets the data drill once, before the first question or
+ * outlook is fetched. Resolves either way: a refused or failed switch leaves
+ * the server on whatever drill it had, and the app still loads.
+ */
+export function applyBootDrill(
+  drill: DataDrill | null,
+  set: (d: DataDrill) => Promise<unknown>,
+): Promise<void> {
+  return drill ? set(drill).then(() => undefined, () => undefined) : Promise.resolve();
 }
 
 /**

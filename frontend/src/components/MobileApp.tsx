@@ -46,6 +46,8 @@ import {
   type MobileStrings,
 } from "../i18n/mobile";
 import { INSTRUCTION, VERDICT } from "../i18n/riskCard";
+import { GATE } from "../i18n/gate";
+import { gateTempers, gateWithholds } from "../gateModel";
 import { waveM, windKmh } from "../format";
 import { PORTS } from "../ports";
 import { RATING_COLOR, RATING_INK, RISK_BANDS, RISK_COLOR, RISK_INK } from "../risk";
@@ -592,10 +594,16 @@ function Verdict({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const color = RISK_COLOR[category];
-  const printed = RISK_INK[category];
+  // The safety gate: with a critical reading missing there is no number and
+  // no go stamp (an empty, dashed ring); on stale readings the verdict stands,
+  // stamped with caution. The sentence under it is already the gate's.
+  const gate = GATE[language] ?? GATE.en;
+  const withheld = gateWithholds(outlook.decision);
+  const tempered = gateTempers(outlook.decision);
+  const color = withheld ? ink[400] : RISK_COLOR[category];
+  const printed = withheld ? ink[700] : tempered ? RISK_INK.MODERATE : RISK_INK[category];
   const danger = category === "HIGH" || category === "EXTREME";
-  const counted = useRingCount(score, enter && !stale, rootRef);
+  const counted = useRingCount(withheld ? 0 : score, enter && !stale && !withheld, rootRef);
   const read = parseClock(outlook.generated_at);
   const readings = [
     wave != null && `${waveM(wave)} ${t.waves}`,
@@ -633,25 +641,35 @@ function Verdict({
 
       {/* the verdict — colour and symbol first, words second */}
       <div className="flex items-center gap-4 px-4 pt-3.5">
-        <Ring score={score} color={color} size={128} dashed={stale}>
-          <span style={{ color: printed }}>
-            {danger ? <WarnGlyph size={26} /> : <BoatGlyph size={28} />}
-          </span>
+        <Ring score={withheld ? 0 : score} color={color} size={128} dashed={stale || withheld}>
+          {!withheld && (
+            <span style={{ color: printed }}>
+              {danger ? <WarnGlyph size={26} /> : <BoatGlyph size={28} />}
+            </span>
+          )}
           <span
             className="lining font-display text-dial font-black leading-none"
             style={{ color: printed }}
           >
-            {counted}
+            {withheld ? "—" : counted}
           </span>
-          <span className="mt-0.5 font-mono text-label font-bold text-ink-500">/ 100</span>
+          {!withheld && <span className="mt-0.5 font-mono text-label font-bold text-ink-500">/ 100</span>}
         </Ring>
         <div className="min-w-0">
           {/* the stamp prints the verdict itself; the band word stands beside the ring (PT3, X1) */}
           <span className="m-stamp" style={{ color: printed }}>
-            {VERDICT[language][category]}
+            {withheld
+              ? gate.state.INSUFFICIENT_DATA
+              : tempered
+                ? gate.state.CAUTION
+                : VERDICT[language][category]}
           </span>
           <p className="mt-3 text-lead font-semibold leading-tight text-ink-900">
-            {CATEGORY[language][category]}
+            {withheld
+              ? gate.instruction.INSUFFICIENT_DATA
+              : tempered
+                ? `${CATEGORY[language][category]} · ${gate.unconfirmed}`
+                : CATEGORY[language][category]}
           </p>
           {readings.length > 0 && (
             <p className="mt-1.5 font-mono text-body leading-relaxed text-ink-700">
@@ -668,7 +686,13 @@ function Verdict({
       <p className="px-4 pt-3.5 font-display text-title font-semibold leading-snug text-ink-900 [text-wrap:balance]">
         {/* a kept reading answers from the client's own tables, so the
             sentence follows a language switch even offline (PT6) */}
-        {stale ? INSTRUCTION[language][category] : outlook.advice[0]}
+        {stale
+          ? withheld
+            ? gate.instruction.INSUFFICIENT_DATA
+            : tempered
+              ? gate.instruction.CAUTION
+              : INSTRUCTION[language][category]
+          : outlook.advice[0]}
       </p>
 
       {/* THE button — one tap, hear everything */}

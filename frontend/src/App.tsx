@@ -34,11 +34,13 @@ import MarineMap from "./components/MarineMap";
 import PFZList from "./components/PFZList";
 import RiskCard from "./components/RiskCard";
 import ScenarioDeck from "./components/ScenarioDeck";
+import DataDrillPanel from "./components/DataDrill";
 import RiskTimeline from "./components/RiskTimeline";
 import { useDocumentMeta } from "./documentMeta";
 import type {
   ChatMessage,
   ChatResponse,
+  DataDrill,
   FishingOutlook,
   MarineAlert,
   Language,
@@ -62,7 +64,8 @@ import { tripIsOff } from "./components/todayModel";
 import { PORTS } from "./ports";
 import { RISK_INK } from "./risk";
 import { SPEECH_LOCALE } from "./speech";
-import { initialLanguage, readBootParams } from "./boot";
+import { applyBootDrill, initialLanguage, readBootParams } from "./boot";
+import { isDrill } from "./gateModel";
 import { ink, risk } from "./tokens";
 import { GlowingBadge } from "./ui/unlumen/glowing-badge";
 import { SonarDial } from "./ui/console/SonarDial";
@@ -116,6 +119,12 @@ type Tab = AppTab | "landing";
 
 /** The deep link this page was opened with — read once, before first render. */
 const BOOT = readBootParams(window.location.search);
+
+/**
+ * `?drill=` sets the safety-gate demo's data drill before the first question
+ * or outlook is fetched (they wait for it only when the link names one).
+ */
+const DRILL_READY = applyBootDrill(BOOT.drill, api.setDataDrill);
 
 /**
  * Every sheet is an address. The URL for a view keeps the params that name
@@ -252,12 +261,13 @@ export default function App() {
   useEffect(() => {
     if (!place) return;
     let alive = true;
-    api
-      .fishingOutlook(place.latitude, place.longitude, {
+    const fetchOutlook = () =>
+      api.fishingOutlook(place.latitude, place.longitude, {
         radiusKm: RADIUS_KM,
         days: 3,
         lang: language,
-      })
+      });
+    (BOOT.drill ? DRILL_READY.then(fetchOutlook) : fetchOutlook())
       .then((d) => {
         if (!alive) return;
         outlookAt.current = {
@@ -387,6 +397,29 @@ export default function App() {
     await send(ask);
   };
 
+  // ------------------------------------------------------------- data drill
+  // The safety-gate demo: set the rehearsed marine feed's health, then ask
+  // the question on screen again — the same sea, answered on new evidence.
+  const [drillNow, setDrillNow] = useState<DataDrill>(BOOT.drill ?? "healthy");
+  const [drillBusy, setDrillBusy] = useState(false);
+  const answeredDrill = latest?.decision?.drill;
+  const activeDrill: DataDrill = drillBusy || !isDrill(answeredDrill) ? drillNow : answeredDrill;
+  const runDrill = async (d: DataDrill) => {
+    setDrillNow(d);
+    setDrillBusy(true);
+    try {
+      await api.setDataDrill(d);
+      const asked = latest?.intent.raw_query;
+      if (asked) await send(asked);
+      else await runScenario(SCENARIOS.find((x) => x.id === "safe")?.ask ?? SCENARIOS[0].ask);
+    } catch {
+      // The switch did not reach the server: the chips keep the choice and
+      // the next question shows whichever drill the server is on.
+    } finally {
+      setDrillBusy(false);
+    }
+  };
+
   // ------------------------------------------------------------- tour
   useEffect(() => {
     if (!tourOn || tourPaused) return;
@@ -500,7 +533,15 @@ export default function App() {
     // in development fires the scenario once, not twice.
     const timers: number[] = [];
     if (BOOT_SCENARIO)
-      timers.push(window.setTimeout(() => runScenario(BOOT_SCENARIO.ask), 250));
+      timers.push(
+        window.setTimeout(
+          () =>
+            BOOT.drill
+              ? void DRILL_READY.then(() => runScenario(BOOT_SCENARIO.ask))
+              : runScenario(BOOT_SCENARIO.ask),
+          250,
+        ),
+      );
     if (BOOT.tour) timers.push(window.setTimeout(() => startTour(), 500));
     return () => {
       alive = false;
@@ -972,6 +1013,13 @@ export default function App() {
               onRun={runScenario}
             />
 
+            <DataDrillPanel
+              active={activeDrill}
+              busy={busy || drillBusy}
+              language={language}
+              onDrill={runDrill}
+            />
+
             <div ref={sheetRef} className="ask-sheet">
               <div
                 data-area="talk"
@@ -1017,6 +1065,8 @@ export default function App() {
                       answerLang={latest.language}
                       trace={latest.trace}
                       elapsed={latest.elapsed_ms}
+                      decision={latest.decision}
+                      health={latest.data_health}
                     />
                   )}
 

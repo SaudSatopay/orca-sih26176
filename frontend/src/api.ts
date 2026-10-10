@@ -1,6 +1,7 @@
 import type {
   AuthorityDashboard,
   ChatResponse,
+  DataDrill,
   FishingOutlook,
   GeofenceAlert,
   Language,
@@ -194,6 +195,17 @@ export function flowField(
     ny: String(ny),
   });
   return json<FlowField>(`${BASE}/field?${p}`);
+}
+
+/**
+ * Set the rehearsed marine feed's health for the safety-gate demo. Server-wide
+ * and immediate: the next question sees it, nothing restarts.
+ */
+export function setDataDrill(drill: DataDrill) {
+  return json<{ ok: boolean; drill: DataDrill; drills: DataDrill[] }>(`${BASE}/config/data-health`, {
+    method: "POST",
+    body: JSON.stringify({ drill }),
+  });
 }
 
 export function setMode(mode: "LIVE" | "DEMO") {

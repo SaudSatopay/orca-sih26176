@@ -128,6 +128,34 @@ describe("the phone's Today tab", () => {
     expect(screen.queryByText(/^Old ·/)).not.toBeInTheDocument();
   });
 
+  it("shows no number and no go stamp when the safety gate has too little data", async () => {
+    const { api, MobileApp } = await openPhone();
+    api.fishingOutlook.mockResolvedValue({
+      ...outlook,
+      decision: {
+        state: "INSUFFICIENT_DATA",
+        confidence: "insufficient",
+        headline: "",
+        reasons: ["Wave height: no reading — the marine forecast feed did not respond."],
+        blocking_inputs: ["wave"],
+        stale_inputs: [],
+        risk_go: true,
+        drill: "unavailable",
+        timestamp: "t",
+      },
+      advice: [
+        "ORCA does not have enough reliable sea data to say go today. Follow the official advisory.",
+        ...outlook.advice.slice(1),
+      ],
+    });
+    render(<MobileApp />);
+    expect(await screen.findByText("Insufficient data")).toBeInTheDocument();
+    expect(screen.getByText("Follow the official advisory")).toBeInTheDocument();
+    expect(screen.queryByText("Go with care")).not.toBeInTheDocument();
+    expect(screen.queryByText("/ 100")).not.toBeInTheDocument();
+    expect(screen.getByText(/does not have enough reliable sea data/)).toBeInTheDocument();
+  });
+
   it("labels a return time after midnight in the fisher's terms", async () => {
     const { MobileApp } = await openPhone();
     render(<MobileApp />);

@@ -145,12 +145,16 @@ export function fill(template: string, vars: Record<string, string | number>): s
  * and nothing that plans a trip.
  *
  * The backend's own signal comes first (`duration.feasible`: is there enough
- * safe time to make a trip worthwhile). EXTREME is a no-go whatever it says.
+ * safe time to make a trip worthwhile). EXTREME is a no-go whatever it says,
+ * and so is a day the safety gate cannot clear: with a critical reading
+ * missing, ORCA plans no trip at all (INSUFFICIENT DATA).
  */
 export function tripIsOff(data: {
   safety: { category: string };
   duration: { feasible: boolean } | null;
+  decision?: { state: string } | null;
 }): boolean {
   if (data.safety.category === "EXTREME") return true;
+  if (data.decision?.state === "INSUFFICIENT_DATA") return true;
   return data.duration ? !data.duration.feasible : false;
 }

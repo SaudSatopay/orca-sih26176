@@ -1,13 +1,25 @@
-import type { AgentTrace, Evidence, Language, RiskAssessment } from "../types";
+import type {
+  AgentTrace,
+  DataHealth,
+  Evidence,
+  Language,
+  RiskAssessment,
+  SafetyDecision,
+} from "../types";
 import { useFirstSight } from "../firstSight";
 import { LockGlyph } from "./glyphs";
 import { RISK_COLOR, RISK_INK } from "../risk";
 import { CREW_SIZE, PHASES, pairs } from "../crew";
 import RiskDial from "./RiskDial";
+import SafetyGate from "./SafetyGate";
 import { CATEGORY, FACTOR, INSTRUCTION, UI, VERDICT } from "../i18n/riskCard";
+import { GATE } from "../i18n/gate";
 import { T as TRACE_T } from "../i18n/agentTrace";
 import { LANG_NAME } from "../i18n/app";
+import { gateTempers, gateWithholds } from "../gateModel";
 import { BorderBeam } from "../ui/magicui/border-beam";
+import { SonarDial } from "../ui/console/SonarDial";
+import { ink } from "../tokens";
 
 /** How many reasons get a bar of their own; the rest share one line. */
 const RANKED = 4;
@@ -39,6 +51,8 @@ export default function RiskCard({
   answerLang,
   trace,
   elapsed,
+  decision,
+  health,
 }: {
   risk: RiskAssessment;
   evidence: Evidence[];
@@ -49,12 +63,20 @@ export default function RiskCard({
   /** The crew that produced this verdict, for the one-line foot. */
   trace?: AgentTrace[];
   elapsed?: number;
+  /** The safety gate's verdict on the evidence behind this one. */
+  decision?: SafetyDecision | null;
+  health?: DataHealth[];
 }) {
   const ui = UI[language] ?? UI.en;
+  const gate = GATE[language] ?? GATE.en;
+  // Insufficient data: ORCA gives no score and no stamp it cannot stand
+  // behind. Caution: the verdict stands, marked as resting on old evidence.
+  const withheld = gateWithholds(decision);
+  const tempered = gateTempers(decision);
   const band = (CATEGORY[language] ?? CATEGORY.en)[risk.category] ?? risk.category;
   const names = FACTOR[language] ?? FACTOR.en;
   const color = RISK_COLOR[risk.category];
-  const printed = RISK_INK[risk.category];
+  const printed = withheld ? ink[700] : tempered ? RISK_INK.MODERATE : RISK_INK[risk.category];
   const reasons = risk.factors.filter((f) => f.contribution > 0);
   const ranked = reasons.slice(0, RANKED);
   const rest = reasons.slice(RANKED);
@@ -70,7 +92,10 @@ export default function RiskCard({
   const gatherWide = PHASES.find((p) => p.key === "gather")?.agents.length ?? 5;
   // The stamp, the count and the bars belong to this reading. They play when
   // it arrives and stay still when the sheet is only opened again.
-  const fresh = useFirstSight(`risk:${risk.generated_at}:${risk.category}:${risk.score}`);
+  // A new gate decision on the same sea (a drill changed) is a fresh verdict too.
+  const fresh = useFirstSight(
+    `risk:${risk.generated_at}:${risk.category}:${risk.score}:${decision?.state ?? ""}:${decision?.timestamp ?? ""}`,
+  );
   // A fresh verdict is announced by a teal light running the card's neatline
   // twice, then gone. It decorates a verdict already on screen; opening the
   // same verdict again runs nothing.
@@ -87,29 +112,57 @@ export default function RiskCard({
           <BorderBeam duration={BEAM_LAP_S} arc={90} borderWidth={3} />
         </div>
       )}
+      {decision && (
+        <SafetyGate decision={decision} health={health} language={language} answerLang={answerLang} />
+      )}
       <div className="verdict-body">
         <div className="flex items-start gap-5 p-5">
-          <RiskDial score={risk.score} category={risk.category} label={band} size={124} fresh={fresh} />
+          {withheld ? (
+            <div className="flex shrink-0 flex-col items-center gap-2" style={{ width: 124 }}>
+              <SonarDial size={124} />
+              <span className="text-center font-mono text-label leading-snug text-ink-500">
+                {gate.noScore}
+              </span>
+            </div>
+          ) : (
+            <RiskDial score={risk.score} category={risk.category} label={band} size={124} fresh={fresh} />
+          )}
           <div className="min-w-0 flex-1">
-            <p className="label">
-              {ui.verdict} · <span style={{ color: printed }}>{band}</span> ·{" "}
-              <span className="tabular-nums">{risk.score}/100</span>
-            </p>
+            {withheld ? (
+              <p className="label">
+                {ui.verdict} · <span style={{ color: printed }}>{gate.state.INSUFFICIENT_DATA}</span>
+              </p>
+            ) : (
+              <p className="label">
+                {ui.verdict} · <span style={{ color: printed }}>{band}</span> ·{" "}
+                <span className="tabular-nums">{risk.score}/100</span>
+                {tempered && <> · {gate.unconfirmed}</>}
+              </p>
+            )}
             <h2
               id="verdict-words"
               className="mt-1 font-display text-headline font-bold leading-tight tracking-tight"
               style={{ color: printed }}
             >
-              {(INSTRUCTION[language] ?? INSTRUCTION.en)[risk.category]}
+              {withheld
+                ? gate.instruction.INSUFFICIENT_DATA
+                : tempered
+                  ? gate.instruction.CAUTION
+                  : (INSTRUCTION[language] ?? INSTRUCTION.en)[risk.category]}
             </h2>
             <div className="mt-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-2">
-              {/* the verdict, stamped on the document — the one verdict vocabulary */}
+              {/* the verdict, stamped on the document — the one verdict vocabulary;
+                  on weak evidence the gate's word takes the stamp */}
               <span
-                key={`${risk.category}-${risk.score}`}
+                key={`${risk.category}-${risk.score}-${decision?.state ?? ""}`}
                 className={`stamp ${fresh ? "animate-stampIn" : ""} text-label`}
                 style={{ color: printed }}
               >
-                {(VERDICT[language] ?? VERDICT.en)[risk.category]}
+                {withheld
+                  ? gate.state.INSUFFICIENT_DATA
+                  : tempered
+                    ? gate.state.CAUTION
+                    : (VERDICT[language] ?? VERDICT.en)[risk.category]}
               </span>
               {/* No delay on the second stamp: without a fill-mode a delayed
                   stamp would sit at rest, jump out to 1.3x and land. The two
@@ -128,7 +181,7 @@ export default function RiskCard({
                 {dataMode}
               </span>
             </div>
-            {lead && (
+            {lead && !withheld && (
               <p className="mt-2.5 text-body leading-snug text-ink-700" lang={answerLang}>
                 {lead}
               </p>
@@ -142,7 +195,9 @@ export default function RiskCard({
           </div>
         </div>
 
-        {/* why */}
+        {/* why — not drawn when the gate withholds the score: the points
+            would rest on an input that never arrived */}
+        {!withheld && (
         <div className="verdict-why px-5 py-4">
           <h3 className="label mb-2.5">{ui.why}</h3>
           <ol className="space-y-2.5">
@@ -196,6 +251,7 @@ export default function RiskCard({
             </p>
           )}
         </div>
+        )}
       </div>
 
       {/* deterministic overrides — the trust moment */}

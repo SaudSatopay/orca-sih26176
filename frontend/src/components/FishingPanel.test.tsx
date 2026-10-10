@@ -178,6 +178,58 @@ describe("the Advice panel's verdict lockup (impeccable L1)", () => {
   });
 });
 
+const decided = (state: "GO" | "CAUTION" | "INSUFFICIENT_DATA") => ({
+  state,
+  confidence: state === "GO" ? "normal" : state === "CAUTION" ? "degraded" : "insufficient",
+  headline: "",
+  reasons:
+    state === "INSUFFICIENT_DATA"
+      ? ["Wave height: no reading — the marine forecast feed did not respond."]
+      : state === "CAUTION"
+        ? ["Wave height is 4 h 10 min old — over the 3 h limit."]
+        : ["All 4 critical inputs are fresh."],
+  blocking_inputs: state === "INSUFFICIENT_DATA" ? ["wave"] : [],
+  stale_inputs: state === "CAUTION" ? ["wave"] : [],
+  risk_go: true,
+  drill: "healthy",
+  timestamp: `t-${state}`,
+});
+
+describe("the safety gate on Today", () => {
+  it("withholds the score and plans no trip when a critical reading is missing", () => {
+    const day = {
+      ...goDay,
+      decision: decided("INSUFFICIENT_DATA"),
+      advice: [
+        "ORCA does not have enough reliable sea data to say go today. Follow the official advisory.",
+        ...goDay.advice.slice(1),
+      ],
+    } as unknown as FishingOutlook;
+    render(<FishingPanel data={day} language="en" />);
+    expect(screen.queryByRole("img", { name: /28 \/ 100/ })).not.toBeInTheDocument();
+    expect(screen.getByText("No score — ORCA will not guess")).toBeInTheDocument();
+    expect(screen.getAllByText("Insufficient data").length).toBeGreaterThan(0);
+    expect(screen.queryByText("Go with care")).not.toBeInTheDocument();
+    expect(screen.getByText(/does not have enough reliable sea data/)).toBeInTheDocument();
+    expect(screen.getByText("Wave height: no reading — the marine forecast feed did not respond.")).toBeInTheDocument();
+  });
+
+  it("keeps the number on stale evidence, stamped with caution and marked unconfirmed", () => {
+    const day = { ...goDay, decision: decided("CAUTION") } as unknown as FishingOutlook;
+    render(<FishingPanel data={day} language="en" />);
+    expect(screen.getByRole("img", { name: /28 \/ 100/ })).toBeInTheDocument();
+    expect(screen.getAllByText("Caution — data stale").length).toBeGreaterThan(0);
+    expect(screen.getByText(/28\/100 · unconfirmed/)).toBeInTheDocument();
+  });
+
+  it("changes nothing on a fresh GO but the evidence check line", () => {
+    const day = { ...goDay, decision: decided("GO") } as unknown as FishingOutlook;
+    render(<FishingPanel data={day} language="en" />);
+    expect(screen.getByText("Go with care")).toBeInTheDocument();
+    expect(screen.getByText("Evidence fresh")).toBeInTheDocument();
+  });
+});
+
 describe("one format for every quantity (taste T5 + X5)", () => {
   it("writes durations as hours and minutes, never bare minutes or decimal hours", () => {
     render(<FishingPanel data={goDay} language="en" />);

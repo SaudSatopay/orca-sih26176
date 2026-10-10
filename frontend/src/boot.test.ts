@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  applyBootDrill,
   initialLanguage,
   isPhoneLayout,
   PHONE_QUERY,
@@ -93,7 +94,14 @@ describe("phone versus desktop selection", () => {
 
 describe("deep links", () => {
   it("reads nothing from a bare URL", () => {
-    expect(readBootParams("")).toEqual({ tab: null, at: null, lang: null, demo: null, tour: false });
+    expect(readBootParams("")).toEqual({
+      tab: null,
+      at: null,
+      lang: null,
+      demo: null,
+      tour: false,
+      drill: null,
+    });
   });
 
   it("reads the rehearsed demo links", () => {
@@ -104,16 +112,32 @@ describe("deep links", () => {
     });
     expect(readBootParams("?tour=1").tour).toBe(true);
     expect(readBootParams("?lang=mr").lang).toBe("mr");
+    expect(readBootParams("?tab=ask&drill=stale").drill).toBe("stale");
+    expect(readBootParams("?m=1&drill=unavailable").drill).toBe("unavailable");
   });
 
   it("ignores values it does not know", () => {
-    expect(readBootParams("?tab=admin&lang=fr&at=north,east&tour=yes")).toEqual({
+    expect(readBootParams("?tab=admin&lang=fr&at=north,east&tour=yes&drill=chaos")).toEqual({
       tab: null,
       at: null,
       lang: null,
       demo: null,
       tour: false,
+      drill: null,
     });
     expect(readBootParams("?at=18.95").at).toBeNull();
+  });
+});
+
+describe("a ?drill= link", () => {
+  it("sets the drill once before anything is asked, and never blocks the app", async () => {
+    const set = vi.fn(() => Promise.resolve({ ok: true }));
+    await applyBootDrill("stale", set);
+    expect(set).toHaveBeenCalledWith("stale");
+    const refused = vi.fn(() => Promise.reject(new Error("400")));
+    await expect(applyBootDrill("unavailable", refused)).resolves.toBeUndefined();
+    const untouched = vi.fn(() => Promise.resolve());
+    await applyBootDrill(null, untouched);
+    expect(untouched).not.toHaveBeenCalled();
   });
 });

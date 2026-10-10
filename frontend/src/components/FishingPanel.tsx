@@ -1,12 +1,16 @@
 import { lazy, Suspense, useId, useState, type ReactNode } from "react";
 
-import { risk } from "../tokens";
+import { ink, risk } from "../tokens";
 import type { AvoidZone, FishingArea, FishingOutlook, Language } from "../types";
 import { useFirstSight } from "../firstSight";
 import { FishGlyph, SchoolGlyph, WarnGlyph } from "./glyphs";
 import { EmptySweepGlyph, NoEntryGlyph } from "./viewGlyphs";
 import { Draft, DraftSheet, OfflineNotice } from "./SheetStates";
 import RiskDial from "./RiskDial";
+import SafetyGate from "./SafetyGate";
+import { SonarDial } from "../ui/console/SonarDial";
+import { GATE } from "../i18n/gate";
+import { gateTempers, gateWithholds } from "../gateModel";
 import { FACTORS, RATING_WORD, T } from "../i18n/fishing";
 import { VERDICT } from "../i18n/riskCard";
 import { returnLabel } from "../i18n/mobile";
@@ -143,8 +147,19 @@ function Advice({
   const d = data.duration;
   const words = RATING_WORD[language] ?? RATING_WORD.en;
   // The dial counts up when this reading arrives, not on every visit.
-  const fresh = useFirstSight(`advice:${data.generated_at}`);
-  const verdictWord = (VERDICT[language] ?? VERDICT.en)[data.safety.category];
+  const fresh = useFirstSight(`advice:${data.generated_at}:${data.decision?.state ?? ""}`);
+  // The safety gate: on missing evidence there is no score and no go stamp;
+  // on stale evidence the verdict stands, stamped with caution. The sentence
+  // under the stamp is already the gate's (the backend replaced advice[0]).
+  const gate = GATE[language] ?? GATE.en;
+  const withheld = gateWithholds(data.decision);
+  const tempered = gateTempers(data.decision);
+  const verdictWord = withheld
+    ? gate.state.INSUFFICIENT_DATA
+    : tempered
+      ? gate.state.CAUTION
+      : (VERDICT[language] ?? VERDICT.en)[data.safety.category];
+  const verdictInk = withheld ? ink[700] : tempered ? RISK_INK.MODERATE : RISK_INK[data.safety.category];
 
   // Closed areas: the backend's sentence, paired with the area's own facts.
   // If the advice could not be cut into blocks, the areas still get their rows.
@@ -204,16 +219,32 @@ function Advice({
         </span>
       </div>
 
+      {data.decision && (
+        <SafetyGate decision={data.decision} health={data.data_health} language={language} answerLang={language} />
+      )}
+
       {/* the verdict leads: dial, stamp, then the plain instruction (L1) */}
       <div
         className={`flex flex-wrap items-center gap-x-5 gap-y-3 px-5 pb-4 pt-4 ${severe ? "hatch-danger" : ""}`}
         data-fresh={fresh ? "" : undefined}
       >
-        <RiskDial score={data.safety.score} category={data.safety.category} size={96} fresh={fresh} />
+        {withheld ? (
+          <div className="flex shrink-0 flex-col items-center gap-1.5" style={{ width: 96 }}>
+            <SonarDial size={96} />
+            <span className="text-center font-mono text-label leading-snug text-ink-500">{gate.noScore}</span>
+          </div>
+        ) : (
+          <RiskDial score={data.safety.score} category={data.safety.category} size={96} fresh={fresh} />
+        )}
         <div className="min-w-0 flex-1 basis-[240px]">
-          <span className="stamp" style={{ color: RISK_INK[data.safety.category] }}>
+          <span className="stamp" style={{ color: verdictInk }}>
             {verdictWord}
           </span>
+          {tempered && (
+            <span className="ml-2.5 font-mono text-label uppercase tracking-[0.12em] text-ink-500">
+              {data.safety.score}/100 · {gate.unconfirmed}
+            </span>
+          )}
           <p
             className={`mt-2.5 font-display text-headline font-bold leading-[1.15] [text-wrap:balance] ${
               severe ? "text-risk-extreme" : "text-ink-900"
