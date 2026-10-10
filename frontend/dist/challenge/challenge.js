@@ -22,6 +22,7 @@
   var doc = document.documentElement;
   var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canObserve = "IntersectionObserver" in window;
+  doc.classList.add("js");
   if (!reduced && canObserve) doc.classList.add("motion");
 
   var $ = function (sel, root) {
@@ -116,6 +117,12 @@
           if (e.isIntersecting) {
             e.target.classList.add("in");
             revealIO.unobserve(e.target);
+            // the stamps in a sheet land one after another as it arrives
+            $$(".stamp", e.target).forEach(function (s, i) {
+              setTimeout(function () {
+                restamp(s);
+              }, 260 + i * 110);
+            });
           }
         });
       },
@@ -141,6 +148,7 @@
     var idleIO = new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
         e.target.classList.toggle("idle", !e.isIntersecting);
+        if (e.isIntersecting) e.target.classList.add("seen");
       });
     });
     $$(".hero, .sec").forEach(function (s) {
@@ -149,6 +157,7 @@
   }
 
   /* ------------------------------------------------------------ scroll: progress, rail, nav */
+  var sheetNums = $$(".sheet-n");
   var progress = $(".progress span");
   var railBoat = $(".rail-boat");
   var rail = $(".rail");
@@ -163,6 +172,16 @@
       if (progress) progress.style.transform = "scaleX(" + p.toFixed(4) + ")";
       if (railBoat && rail && rail.offsetHeight) {
         railBoat.style.transform = "translateY(" + Math.round(p * (rail.offsetHeight - 24)) + "px)";
+      }
+      // the sheet numerals drift a little slower than the sheet (wide screens)
+      if (!reduced && sheetNums.length && window.innerWidth >= 1200) {
+        var vh = window.innerHeight;
+        sheetNums.forEach(function (n) {
+          var r = n.parentNode.getBoundingClientRect();
+          if (r.bottom < -200 || r.top > vh + 200) return;
+          var t = Math.max(-1, Math.min(1, (r.top - vh * 0.35) / vh));
+          n.style.setProperty("--py", (t * 56).toFixed(1) + "px");
+        });
       }
     });
   }
@@ -393,6 +412,120 @@
     m.setAttribute("data-edge", "start");
   });
 
+  /* ================================================================ what if
+   * An illustration of the backend's freshness rule (data_health.py) and the
+   * gate (safety_gate.py), computed here for the Goa question with every
+   * other input fresh. Nothing is sent anywhere: the limits come from
+   * GET /api/config/data-health when a backend answers, else recorded.json.
+   *   age <= fresh limit -> FRESH  -> GO, normal confidence
+   *   age <= max age     -> STALE  -> CAUTION, degraded (score unconfirmed)
+   *   older than that    -> too old, counts as missing -> INSUFFICIENT DATA,
+   *                         and no score is printed */
+  var wi = $("#whatif");
+  var wiLimitsFrom = null; // "live" | "recorded"
+  var whatIf = { limits: function () {} };
+  if (wi) {
+    var wiIn = $("#wi-age", wi);
+    var wiOut = $(".wi-out", wi);
+    var wiLive = $("#wi-live", wi);
+    var W = {};
+    $$("[data-wi]", wi).forEach(function (n) {
+      W[n.getAttribute("data-wi")] = n;
+    });
+    var lawLis = $$(".wi-law li", wi);
+    var wd = { fresh: $(".wd-fresh", wi), stale: $(".wd-stale", wi), dead: $(".wd-dead", wi), hand: $(".wd-hand", wi) };
+    var lim = { fresh: 10800, max: 21600 };
+    var wiState = null;
+    var WI_STATUS = { FRESH: "Fresh", STALE: "Stale", MISSING: "Too old · treated as missing" };
+    var LAW_K = { FRESH: "fresh", STALE: "stale", MISSING: "dead" };
+
+    var wiUpdate = function (min, quiet) {
+      var s = Math.max(0, min) * 60;
+      var st = s <= lim.fresh ? "FRESH" : s <= lim.max ? "STALE" : "MISSING";
+      var state = st === "FRESH" ? "GO" : st === "STALE" ? "CAUTION" : "INSUFFICIENT_DATA";
+      var a = ageText(s);
+      W.age.textContent = a;
+      W["age-sm"].textContent = a;
+      wi.style.setProperty("--a", Math.min(100, (s / SCALE_S) * 100).toFixed(3));
+      wd.hand.style.setProperty("--deg", Math.min(360, (s / SCALE_S) * 360).toFixed(1) + "deg");
+      wi.setAttribute("data-s", st);
+      wiOut.setAttribute("data-s", st);
+      wiOut.setAttribute("data-state", state);
+      W.status.textContent = WI_STATUS[st];
+      W.status.setAttribute("data-s", st);
+      W.stamp.textContent = STATE_WORD[state];
+      W.stamp.setAttribute("data-tone", TONE[state]);
+      if (state === "GO") {
+        W.why.textContent = "Normal confidence, 9/100. All 4 critical inputs are fresh.";
+      } else if (state === "CAUTION") {
+        W.why.textContent =
+          "Degraded confidence, 9/100 unconfirmed. Wave height is " + a + " old — over the " + ageText(lim.fresh) + " limit.";
+      } else {
+        W.why.textContent =
+          "No score: ORCA will not guess. Wave height is " + a + " old — too old to use (limit " +
+          ageText(lim.max) + "). Follow the official advisory.";
+      }
+      lawLis.forEach(function (li) {
+        li.setAttribute("aria-current", String(li.getAttribute("data-k") === LAW_K[st]));
+      });
+      wiIn.setAttribute("aria-valuetext", a + " old: " + WI_STATUS[st].toLowerCase() + ", gate says " + STATE_SAY[state]);
+      if (state !== wiState) {
+        if (wiState !== null && !quiet) {
+          restamp(W.stamp);
+          wiLive.textContent =
+            "Wave reading " + a + " old: " + WI_STATUS[st].toLowerCase() + ". The gate says " + STATE_SAY[state] + ".";
+        }
+        wiState = state;
+      }
+    };
+
+    whatIf.limits = function (inp, from) {
+      if (!inp || typeof inp.fresh_s !== "number" || typeof inp.max_age_s !== "number") return;
+      if (wiLimitsFrom === "live" && from !== "live") return; // the live server wins
+      wiLimitsFrom = from;
+      lim.fresh = inp.fresh_s;
+      lim.max = inp.max_age_s;
+      var f = Math.min(100, (lim.fresh / SCALE_S) * 100);
+      var m = Math.min(100, (lim.max / SCALE_S) * 100);
+      wi.style.setProperty("--f", f.toFixed(3));
+      wi.style.setProperty("--m", m.toFixed(3));
+      wd.fresh.style.strokeDasharray = f.toFixed(2) + " 100";
+      wd.stale.style.strokeDasharray = "0 " + f.toFixed(2) + " " + (m - f).toFixed(2) + " 100";
+      wd.dead.style.strokeDasharray = "0 " + m.toFixed(2) + " " + (100 - m).toFixed(2) + " 100";
+      W["ax-f"].textContent = ageText(lim.fresh);
+      W["ax-f"].style.setProperty("--x", f.toFixed(3));
+      W["ax-m"].textContent = ageText(lim.max);
+      W["ax-m"].style.setProperty("--x", m.toFixed(3));
+      W["law-f"].textContent = ageText(lim.fresh);
+      W["law-m"].textContent = ageText(lim.max);
+      W.limits.textContent =
+        "fresh ≤ " + ageText(lim.fresh) + " · usable ≤ " + ageText(lim.max) +
+        (from === "live" ? ", read from this server just now" : ", as recorded from the real backend");
+      wiUpdate(Number(wiIn.value), true);
+    };
+
+    wiIn.addEventListener("input", function () {
+      wiUpdate(Number(wiIn.value), false);
+    });
+    wiIn.addEventListener("keydown", function (e) {
+      var d = e.key === "PageUp" ? 60 : e.key === "PageDown" ? -60 : 0;
+      if (!d) return;
+      e.preventDefault();
+      wiIn.value = String(Math.max(0, Math.min(720, Number(wiIn.value) + d)));
+      wiUpdate(Number(wiIn.value), false);
+    });
+    $$("[data-wi-min]", wi).forEach(function (b) {
+      b.addEventListener("click", function () {
+        wiIn.value = b.getAttribute("data-wi-min");
+        wiUpdate(Number(wiIn.value), false);
+      });
+    });
+    wiUpdate(Number(wiIn.value), true);
+    recordedReady.then(function (rec) {
+      if (rec && rec.config && rec.config.inputs) whatIf.limits(rec.config.inputs.wave, "recorded");
+    });
+  }
+
   /* ================================================================ live demo */
   var demo = {
     mode: "checking",
@@ -479,6 +612,7 @@
       .then(function (j) {
         if (!j || !Array.isArray(j.drills)) throw new Error("not orca");
         setMode("live");
+        if (j.inputs) whatIf.limits(j.inputs.wave, "live");
       })
       .catch(function () {
         setMode("recorded");

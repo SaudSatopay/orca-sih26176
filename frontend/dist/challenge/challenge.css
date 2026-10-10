@@ -4064,6 +4064,587 @@ html.motion .tl-stamp {
   }
 }
 
+/* ================================================================ beautify pass
+   Sheet numerals, neatlines between sheets, the hero's scroll cue, the
+   freshness ruler's breathing room, and the "what if" control. Same rules
+   as above: tokens only, transform / clip-path / stroke-dashoffset motion,
+   finished states as the base styles. */
+
+/* the sheet numeral: decorative chart lettering in the header's margin */
+.sheet-n {
+  display: none;
+}
+@media (min-width: 1200px) {
+  .sheet-n {
+    display: block;
+    position: absolute;
+    top: -0.12em;
+    right: var(--gutter);
+    font-family: var(--display);
+    font-size: calc(var(--t-poster) * 3.6);
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-variant-numeric: lining-nums;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--rule);
+    pointer-events: none;
+    user-select: none;
+    transform: translate3d(0, var(--py, 0px), 0);
+    clip-path: inset(0 0 0 0);
+    transition: clip-path 1200ms var(--ease-out);
+  }
+  .band-ink .sheet-n {
+    -webkit-text-stroke-color: rgba(127, 169, 188, 0.32);
+  }
+}
+html.motion .sec-head[data-reveal]:not(.in) .sheet-n {
+  clip-path: inset(100% 0 0 0);
+}
+
+/* headlines write on, left to right, as the sheet arrives */
+html.motion .sec-head h2 {
+  clip-path: inset(-0.2em -0.2em -0.3em -0.2em);
+  transition: clip-path 1000ms var(--ease-out) 120ms;
+}
+html.motion .sec-head[data-reveal]:not(.in) h2 {
+  clip-path: inset(-0.2em 100% -0.3em -0.2em);
+}
+html.motion .sec-head .folio span {
+  display: inline-block;
+  transition: transform 700ms var(--ease-out);
+}
+html.motion .sec-head[data-reveal]:not(.in) .folio span {
+  transform: rotate(-6deg) scale(1.25);
+}
+
+/* a graduated neatline across the top of each plain sheet */
+.sec:not(.band-ink):not(.sec-tint)::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: max(var(--gutter), calc(50% - 600px + var(--gutter)));
+  right: max(var(--gutter), calc(50% - 600px + var(--gutter)));
+  height: 9px;
+  background:
+    linear-gradient(var(--rule), var(--rule)) 0 0 / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, var(--rule) 0 1px, transparent 1px 26px) 0 1px / 100% 4px no-repeat,
+    repeating-linear-gradient(90deg, var(--rule-strong) 0 1px, transparent 1px 130px) 0 1px / 100% 8px no-repeat;
+  transform-origin: 0 50%;
+  transition: transform 1400ms var(--ease-out);
+  pointer-events: none;
+}
+html.motion .sec:not(.band-ink):not(.sec-tint):not(.seen)::before {
+  transform: scaleX(0);
+}
+
+/* the hero's scroll cue */
+.hero {
+  position: relative;
+}
+.scroll-cue {
+  display: none;
+}
+@media (min-width: 1024px) and (min-height: 760px) {
+  .scroll-cue {
+    position: absolute;
+    left: 50%;
+    bottom: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transform: translateX(-50%);
+    font-family: var(--mono);
+    font-size: var(--t-label);
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-400);
+    text-decoration: none;
+  }
+  .scroll-cue i {
+    position: relative;
+    width: 1px;
+    height: 40px;
+    overflow: hidden;
+    background: var(--rule-faint);
+  }
+  .scroll-cue i::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 1px;
+    height: 14px;
+    background: var(--chart-500);
+    transform: translateY(-14px);
+    animation: cueDrop 2200ms var(--ease-in-out) infinite;
+  }
+  .scroll-cue:hover {
+    color: var(--chart-600);
+  }
+  .scroll-cue:focus-visible {
+    outline: 2px solid var(--chart-500);
+    outline-offset: 4px;
+  }
+}
+@keyframes cueDrop {
+  0% {
+    transform: translateY(-14px);
+  }
+  70%,
+  100% {
+    transform: translateY(40px);
+  }
+}
+
+/* the health cards deal out like sheets onto the table */
+.cards .hcard {
+  transition:
+    border-color 300ms var(--ease-out),
+    transform 800ms var(--ease-out),
+    clip-path 800ms var(--ease-out);
+  transition-delay: 0ms, calc(var(--i, 0) * 90ms), calc(var(--i, 0) * 90ms);
+}
+html.motion .cards[data-reveal]:not(.in) .hcard {
+  transform: translateY(28px) rotate(-0.6deg);
+  clip-path: inset(0 0 100% 0);
+}
+
+/* the freshness ruler: room for every age pin above its own track */
+.r-row {
+  padding: 30px 0 6px;
+}
+.r-row.r-static {
+  padding-top: 18px;
+}
+.r-track .z-fresh,
+.r-track .z-stale {
+  transform-origin: 0 50%;
+  transition: transform 900ms var(--ease-out);
+}
+.r-track .z-stale {
+  transition-delay: 180ms;
+}
+html.motion .ruler-fig[data-reveal]:not(.in) .r-track .z-fresh,
+html.motion .ruler-fig[data-reveal]:not(.in) .r-track .z-stale {
+  transform: scaleX(0);
+}
+
+/* ------------------------------------------------------------ what if */
+.whatif {
+  --thumb: 16px;
+  margin-top: clamp(32px, 4vw, 48px);
+  padding-top: clamp(24px, 3vw, 36px);
+  border-top: 1px solid var(--rule);
+}
+.wi-head {
+  max-width: 72ch;
+}
+.wi-kicker {
+  color: var(--chart-600);
+}
+.wi-title {
+  margin-top: 8px;
+  font-family: var(--display);
+  font-size: var(--t-title);
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink-900);
+  text-wrap: balance;
+}
+@media (min-width: 768px) {
+  .wi-title {
+    font-size: var(--t-headline);
+  }
+}
+.wi-title em {
+  font-style: italic;
+  font-weight: 500;
+  color: var(--chart-600);
+}
+.wi-note {
+  margin-top: 10px;
+  font-size: var(--t-body);
+  color: var(--ink-500);
+}
+.wi-body {
+  display: grid;
+  gap: 24px;
+  margin-top: 24px;
+  align-items: center;
+}
+@media (min-width: 900px) {
+  .wi-body {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: 40px;
+  }
+}
+.wi-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+  color: var(--ink-500);
+}
+.wi-range-v {
+  font-weight: 700;
+  color: var(--ink-900);
+  letter-spacing: 0.06em;
+}
+.wi-slide {
+  position: relative;
+  height: 48px;
+}
+.wi-zones {
+  position: absolute;
+  top: 11px;
+  bottom: 11px;
+  left: calc(var(--thumb) / 2);
+  right: calc(var(--thumb) / 2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.wi-zones .z-fresh {
+  left: 0;
+  width: calc(var(--f) * 1%);
+}
+.wi-zones .z-stale {
+  left: calc(var(--f) * 1%);
+  width: calc((var(--m) - var(--f)) * 1%);
+}
+.wi-zones .z-dead {
+  left: calc(var(--m) * 1%);
+  right: 0;
+}
+.wi-zones::after {
+  /* the age already spent, shaded in ink from zero to the thumb */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(18, 33, 45, 0.1);
+  transform-origin: 0 50%;
+  transform: scaleX(calc(var(--a) / 100));
+}
+.whatif input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 48px;
+  margin: 0;
+  background: transparent;
+  cursor: ew-resize;
+  touch-action: pan-y;
+}
+.whatif input[type="range"]:focus {
+  outline: none;
+}
+.whatif input[type="range"]:focus-visible {
+  outline: 2px solid var(--chart-500);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.whatif input[type="range"]::-webkit-slider-runnable-track {
+  height: 48px;
+  background: transparent;
+}
+.whatif input[type="range"]::-moz-range-track {
+  height: 48px;
+  background: transparent;
+}
+.whatif input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--thumb);
+  height: 48px;
+  border: 3px solid var(--paper-50);
+  border-radius: 2px;
+  background: var(--ink-900);
+  box-shadow: 0 0 0 1px var(--ink-900), var(--shadow-lift);
+  transition: background-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out);
+}
+.whatif input[type="range"]::-moz-range-thumb {
+  width: var(--thumb);
+  height: 48px;
+  box-sizing: border-box;
+  border: 3px solid var(--paper-50);
+  border-radius: 2px;
+  background: var(--ink-900);
+  box-shadow: 0 0 0 1px var(--ink-900), var(--shadow-lift);
+}
+.whatif[data-s="STALE"] input[type="range"]::-webkit-slider-thumb {
+  background: var(--risk-moderate-ink);
+  box-shadow: 0 0 0 1px var(--risk-moderate-ink), var(--shadow-lift);
+}
+.whatif[data-s="STALE"] input[type="range"]::-moz-range-thumb {
+  background: var(--risk-moderate-ink);
+}
+.whatif[data-s="MISSING"] input[type="range"]::-webkit-slider-thumb {
+  background: var(--risk-extreme-ink);
+  box-shadow: 0 0 0 1px var(--risk-extreme-ink), var(--shadow-lift);
+}
+.whatif[data-s="MISSING"] input[type="range"]::-moz-range-thumb {
+  background: var(--risk-extreme-ink);
+}
+.wi-axis {
+  position: relative;
+  height: 18px;
+  margin: 6px calc(var(--thumb) / 2) 0;
+}
+.wi-axis span {
+  position: absolute;
+  left: calc(var(--x) * 1%);
+  top: 0;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: var(--t-label);
+  color: var(--ink-400);
+  white-space: nowrap;
+}
+.wi-axis span:first-child {
+  transform: none;
+}
+.wi-axis span:last-child {
+  transform: translateX(-100%);
+}
+.wi-presets {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+html:not(.js) .wi-ctl {
+  display: none;
+}
+
+.wi-out {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+  padding: 20px;
+  background: var(--paper-100);
+  border: 1px solid var(--rule-faint);
+  border-left: 3px solid var(--risk-low);
+  border-radius: 3px;
+  transition: border-color 300ms var(--ease-out);
+}
+.wi-out[data-state="CAUTION"] {
+  border-left-color: var(--risk-moderate);
+}
+.wi-out[data-state="INSUFFICIENT_DATA"] {
+  border-left-color: var(--ink-900);
+  border-left-style: dashed;
+  background:
+    repeating-linear-gradient(45deg, rgba(18, 33, 45, 0.04) 0 1.5px, transparent 1.5px 8px),
+    var(--paper-100);
+}
+.wi-dial {
+  display: block;
+  width: 6.5rem;
+  height: 6.5rem;
+}
+@media (max-width: 420px) {
+  .wi-out {
+    grid-template-columns: 1fr;
+  }
+  .wi-dial {
+    width: 5rem;
+    height: 5rem;
+  }
+}
+.wd-track {
+  fill: var(--paper-50);
+  stroke: var(--rule-faint);
+}
+.wd-z {
+  fill: none;
+  stroke-width: 6;
+}
+.wd-fresh {
+  stroke: var(--risk-low);
+  stroke-dasharray: 25 100;
+}
+.wd-stale {
+  stroke: var(--risk-moderate);
+  stroke-dasharray: 0 25 25 100;
+}
+.wd-dead {
+  stroke: var(--risk-extreme);
+  stroke-opacity: 0.45;
+  stroke-dasharray: 0 50 50 100;
+}
+.wd-hand {
+  stroke: var(--ink-900);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  transform: rotate(var(--deg, 7.5deg));
+  transition: transform 260ms var(--ease-out);
+}
+.wd-pin {
+  fill: var(--ink-900);
+}
+.wi-out[data-state="INSUFFICIENT_DATA"] .wd-hand {
+  stroke: var(--ink-400);
+  stroke-dasharray: 3 3;
+}
+.wi-steps {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.wi-step {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin: 0;
+}
+.wi-step > .lbl {
+  min-width: 4.5em;
+  color: var(--ink-400);
+}
+.wi-age {
+  font-family: var(--mono);
+  font-size: var(--t-title);
+  font-weight: 700;
+  color: var(--ink-900);
+}
+.wi-why {
+  margin: 2px 0 0;
+  font-size: var(--t-body);
+  color: var(--ink-700);
+  max-width: 48ch;
+}
+.wi-law {
+  display: grid;
+  gap: 8px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 720px) {
+  .wi-law {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.wi-law li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule-faint);
+  border-radius: 2px;
+  font-size: var(--t-body);
+  color: var(--ink-500);
+  transition: border-color 200ms var(--ease-out), background-color 200ms var(--ease-out);
+}
+.wi-law li b {
+  margin-left: auto;
+  font-family: var(--display);
+  font-size: var(--t-label);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: var(--ink-900);
+}
+.wi-law li[data-k="fresh"] b {
+  color: var(--risk-low-ink);
+}
+.wi-law li[data-k="stale"] b {
+  color: var(--risk-moderate-ink);
+}
+.wi-law li::after {
+  content: "";
+  position: absolute;
+  left: -1px;
+  right: -1px;
+  top: -1px;
+  height: 3px;
+  background: var(--ink-900);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  transition: transform 360ms var(--ease-out);
+}
+.wi-law li[aria-current="true"] {
+  border-color: var(--rule-strong);
+  background: var(--paper-50);
+  color: var(--ink-700);
+}
+.wi-law li[aria-current="true"]::after {
+  transform: scaleX(1);
+}
+html:not(.js) .wi-law li[data-k="fresh"] {
+  border-color: var(--rule-strong);
+  background: var(--paper-50);
+}
+
+/* the pipeline's outcome channels take the hit as each signal arrives */
+.outc .o-bar {
+  fill: var(--chart-300);
+  stroke: none;
+}
+.o-go .o-bar {
+  fill: var(--risk-low);
+}
+.o-caution .o-bar {
+  fill: var(--risk-moderate);
+}
+.o-nogo .o-bar {
+  fill: var(--signal);
+}
+.o-ins .o-bar {
+  fill: var(--paper-300);
+}
+html.motion .outc > * {
+  transform-box: fill-box;
+  animation: outcHit 9s var(--ease-out) infinite;
+  animation-delay: var(--hit, 0s);
+}
+html.motion .outc > .o-bar {
+  transform-origin: 0 50%;
+  animation-name: outcBar;
+}
+@keyframes outcHit {
+  0% {
+    transform: translateX(0);
+  }
+  2.5% {
+    transform: translateX(9px);
+  }
+  9%,
+  100% {
+    transform: translateX(0);
+  }
+}
+@keyframes outcBar {
+  0% {
+    transform: translateX(0) scaleX(1);
+  }
+  2.5% {
+    transform: translateX(9px) scaleX(2.4);
+  }
+  9%,
+  100% {
+    transform: translateX(0) scaleX(1);
+  }
+}
+
+/* phones: the hero's two calls to action share one width */
+@media (max-width: 480px) {
+  .cta-row .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
 @media print {
   .mast,
   .rail,

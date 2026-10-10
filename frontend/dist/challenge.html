@@ -79,7 +79,7 @@
       <dl class="hero-facts">
         <div><dt>States</dt><dd class="sounding">4</dd></div>
         <div><dt>Data drills</dt><dd class="sounding">4</dd></div>
-        <div><dt>Gate tests</dt><dd class="sounding">74</dd></div>
+        <div><dt>Gate tests</dt><dd class="sounding">105</dd></div>
         <div><dt>Floors cut</dt><dd class="sounding">0</dd></div>
       </dl>
     </div>
@@ -204,12 +204,14 @@
       </figcaption>
     </figure>
   </div>
+  <a class="scroll-cue" href="#challenge"><span>Eight sheets of evidence below</span><i aria-hidden="true"></i></a>
 </section>
 
 <!-- ======================================================= 2 THE CHALLENGE -->
 <section class="sec" id="challenge" aria-labelledby="challenge-title">
   <div class="wrap">
     <header class="sec-head" data-reveal>
+      <span class="sheet-n" aria-hidden="true">02</span>
       <p class="folio"><span>Sheet 02</span> The challenge, scoped</p>
       <h2 id="challenge-title">Know when <em>not</em> to decide.</h2>
       <p class="sec-lead">The mentor's brief, priority very high, about six hours, <strong>do not expand the scope</strong>. Objective: strengthen ORCA's most important property, trust.</p>
@@ -276,6 +278,7 @@
           <li style="--i:3"><a href="#gate-rules"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>A deterministic gate step after the risk engine</span><span class="go-to">§4</span></a></li>
           <li style="--i:4"><a href="#demo"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>A compact explanation, and the result in the evidence path</span><span class="go-to">§6</span></a></li>
           <li style="--i:5"><a href="#graph-tests"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>Automated tests and four deterministic fixtures</span><span class="go-to">§7</span></a></li>
+          <li style="--i:6"><a href="#demo"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>Stretch goal: the Evidence Confidence panel, with source, freshness and status for every input</span><span class="go-to">§6</span></a></li>
         </ol>
       </div>
       <div class="checklist" data-reveal>
@@ -310,6 +313,7 @@
 <section class="sec sec-tint" id="before-after" aria-labelledby="ba-title">
   <div class="wrap">
     <header class="sec-head" data-reveal>
+      <span class="sheet-n" aria-hidden="true">03</span>
       <p class="folio"><span>Sheet 03</span> Before and after</p>
       <h2 id="ba-title">Same sea. <em>Honest</em> evidence.</h2>
       <p class="sec-lead">Before this change ORCA judged the sea and nothing else. A four-hour-old forecast and a silent feed looked exactly like good news.</p>
@@ -392,6 +396,7 @@
 <section class="sec band-ink" id="pipeline" aria-labelledby="pipe-title">
   <div class="wrap">
     <header class="sec-head" data-reveal>
+      <span class="sheet-n" aria-hidden="true">04</span>
       <p class="folio"><span>Sheet 04</span> Where the gate sits</p>
       <h2 id="pipe-title">A plotted course, with <em>two new buoys</em>.</h2>
       <p class="sec-lead">Every reading now carries its observation time. The freshness check runs on what the providers delivered; the gate runs after the risk engine and its floors, and before the explanation is written.</p>
@@ -451,10 +456,10 @@
           <text class="bn" y="7">5</text>
         </g>
         <!-- outcome channels -->
-        <g class="outc o-go" transform="translate(990 100)"><rect x="0" y="-22" width="196" height="44" rx="2"/><text x="14" y="6">GO</text></g>
-        <g class="outc o-caution" transform="translate(990 220)"><rect x="0" y="-22" width="196" height="44" rx="2"/><text x="14" y="6">CAUTION</text></g>
-        <g class="outc o-nogo" transform="translate(990 340)"><rect x="0" y="-22" width="196" height="44" rx="2"/><text x="14" y="6">NO-GO</text></g>
-        <g class="outc o-ins" transform="translate(990 460)"><rect x="0" y="-22" width="196" height="44" rx="2"/><text x="14" y="6" class="o-long">INSUFFICIENT DATA</text></g>
+        <g class="outc o-go" style="--hit:5.2s" transform="translate(990 100)"><rect x="0" y="-22" width="196" height="44" rx="2"/><rect class="o-bar" x="0" y="-22" width="5" height="44"/><text x="14" y="6">GO</text></g>
+        <g class="outc o-caution" style="--hit:6.4s" transform="translate(990 220)"><rect x="0" y="-22" width="196" height="44" rx="2"/><rect class="o-bar" x="0" y="-22" width="5" height="44"/><text x="14" y="6">CAUTION</text></g>
+        <g class="outc o-nogo" style="--hit:7.6s" transform="translate(990 340)"><rect x="0" y="-22" width="196" height="44" rx="2"/><rect class="o-bar" x="0" y="-22" width="5" height="44"/><text x="14" y="6">NO-GO</text></g>
+        <g class="outc o-ins" style="--hit:8.8s" transform="translate(990 460)"><rect x="0" y="-22" width="196" height="44" rx="2"/><rect class="o-bar" x="0" y="-22" width="5" height="44"/><text x="14" y="6" class="o-long">INSUFFICIENT DATA</text></g>
         <!-- labels -->
         <g class="plab">
           <text x="70" y="334" text-anchor="middle">Providers</text>
@@ -521,6 +526,7 @@
 <section class="sec" id="checks" aria-labelledby="checks-title">
   <div class="wrap">
     <header class="sec-head" data-reveal>
+      <span class="sheet-n" aria-hidden="true">05</span>
       <p class="folio"><span>Sheet 05</span> What it checks</p>
       <h2 id="checks-title">Six readings, each with a <em>date stamp</em>.</h2>
       <p class="sec-lead">One data-health record per input of the go / no-go decision. Four of them are critical: without them fresh, ORCA will not give a normal-confidence go.</p>
@@ -535,7 +541,7 @@
       <span class="drill-src lbl" id="health-src">recorded from the real backend</span>
     </div>
 
-    <div class="cards" id="health-cards">
+    <div class="cards" id="health-cards" data-reveal>
       <article class="hcard" data-input="wave" data-s="FRESH" style="--i:0">
         <header><h3>Wave height</h3><span class="crit">critical</span></header>
         <dl>
@@ -647,6 +653,58 @@
           <li><i class="z z-fresh"></i>Fresh</li><li><i class="z z-stale"></i>Stale but usable: CAUTION</li><li><i class="z z-dead"></i>Too old to use: treated as missing</li>
         </ul>
       </div>
+
+      <div class="whatif" id="whatif" style="--f:25;--m:50;--a:2.5">
+        <div class="wi-head">
+          <p class="lbl wi-kicker">What if · the wave reading ages</p>
+          <h4 class="wi-title">How old can the wave reading get before ORCA stops saying <em>go</em>?</h4>
+          <p class="wi-note">An illustration of the backend's rule, computed in this page: the Goa question with every other input fresh, against the wave limits served at <code>GET /api/config/data-health</code> (<span data-wi="limits">fresh ≤ 3 h · usable ≤ 6 h</span>). The live demo below asks the real backend.</p>
+        </div>
+
+        <div class="wi-body">
+          <div class="wi-ctl">
+            <label class="lbl wi-label" for="wi-age">Wave reading's age <span class="wi-range-v" data-wi="age-sm" aria-hidden="true">18 min</span></label>
+            <div class="wi-slide">
+              <span class="wi-zones" aria-hidden="true"><i class="z z-fresh"></i><i class="z z-stale"></i><i class="z z-dead"></i></span>
+              <input type="range" id="wi-age" min="0" max="720" step="1" value="18" aria-describedby="wi-note-k">
+            </div>
+            <div class="wi-axis" aria-hidden="true"><span style="--x:0">0</span><span style="--x:25" data-wi="ax-f">3 h</span><span style="--x:50" data-wi="ax-m">6 h</span><span style="--x:100">12 h</span></div>
+            <div class="wi-presets" role="group" aria-label="Jump to an age">
+              <button type="button" class="chip" data-wi-min="18">18 min</button>
+              <button type="button" class="chip" data-wi-min="250">4 h 10 min</button>
+              <button type="button" class="chip" data-wi-min="420">7 h</button>
+            </div>
+            <p class="vh" id="wi-note-k">Arrow keys move the age a minute at a time; Page Up and Page Down move it by an hour.</p>
+          </div>
+
+          <div class="wi-out" data-s="FRESH" data-state="GO">
+            <div class="wi-dial-wrap" aria-hidden="true">
+              <svg class="wi-dial" viewBox="-40 -40 80 80">
+                <circle r="32" class="wd-track"/>
+                <circle r="32" class="wd-z wd-fresh" pathLength="100" transform="rotate(-90)"/>
+                <circle r="32" class="wd-z wd-stale" pathLength="100" transform="rotate(-90)"/>
+                <circle r="32" class="wd-z wd-dead" pathLength="100" transform="rotate(-90)"/>
+                <g class="wd-hand"><path d="M0 0V-27"/></g>
+                <circle r="3.4" class="wd-pin"/>
+              </svg>
+            </div>
+            <div class="wi-steps">
+              <p class="wi-step"><span class="lbl">Age</span> <b class="wi-age lining" data-wi="age">18 min</b></p>
+              <p class="wi-step"><span class="lbl">Status</span> <span class="chip-status" data-wi="status" data-s="FRESH">Fresh</span></p>
+              <p class="wi-step wi-step-gate"><span class="lbl">Gate</span> <span class="stamp stamp-md" data-wi="stamp" data-tone="go">GO</span></p>
+              <p class="wi-why" data-wi="why">Normal confidence, 9/100. All 4 critical inputs are fresh.</p>
+            </div>
+            <p class="vh" id="wi-live" aria-live="polite" aria-atomic="true"></p>
+          </div>
+        </div>
+
+        <ol class="wi-law">
+          <li data-k="fresh"><span class="chip-status" data-s="FRESH">Fresh</span> up to <span data-wi="law-f">3 h</span><b>GO</b></li>
+          <li data-k="stale"><span class="chip-status" data-s="STALE">Stale</span> up to <span data-wi="law-m">6 h</span><b>CAUTION</b></li>
+          <li data-k="dead"><span class="chip-status" data-s="MISSING">Too old</span> treated as missing<b>INSUFFICIENT DATA</b></li>
+        </ol>
+      </div>
+
       <p class="footnote">Configurable engineering defaults (<code>ORCA_FRESH_&lt;INPUT&gt;_S</code>, <code>ORCA_MAXAGE_&lt;INPUT&gt;_S</code>), not a certified standard. Marine and weather models refresh every 1 to 6 hours; an IMD bulletin can be issued at any hour. Served at <code>GET /api/config/data-health</code>.</p>
     </figure>
   </div>
@@ -656,6 +714,7 @@
 <section class="sec sec-demo" id="demo" aria-labelledby="demo-title">
   <div class="wrap">
     <header class="sec-head" data-reveal>
+      <span class="sheet-n" aria-hidden="true">06</span>
       <p class="folio"><span>Sheet 06</span> Live demo</p>
       <h2 id="demo-title">Ask the <em>real</em> ORCA.</h2>
       <p class="sec-lead">Each chip asks the question through the whole pipeline (<code>POST /api/chat</code>) with the data drill riding on the request, so the sea stays the same and only the marine feed's health changes. What comes back is printed as it is.</p>
@@ -785,6 +844,7 @@
 <section class="sec sec-tint" id="proof" aria-labelledby="proof-title">
   <div class="wrap">
     <header class="sec-head" data-reveal>
+      <span class="sheet-n" aria-hidden="true">07</span>
       <p class="folio"><span>Sheet 07</span> Graphs that prove it</p>
       <h2 id="proof-title">The numbers hold. <em>Only the state moves.</em></h2>
       <p class="sec-lead">Every value below is what the real backend returned, captured from <code>POST /api/chat</code> under each drill.</p>
@@ -932,6 +992,7 @@
 <section class="sec band-ink" id="recovery" aria-labelledby="rec-title">
   <div class="wrap">
     <header class="sec-head" data-reveal>
+      <span class="sheet-n" aria-hidden="true">08</span>
       <p class="folio"><span>Sheet 08</span> Recovery in LIVE mode</p>
       <h2 id="rec-title">The feed comes back. <em>So does the evidence.</em></h2>
       <p class="sec-lead">With live data, nobody presses a drill chip. A failed Open-Meteo fetch is remembered for 60 seconds, then retried. When it answers, the next question reads the sea as fresh again.</p>
