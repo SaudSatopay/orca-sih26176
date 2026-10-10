@@ -346,3 +346,138 @@ def test_the_gate_speaks_the_readers_language(ask, lang, drill):
     for text in texts:
         leftover = set(re.findall(r"[A-Za-z][A-Za-z\-]*", text)) - ALLOWED
         assert not leftover, f"{drill}/{lang}: untranslated {sorted(leftover)} in {text!r}"
+
+
+# ---- Today's outlook follows the gate --------------------------------------------
+
+from types import SimpleNamespace  # noqa: E402
+
+import httpx  # noqa: E402
+
+from app.data import live_client  # noqa: E402
+from app.services import plain_language  # noqa: E402
+
+GOA_SEA = {"lat": 15.40, "lon": 73.70}
+
+
+@pytest.mark.parametrize("drill,state", [("healthy", "GO"), ("stale", "CAUTION"),
+                                         ("unavailable", "INSUFFICIENT_DATA"),
+                                         ("recovery", "GO")])
+def test_today_outlook_carries_the_gate(client, drill, state):
+    feeds.set_drill(drill)
+    j = client.get("/api/fishing", params=GOA_SEA).json()
+    assert j["decision"]["state"] == state
+    assert [h["input"] for h in j["data_health"]] == ["wave", "wind", "warnings", "position",
+                                                      "rain", "current"]
+    if state in ("CAUTION", "INSUFFICIENT_DATA"):
+        # the spoken plan's first sentence is the gate's, in place of "You can go today."
+        assert j["advice"][0] == plain_language.gate_line(state, "en")
+    else:
+        assert j["advice"][0] == "You can go today."
+
+
+def test_today_keeps_its_advice_line_count_when_only_the_age_changes(client):
+    healthy = client.get("/api/fishing", params=GOA_SEA).json()["advice"]
+    feeds.set_drill("stale")
+    stale = client.get("/api/fishing", params=GOA_SEA).json()["advice"]
+    assert len(stale) == len(healthy), "todayModel.splitAdvice cuts the list by count"
+    assert stale[1:] == healthy[1:]
+
+
+@pytest.mark.parametrize("lang", ["hi", "mr"])
+def test_todays_gate_line_is_translated(client, lang):
+    feeds.set_drill("unavailable")
+    j = client.get("/api/fishing", params={**GOA_SEA, "lang": lang}).json()
+    line = j["advice"][0]
+    assert line == plain_language.gate_line("INSUFFICIENT_DATA", lang)
+    assert not set(re.findall(r"[A-Za-z][A-Za-z\-]*", line)) - ALLOWED
+
+
+# ---- the config API and the drill switch -----------------------------------------
+
+def test_config_shows_the_freshness_limits_and_the_drill(client):
+    j = client.get("/api/config").json()
+    assert j["data_health"]["wave"] == {"label": "Wave height", "feed": "marine",
+                                        "critical": True, "fresh_s": 10800, "max_age_s": 21600}
+    assert j["data_health"]["position"]["fresh_s"] is None
+    assert j["drill"] == "healthy"
+
+
+def test_the_drill_switch_works_at_runtime_and_refuses_nonsense(client):
+    r = client.post("/api/config/data-health", json={"drill": "stale"})
+    assert r.status_code == 200 and r.json()["drill"] == "stale"
+    assert feeds.active_drill() == "stale"
+    got = client.get("/api/config/data-health").json()
+    assert got["drill"] == "stale" and got["drills"] == list(feeds.DRILLS)
+    assert client.post("/api/config/data-health", json={"drill": "chaos"}).status_code == 400
+    assert feeds.active_drill() == "stale", "a refused switch changes nothing"
+
+
+@pytest.mark.parametrize("method,path,params", [
+    ("get", "/api/fishing", GOA_SEA),
+    ("get", "/api/risk", GOA_SEA),
+    ("get", "/api/risk/timeline", GOA_SEA),
+    ("get", "/api/forecast", GOA_SEA),
+    ("get", "/api/position", GOA_SEA),
+    ("get", "/api/alerts", GOA_SEA),
+    ("get", "/api/authority/dashboard", {}),
+    ("get", "/api/map/pfz", GOA_SEA),
+    ("post", "/api/routes", {"start_lat": 15.40, "start_lon": 73.70,
+                             "dest_lat": 15.20, "dest_lon": 73.40}),
+])
+def test_every_endpoint_survives_a_marine_outage(client, method, path, params):
+    feeds.set_drill("unavailable")
+    if method == "get":
+        r = client.get(path, params=params)
+    else:
+        r = client.post(path, json=params)
+    assert r.status_code == 200, r.text[:300]
+
+
+# ---- LIVE mode recovers by itself -------------------------------------------------
+
+class _FakeProvider:
+    """Open-Meteo stand-in: down until `up` is set, then three days of calm sea."""
+
+    def __init__(self):
+        self.up = False
+        self.calls = 0
+
+    def get(self, url, params=None):
+        self.calls += 1
+        if not self.up:
+            raise httpx.ConnectError("no route to host")
+        days = ("2026-10-01", "2026-10-02", "2026-10-03")
+        hours = [f"{d}T{h:02d}:00" for d in days for h in range(24)]
+        n = len(hours)
+        if "marine" in url:
+            hourly = {"time": hours, "wave_height": [0.7] * n, "wave_period": [8.0] * n,
+                      "sea_surface_temperature": [28.5] * n}
+        else:
+            hourly = {"time": hours, "temperature_2m": [29.0] * n, "wind_speed_10m": [12.0] * n,
+                      "wind_direction_10m": [270.0] * n,
+                      "precipitation_probability": [5.0] * n, "visibility": [15000.0] * n}
+        return SimpleNamespace(raise_for_status=lambda: None, json=lambda: {"hourly": hourly})
+
+
+def test_live_outage_recovers_by_itself_after_the_failure_cache_expires(monkeypatch, ask):
+    provider, clock = _FakeProvider(), {"t": 1000.0}
+    monkeypatch.setattr(live_client, "_http", lambda: provider)
+    monkeypatch.setattr(live_client, "time", SimpleNamespace(monotonic=lambda: clock["t"]))
+    live_client.clear_cache()
+    config.set_data_mode("LIVE")
+    try:
+        down = ask(GOA_Q)
+        assert down.decision.state == "INSUFFICIENT_DATA"
+        assert set(down.decision.blocking_inputs) == {"wave", "wind"}
+
+        provider.up = True                      # the provider is back ...
+        assert ask(GOA_Q).decision.state == "INSUFFICIENT_DATA"   # ... failure cached 60 s
+
+        clock["t"] += live_client.CACHE_TTL_FAIL + 1               # ... then retried
+        back = ask(GOA_Q)
+        assert (back.decision.state, back.decision.confidence) == ("GO", "normal")
+        assert back.mode == "LIVE"
+        assert next(h for h in back.data_health if h.input == "wave").status == "FRESH"
+    finally:
+        live_client.clear_cache()

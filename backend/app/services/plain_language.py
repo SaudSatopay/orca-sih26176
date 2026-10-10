@@ -120,6 +120,33 @@ GO_LINE = {
                 "mr": "अजिबात जाऊ नका. जमिनीवर राहा आणि होडी बांधून ठेवा."},
 }
 
+# When the safety gate withholds a normal answer, this replaces the GO_LINE as
+# the first sentence. Same position, same count: the Today view and the spoken
+# plan cut the advice list by count.
+GATE_LINE = {
+    "CAUTION": {
+        "en": "Be careful: some of today's sea data is old. Check the latest warning "
+              "before you go.",
+        "hi": "सावधान रहें: आज के समुद्र के कुछ आँकड़े पुराने हैं। जाने से पहले ताज़ा "
+              "चेतावनी देख लें।",
+        "mr": "काळजी घ्या: आजची काही सागरी माहिती जुनी आहे. जाण्यापूर्वी ताजा इशारा पाहा.",
+    },
+    "INSUFFICIENT_DATA": {
+        "en": "ORCA does not have enough reliable sea data to say go today. Follow the "
+              "official advisory.",
+        "hi": "आज जाने की सलाह देने के लिए ORCA के पास पर्याप्त भरोसेमंद समुद्री आँकड़े "
+              "नहीं हैं। आधिकारिक सलाह का पालन करें।",
+        "mr": "आज जाण्याचा सल्ला देण्यासाठी ORCA कडे पुरेशी विश्वासार्ह सागरी माहिती नाही. "
+              "अधिकृत सल्ला पाळा.",
+    },
+}
+
+
+def gate_line(state: str, lang: Language) -> Optional[str]:
+    """The first spoken sentence when the gate says CAUTION or INSUFFICIENT_DATA."""
+    return GATE_LINE.get(state, {}).get(lang)
+
+
 CATCH_WORD = {
     "very_good": {"en": "very good chance of fish", "hi": "मछली मिलने की बहुत अच्छी उम्मीद",
                   "mr": "मासे मिळण्याची खूप चांगली शक्यता"},

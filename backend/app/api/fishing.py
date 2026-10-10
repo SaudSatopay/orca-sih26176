@@ -14,12 +14,12 @@ from fastapi import APIRouter, Query
 
 from ..agents import (cyclone_agent, gis_agent, ocean_agent, risk_agent,
                       route_agent, weather_agent)
-from ..data import demo_store
+from ..data import demo_store, feeds
 from ..data.demo_store import IST, now_ist
 from ..data.geo import (RESTRICTED_ZONES, distance_from_shore_km, haversine_km,
                         nearest_port, point_in_polygon, zone_window_text, zones_near)
-from ..schemas import Location
-from ..services import fishing, i18n, plain_language
+from ..schemas import Location, RiskAssessment
+from ..services import data_health, fishing, i18n, plain_language, safety_gate
 
 router = APIRouter(prefix="/api", tags=["fishing"])
 
@@ -107,15 +107,21 @@ def fishing_outlook(
     loc = Location(name=port["name"], latitude=lat, longitude=lon, state=port["state"])
 
     # ---- current safety picture -----------------------------------------
-    weather = weather_agent.run(loc, now)
-    ocean = ocean_agent.run(loc, now)
-    cyclone = cyclone_agent.run(loc, now)
-    gis = gis_agent.run(loc, now)
+    weather = weather_agent.run(loc, now, lang)
+    ocean = ocean_agent.run(loc, now, lang)
+    cyclone = cyclone_agent.run(loc, now, lang)
+    gis = gis_agent.run(loc, now, lang)
     risk_res = risk_agent.run(loc, now, weather=weather.data, ocean=ocean.data,
                               cyclone=cyclone.data, gis=gis.data,
                               sources=[weather.source, ocean.source], mode=weather.mode)
     risk = risk_res.data
     ambient_sst = ocean.data.get("sst_c")
+
+    # ---- the safety gate: is the evidence fit for a normal answer? -------
+    health = data_health.complete(weather.health + ocean.health + cyclone.health + gis.health,
+                                  lang=lang)  # type: ignore[arg-type]
+    decision = safety_gate.decide(RiskAssessment(**risk) if risk_res.ok else None, health, now,
+                                  lang=lang, drill=feeds.active_drill())  # type: ignore[arg-type]
 
     # ---- grounds within the radius, today -------------------------------
     candidates = demo_store.pfz_zones(lat, lon, loc.name, now, radius_km=radius_km)
@@ -241,6 +247,10 @@ def fishing_outlook(
         best_window=best_window,
         forecast=forecast,
     )
+    # On weak evidence the first sentence is the gate's, not "You can go today."
+    gate_first = plain_language.gate_line(decision.state, lang)  # type: ignore[arg-type]
+    if gate_first and advice:
+        advice[0] = gate_first
 
     return {
         "location": {
@@ -271,4 +281,6 @@ def fishing_outlook(
         "advice": advice,
         "mode": weather.mode,
         "method": i18n.method_line(lang),
+        "decision": decision.model_dump(),
+        "data_health": [h.model_dump() for h in health],
     }

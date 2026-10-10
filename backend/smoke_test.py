@@ -7,6 +7,7 @@ from __future__ import annotations
 import sys
 
 from app.agents import planner
+from app.data import feeds
 from app.schemas import ChatRequest
 
 CASES = [
@@ -90,6 +91,34 @@ def main() -> int:
     r4 = planner.handle(ChatRequest(message="Is it safe near Goa tomorrow morning?", session_id="c"))
     if not r4.risk or r4.risk.category not in ("LOW", "MODERATE"):
         failures.append(f"Goa expected LOW/MODERATE, got {r4.risk.category if r4.risk else None}")
+
+    # --- the safety gate: know when NOT to decide ------------------------
+    # The same Goa question under the four data drills (only the rehearsed
+    # marine feed's health changes), then the floor law with the feed down.
+    print("=" * 78)
+    print("SAFETY GATE — data sufficiency (same sea, only the marine feed changes)")
+    goa_q = "Is it safe to go fishing tomorrow morning near Goa?"
+    expected = {"healthy": "GO", "stale": "CAUTION", "unavailable": "INSUFFICIENT_DATA",
+                "recovery": "GO"}
+    try:
+        for drill, want in expected.items():
+            feeds.set_drill(drill)
+            g = planner.handle(ChatRequest(message=goa_q, session_id="gate"))
+            d = g.decision
+            # A score built on a missing input is never shown as a verdict.
+            score = "withheld" if d.state == "INSUFFICIENT_DATA" else f"{g.risk.score}/100"
+            print(f"  {drill:<12} -> {d.state:<17} {d.confidence:<12} "
+                  f"score {score:<9} {d.reasons[0]}")
+            if d.state != want:
+                failures.append(f"gate under '{drill}' expected {want}, got {d.state}")
+        feeds.set_drill("unavailable")
+        p = planner.handle(ChatRequest(message="Can I fish near Paradip?", session_id="gate-p"))
+        print(f"  floor check  -> Paradip with the marine feed down: {p.risk.score}/100 "
+              f"{p.risk.category}, gate {p.decision.state}")
+        if p.risk.score != r3.risk.score or p.decision.state != "NO_GO":
+            failures.append("a data outage must never lower the official-warning floor")
+    finally:
+        feeds.set_drill("healthy")
 
     print("=" * 78)
     if failures:

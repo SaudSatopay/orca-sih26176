@@ -3,12 +3,12 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 from ..agents import ocean_agent, route_agent, weather_agent
-from ..config import RISK, SOURCE_LABELS, get_data_mode, set_data_mode
-from ..data import live_client
+from ..config import DATA_HEALTH, RISK, SOURCE_LABELS, get_data_mode, set_data_mode
+from ..data import feeds, live_client
 from ..data.demo_store import PORT_SCENARIO, SCENARIOS, now_ist
 from ..data.geo import nearest_port
 from ..schemas import Location
@@ -63,11 +63,42 @@ def switch_mode(req: ModeRequest) -> dict:
     }
 
 
+def _freshness_limits() -> dict:
+    return {key: {"label": p.label, "feed": p.feed, "critical": p.critical,
+                  "fresh_s": p.fresh_s, "max_age_s": p.max_age_s}
+            for key, p in DATA_HEALTH.inputs.items()}
+
+
+class DrillRequest(BaseModel):
+    drill: str
+
+
+@router.get("/config/data-health")
+def data_health_config() -> dict:
+    """The active data drill and the freshness limits the safety gate applies."""
+    return {"drill": feeds.active_drill(), "drills": list(feeds.DRILLS),
+            "inputs": _freshness_limits()}
+
+
+@router.post("/config/data-health")
+def switch_drill(req: DrillRequest) -> dict:
+    """Set the rehearsed marine feed's health (healthy, stale, unavailable,
+    recovery) at runtime, so the safety gate can be shown in every state. The
+    next question sees it; nothing restarts and no cache needs clearing."""
+    try:
+        drill = feeds.set_drill(req.drill)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"ok": True, "drill": drill, "drills": list(feeds.DRILLS)}
+
+
 @router.get("/config")
 def config() -> dict:
     """What the system believes and why — shown in the UI's 'How it works' panel."""
     return {
         "data_mode": get_data_mode(),
+        "data_health": _freshness_limits(),
+        "drill": feeds.active_drill(),
         "risk_weights": RISK.weights,
         "risk_thresholds": RISK.thresholds,
         "deterministic_overrides": {
