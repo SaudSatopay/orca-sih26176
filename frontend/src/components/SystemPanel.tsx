@@ -350,6 +350,24 @@ export default function SystemPanel({
         </div>
       </section>
 
+      {/* ---------------- the gate: know when not to decide ---------------- */}
+      <section className="panel overflow-hidden" data-gate-law>
+        <div className="hd">
+          <h3 className="label">{t.sGate}</h3>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4">
+          <span className="stamp text-body text-ink-800">{t.gateStamp}</span>
+          <ul className="min-w-0 space-y-1 font-mono text-label text-ink-800">
+            <li>{t.gate1}</li>
+            <li>{t.gate2}</li>
+            <li>{t.gate3}</li>
+          </ul>
+          <p className="min-w-0 max-w-[44ch] flex-1 basis-[260px] text-label italic leading-relaxed text-ink-800">
+            {t.gateNote}
+          </p>
+        </div>
+      </section>
+
       {/* ---------------- where it goes ---------------- */}
       <section className="panel overflow-hidden">
         <div className="hd">

@@ -174,3 +174,17 @@ describe("the live feed (S4, S5, W3)", () => {
     expect(screen.queryByText(/32 s → 0\.02 s/)).not.toBeInTheDocument();
   });
 });
+
+describe("the engine room shows where the safety gate sits", () => {
+  it("prints the gate between the law and the outputs, and the stand-in rule", async () => {
+    await openPanel("DEMO");
+    const law = screen.getByText("03 · The law — floors that only raise");
+    const gate = screen.getByText("04 · The gate — know when not to decide");
+    const out = screen.getByText("05 · Out — what it becomes");
+    // document order: law, then gate, then outputs
+    expect(law.compareDocumentPosition(gate) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(gate.compareDocumentPosition(out) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("No GO on stale or missing evidence")).toBeInTheDocument();
+    expect(screen.getByText(/the safety gate will not clear a trip on it/)).toBeInTheDocument();
+  });
+});
