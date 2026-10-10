@@ -1,6 +1,12 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatResponse, FishingOutlook } from "../types";
+import {
+  FakeRecognition,
+  heard,
+  installFakeRecognition,
+  removeFakeRecognition,
+} from "../test/fakeSpeech";
 
 vi.mock("./MarineMap", () => ({ default: () => null }));
 vi.mock("../api");
@@ -287,5 +293,40 @@ describe("the phone's Ask tab", () => {
     fireEvent.click(within(alert).getByRole("button", { name: "Try again" }));
     expect((await screen.findAllByText("Do not go")).length).toBeGreaterThan(0);
     expect(api.ask).toHaveBeenCalledTimes(2);
+  });
+
+  describe("by voice", () => {
+    beforeEach(installFakeRecognition);
+    afterEach(removeFakeRecognition);
+
+    it("asks one spoken question once, whole, even when the phone reports it word by word", async () => {
+      const { api, MobileApp } = await openPhone("?lang=en&tab=ask");
+      render(<MobileApp />);
+      fireEvent.click(screen.getByRole("button", { name: "Ask by voice" }));
+      const rec = FakeRecognition.last();
+      expect(rec.started).toBe(1);
+
+      // Android Chrome: one event per growing transcript, sometimes all in one list
+      act(() => rec.say([heard("is")]));
+      act(() => rec.say([heard("is"), heard("is it")], 1));
+      act(() => rec.say([heard("is"), heard("is it"), heard("is it safe to go")], 2));
+      expect(api.ask).not.toHaveBeenCalled();
+
+      act(() => rec.end());
+      expect((await screen.findAllByText("Do not go")).length).toBeGreaterThan(0);
+      expect(api.ask).toHaveBeenCalledTimes(1);
+      expect(api.ask).toHaveBeenCalledWith(expect.objectContaining({ message: "is it safe to go" }));
+    });
+
+    it("says nothing was heard, and asks nothing, when listening ends in silence", async () => {
+      const { api, MobileApp } = await openPhone("?lang=en&tab=ask");
+      render(<MobileApp />);
+      fireEvent.click(screen.getByRole("button", { name: "Ask by voice" }));
+      act(() => FakeRecognition.last().end());
+      expect(
+        screen.getByText("Nothing was heard. Tap the microphone and speak again."),
+      ).toBeInTheDocument();
+      expect(api.ask).not.toHaveBeenCalled();
+    });
   });
 });
