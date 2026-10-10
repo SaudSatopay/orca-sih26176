@@ -1,0 +1,1007 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ORCA · Know when not to decide</title>
+<meta name="description" content="ORCA's answer to the SIH26176 mentor challenge: a deterministic safety gate that checks the evidence is fresh and present before ORCA tells a fisher to go. With a live demo against the real backend.">
+<meta name="theme-color" content="#F5EEDD">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="preload" href="/challenge/fonts/fraunces-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/challenge/challenge.css">
+<script src="/challenge/challenge.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+
+<!-- the sheet's ground: graticule, contours, compass rose. Decoration only. -->
+<div class="ground" aria-hidden="true">
+  <svg class="ground-contours" viewBox="0 0 800 600" fill="none" preserveAspectRatio="xMinYMax slice">
+    <path d="M-20 520 C120 470 180 380 300 360 S520 420 620 330 S760 180 840 200" />
+    <path d="M-20 560 C140 510 210 430 330 410 S540 470 650 380 S780 240 840 250" />
+    <path d="M-20 600 C150 560 240 480 360 460 S560 520 680 430 S800 300 840 310" />
+    <path d="M-20 640 C160 610 270 530 390 510 S590 570 710 480 S820 360 840 370" />
+  </svg>
+</div>
+
+<header class="mast" id="top">
+  <div class="mast-in">
+    <a class="brand" href="#hero" aria-label="ORCA, back to the top">
+      <svg class="mark" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+        <circle cx="22" cy="22" r="20" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="22" cy="22" r="16.5" stroke="currentColor" stroke-width=".7" opacity=".55"/>
+        <path d="M22 2v4M22 38v4M2 22h4M38 22h4" stroke="currentColor" stroke-width="1.4"/>
+        <g class="needle"><path d="M17.2 27.5C17.2 19.5 19.6 12.5 22.3 9c.6 6 3.1 12 4.8 18.5Z" fill="currentColor"/></g>
+        <path d="M10.5 30q3.5-2.4 7 0t7 0 7 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M13.5 33.5q3-2 6 0t6 0 5.5 0" stroke="currentColor" stroke-linecap="round" opacity=".6"/>
+      </svg>
+      <span class="brand-word">ORCA</span>
+      <span class="brand-sub">Mentor challenge</span>
+    </a>
+    <nav class="mast-nav" aria-label="Sections">
+      <a href="#challenge">Challenge</a>
+      <a href="#before-after">Before &amp; after</a>
+      <a href="#pipeline">Pipeline</a>
+      <a href="#checks">Checks</a>
+      <a href="#proof">Proof</a>
+      <a href="#recovery">Recovery</a>
+    </nav>
+    <a class="btn btn-ink btn-sm" href="#demo">Live demo</a>
+  </div>
+  <div class="progress" aria-hidden="true"><span></span></div>
+</header>
+
+<!-- the plotted course down the left margin: a boat follows the reader -->
+<div class="rail" aria-hidden="true">
+  <span class="rail-line"></span>
+  <span class="rail-boat">
+    <svg viewBox="0 0 24 24" fill="none"><path d="M4 14h16l-3 5H7Z" fill="currentColor"/><path d="M12 3v10M12 4l5 8h-5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+  </span>
+</div>
+
+<main id="main">
+
+<!-- ================================================================ 1 HERO -->
+<section class="hero" id="hero" aria-labelledby="hero-title">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <p class="eyebrow">Vibeathon 2026 · Mentor challenge · SIH26176</p>
+      <h1 id="hero-title" class="hero-title"><span class="write">Can I go to sea today?</span></h1>
+      <p class="hero-claim">ORCA already knew when the sea was dangerous. <em>Now it knows when it doesn't know.</em></p>
+      <p class="hero-lead">Before ORCA tells a fisher to go, a deterministic safety gate now checks that every critical reading is present and fresh. Old evidence earns a <strong>caution</strong>. Missing evidence earns <strong>no answer at all</strong>, and an official warning still wins every time.</p>
+      <div class="cta-row">
+        <a class="btn btn-ink" href="#demo">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 4.5v11l9-5.5Z" fill="currentColor"/></svg>
+          Run the live demo
+        </a>
+        <a class="btn btn-line" href="#pipeline">Read how it works</a>
+      </div>
+      <dl class="hero-facts">
+        <div><dt>States</dt><dd class="sounding">4</dd></div>
+        <div><dt>Data drills</dt><dd class="sounding">4</dd></div>
+        <div><dt>Gate tests</dt><dd class="sounding">74</dd></div>
+        <div><dt>Floors cut</dt><dd class="sounding">0</dd></div>
+      </dl>
+    </div>
+
+    <figure class="hero-sheet sheet" data-state="go" aria-labelledby="hero-cap">
+      <div class="sheet-frame">
+        <svg class="hero-chart" viewBox="0 0 640 500" fill="none" aria-hidden="true">
+          <defs>
+            <pattern id="grat" width="64" height="64" patternUnits="userSpaceOnUse">
+              <path d="M64 0H0V64" stroke="var(--chart-500)" stroke-opacity=".12"/>
+            </pattern>
+            <pattern id="landhatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <path d="M0 0V7" stroke="var(--ink-300)" stroke-opacity=".55" stroke-width="1"/>
+            </pattern>
+            <pattern id="redhatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <path d="M0 0V6" stroke="var(--risk-extreme)" stroke-opacity=".5" stroke-width="1.4"/>
+            </pattern>
+          </defs>
+          <rect width="640" height="500" fill="url(#grat)"/>
+          <!-- shallow water wash along the coast -->
+          <path class="shoal" d="M640 0H470C452 60 486 118 462 170c-22 50-80 70-86 128-6 52 40 92 26 140-6 22-16 42-24 62h262Z"/>
+          <!-- contours -->
+          <g class="contours">
+            <path d="M440 0c-20 70 14 120-14 178-24 50-86 76-90 134-4 56 38 96 22 150-4 14-10 26-16 38"/>
+            <path d="M400 0c-26 78 4 130-30 192-28 50-92 80-94 140-2 58 36 100 18 168"/>
+            <path d="M350 0c-30 86-8 142-46 206-30 52-100 86-100 148 0 60 30 98 12 146"/>
+          </g>
+          <!-- the land: Goa's coast, the river mouth and the harbour -->
+          <path class="land" d="M640 0H520c-14 46 18 96 0 140-16 40-60 58-74 98-8 24 6 44 30 50l40 6c-26 10-58 18-66 44-10 36 30 64 28 100-2 26-14 44-24 62h166Z"/>
+          <path class="land-hatch" d="M640 0H520c-14 46 18 96 0 140-16 40-60 58-74 98-8 24 6 44 30 50l40 6c-26 10-58 18-66 44-10 36 30 64 28 100-2 26-14 44-24 62h166Z" fill="url(#landhatch)"/>
+          <!-- river -->
+          <path class="river" d="M516 294c30-4 56 8 80-4 16-8 30-6 44-2"/>
+          <!-- breakwater + jetty -->
+          <path class="jetty" d="M476 288c-18 2-34 10-40 22M500 300l-14 20"/>
+          <text class="place" x="548" y="210">PANAJI</text>
+          <text class="place place-sm" x="560" y="318">MANDOVI</text>
+          <text class="place place-sm" x="120" y="470">ARABIAN SEA</text>
+          <!-- soundings: decorative chart lettering -->
+          <g class="soundings">
+            <text x="392" y="250">4</text><text x="356" y="330">7</text><text x="300" y="214">11</text>
+            <text x="246" y="300">16</text><text x="190" y="384">22</text><text x="130" y="240">28</text>
+            <text x="80" y="330">33</text><text x="224" y="130">19</text>
+          </g>
+          <!-- the swell -->
+          <g class="swell">
+            <path class="sw sw1" d="M-640 120q20-8 40 0t40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0 40 0"/>
+            <path class="sw sw2" d="M-640 200q24-9 48 0t48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0 48 0"/>
+            <path class="sw sw3" d="M-640 410q18-7 36 0t36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0 36 0"/>
+          </g>
+          <!-- the plotted course out to the fishing ground -->
+          <path class="course-base" d="M452 304C400 300 352 286 300 262S198 214 120 206"/>
+          <path class="course" pathLength="100" d="M452 304C400 300 352 286 300 262S198 214 120 206"/>
+          <path class="course-signal" pathLength="100" d="M452 304C400 300 352 286 300 262S198 214 120 206"/>
+          <g class="ground-buoy" transform="translate(120 206)">
+            <circle r="13" class="gb-ring"/>
+            <circle r="5.5" class="gb-dot"/>
+            <text x="0" y="-22" text-anchor="middle" class="place place-sm">GROUND 1</text>
+          </g>
+          <!-- sonar rings around the harbour: the gate listening for its feeds -->
+          <g class="sonar" transform="translate(462 300)">
+            <circle r="18"/><circle r="18"/><circle r="18"/>
+          </g>
+          <!-- the boat, moored -->
+          <g class="boat" transform="translate(452 296)">
+            <g class="boat-bob">
+              <path d="M-20 0h40l-8 10h-24Z" fill="var(--ink-900)"/>
+              <path d="M-4-2v-26M-4-26l15 22h-15" stroke="var(--ink-900)" stroke-width="1.8" stroke-linejoin="round" fill="var(--paper-50)"/>
+              <path d="M-26 13q6-3 12 0t12 0 12 0 12 0 12 0" stroke="var(--chart-500)" stroke-width="1.4" stroke-linecap="round"/>
+            </g>
+          </g>
+          <!-- compass rose: the ORCA mark -->
+          <g class="rose" transform="translate(70 70)">
+            <circle r="44" stroke="var(--ink-700)" stroke-width="1.2"/>
+            <circle r="36" stroke="var(--ink-700)" stroke-width=".6" opacity=".5"/>
+            <path d="M0-44v10M0 34v10M-44 0h10M34 0h10" stroke="var(--ink-700)" stroke-width="1.2"/>
+            <path d="M-31-31l5 5M26 26l5 5M31-31l-5 5M-26 26l-5 5" stroke="var(--ink-700)" stroke-width=".8"/>
+            <text y="-50" text-anchor="middle" class="place place-sm">N</text>
+            <g class="rose-needle"><path d="M-11 12C-11-6-6-22 .5-30 2-17 7-4 11 12Z" fill="var(--ink-900)"/></g>
+            <path d="M-24 18q6-4 12 0t12 0 12 0 12 0" stroke="var(--ink-700)" stroke-width="1.2" stroke-linecap="round"/>
+          </g>
+        </svg>
+
+        <!-- the instrument card: the wave reading and its age -->
+        <div class="instrument" aria-hidden="true">
+          <p class="lbl">Wave height · marine feed</p>
+          <p class="inst-value"><span class="sounding lining" data-hero="wave">0.6 m</span></p>
+          <div class="inst-row">
+            <svg class="age-dial" viewBox="-30 -30 60 60">
+              <circle r="24" class="ad-track"/>
+              <path class="ad-fresh" d="M0-24A24 24 0 0 1 24 0"/>
+              <path class="ad-stale" d="M24 0A24 24 0 0 1 0 24"/>
+              <path class="ad-dead" d="M0 24A24 24 0 0 1 0-24"/>
+              <g class="ad-hand"><path d="M0 0V-20" stroke-width="2.2" stroke-linecap="round"/></g>
+              <circle r="2.8" class="ad-pin"/>
+            </svg>
+            <div>
+              <p class="inst-age" data-hero="age">18 min old</p>
+              <p class="inst-limit">fresh within 3 h</p>
+              <p class="chip-status" data-hero="status" data-s="FRESH">Fresh</p>
+            </div>
+          </div>
+          <p class="inst-score"><span class="lbl">Risk</span> <span data-hero="score">9/100 · LOW</span></p>
+        </div>
+
+        <!-- the verdict stamp -->
+        <div class="hero-verdict">
+          <p class="stamp stamp-xl" data-tone="go" data-hero="stamp">GO</p>
+          <p class="verdict-sub" data-hero="sub">normal confidence</p>
+          <p class="verdict-reason" data-hero="reason">All 4 critical inputs are fresh.</p>
+        </div>
+      </div>
+
+      <figcaption id="hero-cap" class="hero-cap">
+        <span class="lbl">One sea, four answers. The Goa question under each data drill, as the real backend answers it:</span>
+        <span class="state-legend" role="group" aria-label="Show the answer under a drill">
+          <button type="button" class="leg" data-i="0" aria-pressed="true">Healthy · GO</button>
+          <button type="button" class="leg" data-i="1" aria-pressed="false">Stale · CAUTION</button>
+          <button type="button" class="leg" data-i="2" aria-pressed="false">Unavailable · INSUFFICIENT DATA</button>
+          <button type="button" class="leg" data-i="3" aria-pressed="false">Recovery · GO</button>
+          <button type="button" class="leg leg-pause" data-pause aria-pressed="false">Pause</button>
+        </span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ======================================================= 2 THE CHALLENGE -->
+<section class="sec" id="challenge" aria-labelledby="challenge-title">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="folio"><span>Sheet 02</span> The challenge, scoped</p>
+      <h2 id="challenge-title">Know when <em>not</em> to decide.</h2>
+      <p class="sec-lead">The mentor's brief, priority very high, about six hours, <strong>do not expand the scope</strong>. Objective: strengthen ORCA's most important property, trust.</p>
+    </header>
+
+    <blockquote class="brief" data-reveal>
+      <p>Make ORCA aware not only that conditions may be dangerous, but also that it may not have enough reliable evidence to make a normal-confidence decision.</p>
+      <footer class="lbl">The challenge in one sentence · mentor brief, ORCA Mentor Challenge</footer>
+    </blockquote>
+
+    <h3 class="sub-h" id="behaviours-title">Five required behaviours, five answers</h3>
+    <div class="table-scroll" data-reveal>
+      <table class="behaviours" aria-labelledby="behaviours-title">
+        <thead>
+          <tr><th scope="col">Scenario</th><th scope="col">Condition</th><th scope="col">Expected behaviour</th><th scope="col">What ORCA does now</th><th scope="col"><span class="vh">Proof</span></th></tr>
+        </thead>
+        <tbody>
+          <tr style="--i:0">
+            <th scope="row">Healthy</th>
+            <td data-label="Condition">All critical sources present and within their freshness limits</td>
+            <td data-label="Expected behaviour">The normal, existing verdict</td>
+            <td data-label="What ORCA does now"><span class="stamp stamp-sm" data-tone="go">GO</span> <span class="conf">normal confidence · 9/100</span></td>
+            <td data-label="Proof"><a class="proof" href="#graph-same-sea">See graph</a></td>
+          </tr>
+          <tr style="--i:1">
+            <th scope="row">Stale</th>
+            <td data-label="Condition">A critical input is older than its configured threshold</td>
+            <td data-label="Expected behaviour">Not the same confidence as a fresh decision, and it says why</td>
+            <td data-label="What ORCA does now"><span class="stamp stamp-sm" data-tone="caution">CAUTION</span> <span class="conf">degraded · "4 h 10 min old — over the 3 h limit"</span></td>
+            <td data-label="Proof"><a class="proof" href="#demo">Try it live</a></td>
+          </tr>
+          <tr style="--i:2">
+            <th scope="row">Missing</th>
+            <td data-label="Condition">A required input is unavailable</td>
+            <td data-label="Expected behaviour">Fails safely; never invents a value or silently substitutes one</td>
+            <td data-label="What ORCA does now"><span class="stamp stamp-sm" data-tone="insufficient">INSUFFICIENT DATA</span> <span class="conf">no score, no invented wave height</span></td>
+            <td data-label="Proof"><a class="proof" href="#demo">Try it live</a></td>
+          </tr>
+          <tr style="--i:3">
+            <th scope="row">Recovery</th>
+            <td data-label="Condition">The source becomes healthy again</td>
+            <td data-label="Expected behaviour">Back to the normal path, no restart, no code change</td>
+            <td data-label="What ORCA does now"><span class="stamp stamp-sm" data-tone="go">GO</span> <span class="conf">"reconnected 1 min ago — readings are fresh again"</span></td>
+            <td data-label="Proof"><a class="proof" href="#recovery">See timeline</a></td>
+          </tr>
+          <tr style="--i:4">
+            <th scope="row">Floor compatibility</th>
+            <td data-label="Condition">The official-warning floor fires</td>
+            <td data-label="Expected behaviour">The gate never weakens it; it only adds safety</td>
+            <td data-label="What ORCA does now"><span class="stamp stamp-sm" data-tone="nogo">NO-GO</span> <span class="conf">92 and 70 held under every drill</span></td>
+            <td data-label="Proof"><a class="proof" href="#graph-floor">See graph</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="checks-grid">
+      <div class="checklist" data-reveal>
+        <h3 class="sub-h">Minimum scope, delivered</h3>
+        <ol class="ticks">
+          <li style="--i:0"><a href="#checks"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>A data-health model: one record per input</span><span class="go-to">§5</span></a></li>
+          <li style="--i:1"><a href="#ruler"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>Configurable thresholds, overridable by environment</span><span class="go-to">§5</span></a></li>
+          <li style="--i:2"><a href="#checks"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>A critical-input definition: wave, wind, warnings, position</span><span class="go-to">§5</span></a></li>
+          <li style="--i:3"><a href="#gate-rules"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>A deterministic gate step after the risk engine</span><span class="go-to">§4</span></a></li>
+          <li style="--i:4"><a href="#demo"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>A compact explanation, and the result in the evidence path</span><span class="go-to">§6</span></a></li>
+          <li style="--i:5"><a href="#graph-tests"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>Automated tests and four deterministic fixtures</span><span class="go-to">§7</span></a></li>
+        </ol>
+      </div>
+      <div class="checklist" data-reveal>
+        <h3 class="sub-h">Acceptance, as the mentor checks it</h3>
+        <ol class="ticks">
+          <li style="--i:0"><a href="#demo"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>The healthy demo still works: Goa is 9/100, GO</span><span class="go-to">§6</span></a></li>
+          <li style="--i:1"><a href="#demo"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>A critical input can be made stale or unavailable deterministically</span><span class="go-to">§6</span></a></li>
+          <li style="--i:2"><a href="#pipeline"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>The problem is caught before a normal-confidence decision</span><span class="go-to">§4</span></a></li>
+          <li style="--i:3"><a href="#demo"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>A clear degraded or insufficient outcome with a reason, in the evidence path too</span><span class="go-to">§6</span></a></li>
+          <li style="--i:4"><a href="#graph-floor"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>No new logic can reduce an official-warning floor</span><span class="go-to">§7</span></a></li>
+          <li style="--i:5"><a href="#graph-tests"><svg class="tick" viewBox="0 0 20 20" aria-hidden="true"><path pathLength="1" d="M4 10.5l4 4 8-9"/></svg><span>The four scenarios pass from a clean start with one command</span><span class="go-to">§7</span></a></li>
+        </ol>
+      </div>
+    </div>
+
+    <aside class="not-done" aria-labelledby="not-title" data-reveal>
+      <h3 class="sub-h" id="not-title">What we did <em>not</em> do</h3>
+      <p class="muted">Scope discipline is part of the brief. The gate is a small deterministic step inside the existing pipeline.</p>
+      <ul class="crosses">
+        <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>No UI redesign: one compact strip on the existing verdict</li>
+        <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>No risk-engine rewrite: weights, curves and floors untouched</li>
+        <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>No LLM or AI feature for show: the gate is five lines of rules</li>
+        <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>No new languages: English, Hindi and Marathi, as before</li>
+        <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>No IMD, INCOIS or MOSDAC integration</li>
+        <li><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15"/></svg>No separate app: the gate runs inside ORCA; this page only shows it</li>
+      </ul>
+    </aside>
+  </div>
+</section>
+
+<!-- ======================================================= 3 BEFORE / AFTER -->
+<section class="sec sec-tint" id="before-after" aria-labelledby="ba-title">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="folio"><span>Sheet 03</span> Before and after</p>
+      <h2 id="ba-title">Same sea. <em>Honest</em> evidence.</h2>
+      <p class="sec-lead">Before this change ORCA judged the sea and nothing else. A four-hour-old forecast and a silent feed looked exactly like good news.</p>
+    </header>
+
+    <article class="ba" aria-labelledby="ba1-title" data-reveal>
+      <div class="ba-scene" aria-hidden="true">
+        <svg viewBox="-60 -60 120 120" class="clock">
+          <circle r="50" class="ck-face"/>
+          <path class="ck-fresh" d="M0-50A50 50 0 0 1 50 0"/>
+          <path class="ck-stale" d="M50 0A50 50 0 0 1 0 50"/>
+          <path class="ck-dead" d="M0 50A50 50 0 0 1 0-50"/>
+          <g class="ck-ticks"><path d="M0-50v7M50 0h-7M0 50v-7M-50 0h7"/></g>
+          <text x="0" y="-31" text-anchor="middle">0 h</text>
+          <text x="31" y="4" text-anchor="middle">3 h</text>
+          <text x="0" y="40" text-anchor="middle">6 h</text>
+          <g class="ck-hand"><path d="M0 0V-42"/></g>
+          <circle r="4" class="ck-pin"/>
+        </svg>
+        <p class="scene-cap lbl">Wave forecast age · 4 h 10 min</p>
+      </div>
+      <div class="ba-body">
+        <h3 id="ba1-title" class="ba-title">A four-hour-old wave forecast</h3>
+        <div class="ba-pair">
+          <div class="ba-card ba-before">
+            <p class="lbl">Before</p>
+            <p class="stamp stamp-md" data-tone="go">SAFE TO GO</p>
+            <p class="ba-text">Treated exactly like a fresh one, at full confidence.</p>
+          </div>
+          <svg class="ba-arrow" viewBox="0 0 40 20" aria-hidden="true"><path d="M2 10h32M28 4l6 6-6 6"/></svg>
+          <div class="ba-card ba-after">
+            <p class="lbl">After</p>
+            <p class="stamp stamp-md thunk" data-tone="caution">CAUTION · DATA STALE</p>
+            <p class="ba-text">Degraded confidence. <q>Wave height is 4 h 10 min old — over the 3 h limit.</q> <q>Check the latest IMD / INCOIS bulletin before you go.</q></p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="ba" aria-labelledby="ba2-title" data-reveal>
+      <div class="ba-scene" aria-hidden="true">
+        <svg viewBox="-60 -60 120 120" class="feed">
+          <path class="fd-mast" d="M0 44V-6M-18 44L0-6l18 50M-11 24h22"/>
+          <circle cy="-12" r="5" class="fd-head"/>
+          <path class="fd-arc a1" d="M-14-26a20 20 0 0 1 28 0"/>
+          <path class="fd-arc a2" d="M-24-36a34 34 0 0 1 48 0"/>
+          <path class="fd-arc a3" d="M-34-46a48 48 0 0 1 68 0"/>
+          <g class="fd-x"><path d="M22-4l16 16M38-4L22 12"/></g>
+        </svg>
+        <p class="scene-cap lbl">Marine forecast feed · no response</p>
+      </div>
+      <div class="ba-body">
+        <h3 id="ba2-title" class="ba-title">The marine feed goes down</h3>
+        <div class="ba-pair">
+          <div class="ba-card ba-before">
+            <p class="lbl">Before</p>
+            <p class="stamp stamp-md" data-tone="go">SAFE TO GO</p>
+            <p class="ba-text">LIVE quietly swapped in labelled demo values and still scored the trip. For an unknown wave the engine assumes a 0.3 hazard, so it could still print "Safe to go".</p>
+          </div>
+          <svg class="ba-arrow" viewBox="0 0 40 20" aria-hidden="true"><path d="M2 10h32M28 4l6 6-6 6"/></svg>
+          <div class="ba-card ba-after">
+            <p class="lbl">After</p>
+            <p class="stamp stamp-md thunk" data-tone="insufficient">INSUFFICIENT DATA</p>
+            <p class="ba-text">No score, no invented wave height. <q>Wave height: no reading — the marine forecast feed did not respond.</q> Follow the official advisory.</p>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <ul class="ba-strip" data-reveal>
+      <li><span class="lbl">Official warning in force</span> NO-GO at the same floor, 70 or 92, whatever the data health. <strong>Unchanged.</strong></li>
+      <li><span class="lbl">Provider comes back</span> GO at normal confidence on the next question. <strong>New.</strong></li>
+      <li><span class="lbl">Where the reader sees it</span> The verdict stamp, a one-line gate strip, the inputs table, the evidence ledger, the spoken phone plan.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ======================================================= 4 THE PIPELINE (ink) -->
+<section class="sec band-ink" id="pipeline" aria-labelledby="pipe-title">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="folio"><span>Sheet 04</span> Where the gate sits</p>
+      <h2 id="pipe-title">A plotted course, with <em>two new buoys</em>.</h2>
+      <p class="sec-lead">Every reading now carries its observation time. The freshness check runs on what the providers delivered; the gate runs after the risk engine and its floors, and before the explanation is written.</p>
+    </header>
+
+    <div class="pipe-wide" aria-hidden="true">
+      <svg viewBox="0 0 1200 560" fill="none" class="pipe-svg">
+        <defs>
+          <pattern id="nightgrat" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0V60" stroke="var(--paper-50)" stroke-opacity=".05"/></pattern>
+        </defs>
+        <rect width="1200" height="560" fill="url(#nightgrat)"/>
+        <!-- the course legs -->
+        <g class="legs">
+          <path id="lg1" d="M96 280H286"/>
+          <path d="M314 280C390 280 380 110 470 110"/>
+          <path d="M314 280C390 280 390 220 470 220"/>
+          <path d="M314 280C390 280 390 340 470 340"/>
+          <path d="M314 280C390 280 380 450 470 450"/>
+          <path d="M530 110C620 110 600 280 676 280"/>
+          <path d="M530 220C610 220 610 280 676 280"/>
+          <path d="M530 340C610 340 610 280 676 280"/>
+          <path d="M530 450C620 450 600 280 676 280"/>
+          <path d="M724 280H846"/>
+          <path d="M900 280C960 280 960 100 990 100"/>
+          <path d="M900 280C960 280 960 220 990 220"/>
+          <path d="M900 280C960 280 960 340 990 340"/>
+          <path d="M900 280C960 280 960 460 990 460"/>
+        </g>
+        <!-- signals travelling the course (stroke-dashoffset dots) -->
+        <g class="sig">
+          <path pathLength="100" style="--d:0s" d="M96 280H286"/>
+          <path pathLength="100" style="--d:.9s" class="s-teal" d="M314 280C390 280 380 110 470 110"/>
+          <path pathLength="100" style="--d:1.0s" class="s-teal" d="M314 280C390 280 390 220 470 220"/>
+          <path pathLength="100" style="--d:1.1s" class="s-teal" d="M314 280C390 280 390 340 470 340"/>
+          <path pathLength="100" style="--d:1.2s" class="s-teal" d="M314 280C390 280 380 450 470 450"/>
+          <path pathLength="100" style="--d:2.1s" class="s-teal" d="M530 110C620 110 600 280 676 280"/>
+          <path pathLength="100" style="--d:2.2s" class="s-teal" d="M530 220C610 220 610 280 676 280"/>
+          <path pathLength="100" style="--d:2.3s" class="s-teal" d="M530 340C610 340 610 280 676 280"/>
+          <path pathLength="100" style="--d:2.4s" class="s-teal" d="M530 450C620 450 600 280 676 280"/>
+          <path pathLength="100" style="--d:3.3s" d="M724 280H846"/>
+          <path pathLength="100" style="--d:4.2s" class="s-go" d="M900 280C960 280 960 100 990 100"/>
+          <path pathLength="100" style="--d:5.4s" class="s-caution" d="M900 280C960 280 960 220 990 220"/>
+          <path pathLength="100" style="--d:6.6s" class="s-nogo" d="M900 280C960 280 960 340 990 340"/>
+          <path pathLength="100" style="--d:7.8s" class="s-ins" d="M900 280C960 280 960 460 990 460"/>
+        </g>
+        <!-- buoys -->
+        <g class="buoy" transform="translate(70 280)"><circle r="26"/><text class="bn" y="7">1</text></g>
+        <g class="buoy buoy-new" transform="translate(300 280)"><circle r="26" class="halo"/><circle r="26"/><text class="bn" y="7">2</text></g>
+        <g class="buoy buoy-sm" transform="translate(500 110)"><circle r="20"/><text class="bn bn-sm" y="5">3a</text></g>
+        <g class="buoy buoy-sm" transform="translate(500 220)"><circle r="20"/><text class="bn bn-sm" y="5">3b</text></g>
+        <g class="buoy buoy-sm buoy-ocean" transform="translate(500 340)"><circle r="20"/><text class="bn bn-sm" y="5">3c</text></g>
+        <g class="buoy buoy-sm" transform="translate(500 450)"><circle r="20"/><text class="bn bn-sm" y="5">3d</text></g>
+        <g class="buoy" transform="translate(700 280)"><circle r="26"/><text class="bn" y="7">4</text></g>
+        <g class="gate" transform="translate(873 280)">
+          <circle r="44" class="halo"/>
+          <path d="M0-34L34 0 0 34-34 0Z"/>
+          <text class="bn" y="7">5</text>
+        </g>
+        <!-- outcome channels -->
+        <g class="outc o-go" transform="translate(990 100)"><rect x="0" y="-22" width="196" height="44" rx="2"/><text x="14" y="6">GO</text></g>
+        <g class="outc o-caution" transform="translate(990 220)"><rect x="0" y="-22" width="196" height="44" rx="2"/><text x="14" y="6">CAUTION</text></g>
+        <g class="outc o-nogo" transform="translate(990 340)"><rect x="0" y="-22" width="196" height="44" rx="2"/><text x="14" y="6">NO-GO</text></g>
+        <g class="outc o-ins" transform="translate(990 460)"><rect x="0" y="-22" width="196" height="44" rx="2"/><text x="14" y="6" class="o-long">INSUFFICIENT DATA</text></g>
+        <!-- labels -->
+        <g class="plab">
+          <text x="70" y="334" text-anchor="middle">Providers</text>
+          <text x="70" y="354" text-anchor="middle" class="pl-sm">LIVE · DEMO</text>
+          <text x="70" y="372" text-anchor="middle" class="pl-sm">bulletin · chart</text>
+          <text x="300" y="334" text-anchor="middle">Data health</text>
+          <text x="300" y="354" text-anchor="middle">+ freshness</text>
+          <text x="300" y="232" text-anchor="middle" class="pl-new">NEW</text>
+          <text x="530" y="82" class="pl-sm" text-anchor="middle">weather</text>
+          <text x="530" y="192" class="pl-sm" text-anchor="middle">cyclone</text>
+          <text x="530" y="312" class="pl-sm" text-anchor="middle">ocean</text>
+          <text x="530" y="422" class="pl-sm" text-anchor="middle">gis</text>
+          <text x="500" y="510" text-anchor="middle">4 agents, in parallel</text>
+          <text x="700" y="334" text-anchor="middle">Risk engine</text>
+          <text x="700" y="354" text-anchor="middle">+ floors</text>
+          <text x="700" y="380" text-anchor="middle" class="pl-sm">92 · 70 · 85 · 60</text>
+          <text x="700" y="398" text-anchor="middle" class="pl-sm">only raise</text>
+          <text x="873" y="350" text-anchor="middle">SAFETY GATE</text>
+          <text x="873" y="370" text-anchor="middle" class="pl-sm">deterministic</text>
+          <text x="873" y="216" text-anchor="middle" class="pl-new">NEW</text>
+          <text x="990" y="138" class="pl-sm">all critical fresh</text>
+          <text x="990" y="258" class="pl-sm">critical stale, usable</text>
+          <text x="990" y="378" class="pl-sm">risk says no-go</text>
+          <text x="990" y="498" class="pl-sm">critical missing or too old</text>
+        </g>
+      </svg>
+    </div>
+
+    <ol class="pipe-list">
+      <li><span class="pl-n">1</span><div><strong>Providers and cached data</strong><span>Open-Meteo (LIVE) · the rehearsed dataset (DEMO) · the warnings bulletin · the bundled chart layer</span></div></li>
+      <li class="is-new"><span class="pl-n">2</span><div><strong>Data health + freshness check <em class="new">new</em></strong><span>Per input: source · observed_at · age · limit · FRESH / STALE / MISSING / ERROR · critical</span></div></li>
+      <li><span class="pl-n">3</span><div><strong>Four agents, in parallel</strong><span>weather · ocean · cyclone · gis, each reporting the health of what it delivered</span></div></li>
+      <li><span class="pl-n">4</span><div><strong>Risk engine + safety floors</strong><span>The weighted score, then floors that only raise it: 92 · 70 · 85 · 60</span></div></li>
+      <li class="is-new"><span class="pl-n">5</span><div><strong>Safety gate <em class="new">new</em></strong><span>Deterministic. Splits into GO · CAUTION · NO-GO · INSUFFICIENT DATA</span></div></li>
+      <li><span class="pl-n">6</span><div><strong>Explanation agent</strong><span>The answer, the evidence ledger and the spoken plan carry the gate's result</span></div></li>
+    </ol>
+
+    <div class="gate-cols">
+      <figure class="code-card" id="gate-rules" data-reveal>
+        <figcaption class="lbl">services/safety_gate.py · the gate, in five lines</figcaption>
+        <pre class="rules"><code><span class="r-line">blocking = critical inputs MISSING, ERROR, expired, or with no timestamp</span>
+<span class="r-line">stale    = critical inputs STALE but still usable</span>
+<span class="r-line"><b>if</b> risk is None      <i>→</i> <u class="u-ins">INSUFFICIENT_DATA</u>  no result, no guess</span>
+<span class="r-line"><b>elif</b> not risk.go    <i>→</i> <u class="u-nogo">NO_GO</u>              existing safety law, untouched</span>
+<span class="r-line"><b>elif</b> blocking       <i>→</i> <u class="u-ins">INSUFFICIENT_DATA</u>  follow the official advisory</span>
+<span class="r-line"><b>elif</b> stale          <i>→</i> <u class="u-caution">CAUTION</u>            degraded confidence</span>
+<span class="r-line"><b>else</b>                <i>→</i> <u class="u-go">GO</u>                 normal confidence</span></code><span class="scan" aria-hidden="true"></span></pre>
+      </figure>
+      <div class="invariants" data-reveal>
+        <h3 class="sub-h">Five invariants, all tested</h3>
+        <ol>
+          <li>The gate never changes the risk score, band or floors. It only chooses the state.</li>
+          <li>If the existing logic says no-go, the state is NO-GO under every data condition.</li>
+          <li>GO is only possible when every critical input is fresh.</li>
+          <li>A missing input is never invented: in the unavailable drill the wave height is <code>None</code>, not a number.</li>
+          <li>Bad data can only move ORCA toward caution, never toward "go".</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================= 5 WHAT IT CHECKS -->
+<section class="sec" id="checks" aria-labelledby="checks-title">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="folio"><span>Sheet 05</span> What it checks</p>
+      <h2 id="checks-title">Six readings, each with a <em>date stamp</em>.</h2>
+      <p class="sec-lead">One data-health record per input of the go / no-go decision. Four of them are critical: without them fresh, ORCA will not give a normal-confidence go.</p>
+    </header>
+
+    <div class="drill-bar" role="group" aria-label="Show the records under a drill">
+      <span class="lbl">Records under the drill</span>
+      <button type="button" class="chip" data-hdrill="healthy" aria-pressed="true">Healthy</button>
+      <button type="button" class="chip" data-hdrill="stale" aria-pressed="false">Stale</button>
+      <button type="button" class="chip" data-hdrill="unavailable" aria-pressed="false">Unavailable</button>
+      <button type="button" class="chip" data-hdrill="recovery" aria-pressed="false">Recovery</button>
+      <span class="drill-src lbl" id="health-src">recorded from the real backend</span>
+    </div>
+
+    <div class="cards" id="health-cards">
+      <article class="hcard" data-input="wave" data-s="FRESH" style="--i:0">
+        <header><h3>Wave height</h3><span class="crit">critical</span></header>
+        <dl>
+          <div><dt>Source</dt><dd data-f="feed">marine forecast feed</dd></div>
+          <div><dt>Observed</dt><dd data-f="obs">12:30 IST</dd></div>
+          <div><dt>Age</dt><dd data-f="age">18 min</dd></div>
+          <div><dt>Limit</dt><dd data-f="limit">fresh ≤ 3 h · usable ≤ 6 h</dd></div>
+        </dl>
+        <p class="chip-status" data-f="status" data-s="FRESH">Fresh</p>
+        <p class="why">25% of the score; carries the 4 m wave floor (85).</p>
+      </article>
+      <article class="hcard" data-input="wind" data-s="FRESH" style="--i:1">
+        <header><h3>Wind</h3><span class="crit">critical</span></header>
+        <dl>
+          <div><dt>Source</dt><dd data-f="feed">weather forecast feed</dd></div>
+          <div><dt>Observed</dt><dd data-f="obs">12:36 IST</dd></div>
+          <div><dt>Age</dt><dd data-f="age">12 min</dd></div>
+          <div><dt>Limit</dt><dd data-f="limit">fresh ≤ 3 h · usable ≤ 6 h</dd></div>
+        </dl>
+        <p class="chip-status" data-f="status" data-s="FRESH">Fresh</p>
+        <p class="why">20% of the score; carries the gale floor (85).</p>
+      </article>
+      <article class="hcard" data-input="warnings" data-s="FRESH" style="--i:2">
+        <header><h3>Official warnings</h3><span class="crit">critical</span></header>
+        <dl>
+          <div><dt>Source</dt><dd data-f="feed">warnings bulletin feed</dd></div>
+          <div><dt>Observed</dt><dd data-f="obs">12:23 IST</dd></div>
+          <div><dt>Age</dt><dd data-f="age">25 min</dd></div>
+          <div><dt>Limit</dt><dd data-f="limit">fresh ≤ 1 h · usable ≤ 3 h</dd></div>
+        </dl>
+        <p class="chip-status" data-f="status" data-s="FRESH">Fresh</p>
+        <p class="why">25%; carries the 92 and 70 floors. A new warning can come at any hour.</p>
+      </article>
+      <article class="hcard" data-input="position" data-s="FRESH" style="--i:3">
+        <header><h3>Position and restricted zones</h3><span class="crit">critical</span></header>
+        <dl>
+          <div><dt>Source</dt><dd data-f="feed">bundled chart layer</dd></div>
+          <div><dt>Observed</dt><dd data-f="obs">bundled</dd></div>
+          <div><dt>Age</dt><dd data-f="age">static</dd></div>
+          <div><dt>Limit</dt><dd data-f="limit">static layer</dd></div>
+        </dl>
+        <p class="chip-status" data-f="status" data-s="FRESH">Fresh</p>
+        <p class="why">Carries the restricted-zone floor (60).</p>
+      </article>
+      <article class="hcard" data-input="rain" data-s="FRESH" style="--i:4">
+        <header><h3>Rain and visibility</h3><span class="crit crit-no">supporting</span></header>
+        <dl>
+          <div><dt>Source</dt><dd data-f="feed">weather forecast feed</dd></div>
+          <div><dt>Observed</dt><dd data-f="obs">12:36 IST</dd></div>
+          <div><dt>Age</dt><dd data-f="age">12 min</dd></div>
+          <div><dt>Limit</dt><dd data-f="limit">fresh ≤ 3 h · usable ≤ 6 h</dd></div>
+        </dl>
+        <p class="chip-status" data-f="status" data-s="FRESH">Fresh</p>
+        <p class="why">Supporting (10%); never gates on its own.</p>
+      </article>
+      <article class="hcard" data-input="current" data-s="FRESH" style="--i:5">
+        <header><h3>Surface current</h3><span class="crit crit-no">supporting</span></header>
+        <dl>
+          <div><dt>Source</dt><dd data-f="feed">marine forecast feed</dd></div>
+          <div><dt>Observed</dt><dd data-f="obs">12:30 IST</dd></div>
+          <div><dt>Age</dt><dd data-f="age">18 min</dd></div>
+          <div><dt>Limit</dt><dd data-f="limit">fresh ≤ 6 h · usable ≤ 12 h</dd></div>
+        </dl>
+        <p class="chip-status" data-f="status" data-s="FRESH">Fresh</p>
+        <p class="why">Supporting, part of sea state (10%).</p>
+      </article>
+    </div>
+
+    <figure class="ruler-fig" id="ruler" data-reveal>
+      <figcaption>
+        <h3 class="sub-h">The freshness ruler</h3>
+        <p class="muted">Each input's age against its own limits, on a 0 to 12 hour scale. Change the drill above and watch the wave and current markers move: the sea does not change between drills, only the marine feed's health.</p>
+      </figcaption>
+      <div class="ruler" role="img" aria-labelledby="ruler-desc">
+        <p class="vh" id="ruler-desc">Freshness ruler. Wave height and wind are fresh up to 3 hours and usable up to 6. Official warnings are fresh up to 1 hour and usable up to 3. Rain is fresh up to 3 hours and usable up to 6. Surface current is fresh up to 6 hours and usable up to 12. Position is a static bundled layer.</p>
+        <div class="r-axis" aria-hidden="true">
+          <span style="--x:0">0</span><span style="--x:8.333">1 h</span><span style="--x:25">3 h</span><span style="--x:50">6 h</span><span style="--x:75">9 h</span><span style="--x:100">12 h</span>
+        </div>
+        <div class="r-row" data-input="wave" style="--f:25;--m:50" aria-hidden="true">
+          <span class="r-name">Wave height</span>
+          <span class="r-track"><i class="z z-fresh"></i><i class="z z-stale"></i><i class="z z-dead"></i>
+            <span class="r-mk" style="--a:2.5"><span class="r-pin"><b>18 min</b></span></span></span>
+        </div>
+        <div class="r-row" data-input="wind" style="--f:25;--m:50" aria-hidden="true">
+          <span class="r-name">Wind</span>
+          <span class="r-track"><i class="z z-fresh"></i><i class="z z-stale"></i><i class="z z-dead"></i>
+            <span class="r-mk" style="--a:1.667"><span class="r-pin"><b>12 min</b></span></span></span>
+        </div>
+        <div class="r-row" data-input="warnings" style="--f:8.333;--m:25" aria-hidden="true">
+          <span class="r-name">Official warnings</span>
+          <span class="r-track"><i class="z z-fresh"></i><i class="z z-stale"></i><i class="z z-dead"></i>
+            <span class="r-mk" style="--a:3.472"><span class="r-pin"><b>25 min</b></span></span></span>
+        </div>
+        <div class="r-row r-static" data-input="position" aria-hidden="true">
+          <span class="r-name">Position · zones</span>
+          <span class="r-track"><i class="z z-static">bundled chart layer · no age</i></span>
+        </div>
+        <div class="r-row r-supp" data-input="rain" style="--f:25;--m:50" aria-hidden="true">
+          <span class="r-name">Rain · visibility</span>
+          <span class="r-track"><i class="z z-fresh"></i><i class="z z-stale"></i><i class="z z-dead"></i>
+            <span class="r-mk" style="--a:1.667"><span class="r-pin"><b>12 min</b></span></span></span>
+        </div>
+        <div class="r-row r-supp" data-input="current" style="--f:50;--m:100" aria-hidden="true">
+          <span class="r-name">Surface current</span>
+          <span class="r-track"><i class="z z-fresh"></i><i class="z z-stale"></i><i class="z z-dead"></i>
+            <span class="r-mk" style="--a:2.5"><span class="r-pin"><b>18 min</b></span></span></span>
+        </div>
+        <ul class="r-key" aria-hidden="true">
+          <li><i class="z z-fresh"></i>Fresh</li><li><i class="z z-stale"></i>Stale but usable: CAUTION</li><li><i class="z z-dead"></i>Too old to use: treated as missing</li>
+        </ul>
+      </div>
+      <p class="footnote">Configurable engineering defaults (<code>ORCA_FRESH_&lt;INPUT&gt;_S</code>, <code>ORCA_MAXAGE_&lt;INPUT&gt;_S</code>), not a certified standard. Marine and weather models refresh every 1 to 6 hours; an IMD bulletin can be issued at any hour. Served at <code>GET /api/config/data-health</code>.</p>
+    </figure>
+  </div>
+</section>
+
+<!-- ======================================================= 6 LIVE DEMO -->
+<section class="sec sec-demo" id="demo" aria-labelledby="demo-title">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="folio"><span>Sheet 06</span> Live demo</p>
+      <h2 id="demo-title">Ask the <em>real</em> ORCA.</h2>
+      <p class="sec-lead">Each chip asks the question through the whole pipeline (<code>POST /api/chat</code>) with the data drill riding on the request, so the sea stays the same and only the marine feed's health changes. What comes back is printed as it is.</p>
+    </header>
+
+    <div class="demo">
+      <div class="demo-ctl">
+        <p class="mode" id="mode" data-mode="checking"><span class="mode-dot" aria-hidden="true"></span><span id="mode-text">Checking for the ORCA backend on this server…</span></p>
+
+        <fieldset class="ctl-group">
+          <legend class="lbl">1 · Data drill <span class="muted">(the marine feed's health)</span></legend>
+          <div class="chips">
+            <button type="button" class="chip chip-lg" data-drill="healthy" aria-pressed="true"><b>Healthy</b><span>delivered 18 min ago</span></button>
+            <button type="button" class="chip chip-lg" data-drill="stale" aria-pressed="false"><b>Stale</b><span>4 h 10 min old</span></button>
+            <button type="button" class="chip chip-lg" data-drill="unavailable" aria-pressed="false"><b>Unavailable</b><span>did not respond</span></button>
+            <button type="button" class="chip chip-lg" data-drill="recovery" aria-pressed="false"><b>Recovery</b><span>reconnected 1 min ago</span></button>
+          </div>
+        </fieldset>
+
+        <fieldset class="ctl-group">
+          <legend class="lbl">2 · Question</legend>
+          <div class="chips">
+            <button type="button" class="chip chip-lg" data-q="goa" aria-pressed="true"><b>Goa</b><span>tomorrow morning</span></button>
+            <button type="button" class="chip chip-lg" data-q="paradip" aria-pressed="false"><b>Paradip</b><span>cyclone warning</span></button>
+            <button type="button" class="chip chip-lg" data-q="mumbai" aria-pressed="false"><b>Mumbai 6 AM</b><span>IMD fishermen warning</span></button>
+          </div>
+        </fieldset>
+
+        <div class="ctl-actions">
+          <button type="button" class="btn btn-ink" id="story-btn" aria-pressed="false">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path class="i-play" d="M6 4.5v11l9-5.5Z" fill="currentColor"/><path class="i-stop" d="M5.5 5.5h9v9h-9Z" fill="currentColor"/></svg>
+            <span id="story-label">Play the story</span>
+          </button>
+          <button type="button" class="btn btn-line" id="reset-btn">Reset to healthy</button>
+        </div>
+        <p class="ctl-note muted">Each question carries its own drill and leaves the ORCA app's setting alone. On an older backend without that, the page uses the shared drill switch and puts it back on <em>Healthy</em> after every answer and when you leave.</p>
+
+        <ol class="story" id="story" aria-label="The demo story">
+          <li data-step="0"><span class="st-bar"><i></i></span>Healthy</li>
+          <li data-step="1"><span class="st-bar"><i></i></span>Stale</li>
+          <li data-step="2"><span class="st-bar"><i></i></span>Missing</li>
+          <li data-step="3"><span class="st-bar"><i></i></span>Floor holds</li>
+          <li data-step="4"><span class="st-bar"><i></i></span>Recovery</li>
+        </ol>
+        <p class="caption" id="caption">Press <strong>Play the story</strong> for the two-minute walkthrough, or pick any drill and question.</p>
+      </div>
+
+      <div class="result sheet" id="result" data-state="GO" aria-busy="false">
+        <p class="vh" id="result-live" aria-live="polite" aria-atomic="true"></p>
+        <div class="res-top">
+          <p class="res-q"><span class="lbl">Question</span> <q id="res-q">Is it safe to go fishing tomorrow morning near Goa?</q></p>
+          <p class="res-meta lbl" id="res-meta">recorded from the real backend · drill healthy</p>
+        </div>
+
+        <div class="res-verdict">
+          <div class="res-stamp-wrap">
+            <p class="stamp stamp-xl" id="res-stamp" data-tone="go">GO</p>
+            <p class="res-conf" id="res-conf">normal confidence</p>
+          </div>
+          <div class="res-score" id="res-score" data-withheld="false">
+            <div class="score-num">
+              <p class="lbl">Risk score</p>
+              <p class="dial sounding lining"><span id="res-score-n">9</span><small>/100</small></p>
+              <p class="score-cat" id="res-cat" data-cat="LOW">LOW</p>
+            </div>
+            <div class="score-none" aria-hidden="true">
+              <svg viewBox="-40 -40 80 80" class="sonar-dial"><circle r="10"/><circle r="20"/><circle r="30"/><circle r="36" class="sd-ring"/></svg>
+            </div>
+            <p class="score-withheld">No score. <strong>ORCA will not guess.</strong></p>
+          </div>
+        </div>
+
+        <p class="res-headline" id="res-headline">Evidence check passed — normal confidence.</p>
+        <ul class="reasons" id="res-reasons">
+          <li>All 4 critical inputs are fresh.</li>
+        </ul>
+        <p class="res-floor" id="res-floor" hidden></p>
+
+        <div class="res-cols">
+          <div>
+            <h3 class="lbl res-h">Data health · what the gate saw</h3>
+            <div class="table-scroll">
+              <table class="htable">
+                <thead><tr><th scope="col">Input</th><th scope="col">Age</th><th scope="col">Limit</th><th scope="col">Status</th></tr></thead>
+                <tbody id="res-health">
+                  <tr><th scope="row">Wave height <span class="crit-dot" title="critical">critical</span></th><td>18 min</td><td>3 h</td><td><span class="chip-status" data-s="FRESH">Fresh</span></td></tr>
+                  <tr><th scope="row">Wind <span class="crit-dot">critical</span></th><td>12 min</td><td>3 h</td><td><span class="chip-status" data-s="FRESH">Fresh</span></td></tr>
+                  <tr><th scope="row">Official warnings <span class="crit-dot">critical</span></th><td>25 min</td><td>1 h</td><td><span class="chip-status" data-s="FRESH">Fresh</span></td></tr>
+                  <tr><th scope="row">Position and restricted zones <span class="crit-dot">critical</span></th><td>static</td><td>bundled</td><td><span class="chip-status" data-s="FRESH">Fresh</span></td></tr>
+                  <tr><th scope="row">Rain and visibility</th><td>12 min</td><td>3 h</td><td><span class="chip-status" data-s="FRESH">Fresh</span></td></tr>
+                  <tr><th scope="row">Surface current</th><td>18 min</td><td>6 h</td><td><span class="chip-status" data-s="FRESH">Fresh</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <h3 class="lbl res-h">The crew · trace</h3>
+            <ol class="crew" id="res-trace">
+              <li data-st="ok"><b>intent</b><span>fishing_safety @ Panaji (Goa) 06:00</span></li>
+              <li data-st="ok"><b>weather</b><span>wind 10.9 km/h, rain 4%</span></li>
+              <li data-st="ok"><b>ocean</b><span>wave 0.62 m, slight</span></li>
+              <li data-st="ok"><b>cyclone</b><span>no active warning</span></li>
+              <li data-st="ok"><b>gis</b><span>0.0 km offshore, 0 zones nearby</span></li>
+              <li data-st="ok"><b>risk</b><span>9/100 LOW</span></li>
+              <li data-st="ok"><b>explanation</b><span>answer composed</span></li>
+            </ol>
+            <h3 class="lbl res-h">Evidence ledger · gate rows</h3>
+            <ul class="ledger" id="res-evidence">
+              <li><b>Safety gate</b><span>Go · normal confidence</span></li>
+              <li><b>Freshness · Wave height</b><span>fresh · 18 min old (limit 3 h)</span></li>
+            </ul>
+          </div>
+        </div>
+
+        <details class="answer">
+          <summary>The answer ORCA wrote</summary>
+          <p id="res-answer">Conditions look safe. Risk score: 9/100. Main reasons: Wave height 0.6 m; Wind speed 11 km/h; Official warning none. Sources: ORCA demo dataset — SIMULATED, not official data, ORCA geospatial layer (OpenStreetMap derived) · Updated 11 Oct 2026, 06:00 IST. Demo / simulated data — not a live government feed.</p>
+        </details>
+        <p class="res-foot lbl"><span id="res-elapsed">answered in 0 ms</span> · <span id="res-origin">recorded from the real backend</span></p>
+        <div class="busy" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================= 7 PROOF -->
+<section class="sec sec-tint" id="proof" aria-labelledby="proof-title">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="folio"><span>Sheet 07</span> Graphs that prove it</p>
+      <h2 id="proof-title">The numbers hold. <em>Only the state moves.</em></h2>
+      <p class="sec-lead">Every value below is what the real backend returned, captured from <code>POST /api/chat</code> under each drill.</p>
+    </header>
+
+    <div class="graphs">
+      <figure class="graph" id="graph-same-sea" data-reveal>
+        <figcaption><span class="lbl">Graph A</span><h3>Same sea, different evidence</h3><p class="muted">The Goa question under the four drills. The score never moves; the gate's state does.</p></figcaption>
+        <svg viewBox="0 0 560 330" class="g-svg" role="img" aria-labelledby="ga-t ga-d">
+          <title id="ga-t">Goa risk score and gate state under each drill</title>
+          <desc id="ga-d">Healthy: 9 out of 100, GO. Stale: 9 out of 100, CAUTION. Unavailable: score withheld, INSUFFICIENT DATA. Recovery: 9 out of 100, GO.</desc>
+          <!-- risk bands -->
+          <g class="bands">
+            <rect x="60" y="22.8" width="400" height="58.8" class="b-ext"/>
+            <rect x="60" y="81.6" width="400" height="81.2" class="b-high"/>
+            <rect x="60" y="162.8" width="400" height="70" class="b-mod"/>
+            <rect x="60" y="232.8" width="400" height="70" class="b-low"/>
+          </g>
+          <g class="axis">
+            <path d="M60 302.8H460"/>
+            <text x="50" y="306" text-anchor="end">0</text>
+            <text x="50" y="236" text-anchor="end">25</text>
+            <text x="50" y="166" text-anchor="end">50</text>
+            <text x="50" y="85" text-anchor="end">79</text>
+            <text x="50" y="27" text-anchor="end">100</text>
+            <text x="468" y="296" class="band-l">LOW</text>
+            <text x="468" y="226" class="band-l">MODERATE</text>
+            <text x="468" y="156" class="band-l">HIGH</text>
+            <text x="468" y="75" class="band-l">EXTREME</text>
+          </g>
+          <g class="bars">
+            <rect class="bar" style="--i:0" x="82" y="277.6" width="56" height="25.2"/>
+            <rect class="bar" style="--i:1" x="182" y="277.6" width="56" height="25.2"/>
+            <rect class="bar bar-none" style="--i:2" x="282" y="22.8" width="56" height="280"/>
+            <rect class="bar" style="--i:3" x="382" y="277.6" width="56" height="25.2"/>
+            <text class="bar-v" x="110" y="268" text-anchor="middle">9</text>
+            <text class="bar-v" x="210" y="268" text-anchor="middle">9</text>
+            <rect x="256" y="146" width="108" height="28" class="bar-tag"/>
+            <text class="bar-v bar-v-none" x="310" y="166" text-anchor="middle">withheld</text>
+            <text class="bar-v" x="410" y="268" text-anchor="middle">9</text>
+          </g>
+        </svg>
+        <div class="g-states" aria-hidden="true">
+          <span><b>Healthy</b><i class="stamp stamp-sm" data-tone="go">GO</i></span>
+          <span><b>Stale</b><i class="stamp stamp-sm" data-tone="caution">CAUTION</i></span>
+          <span><b>Unavailable</b><i class="stamp stamp-sm" data-tone="insufficient">INSUFFICIENT</i></span>
+          <span><b>Recovery</b><i class="stamp stamp-sm" data-tone="go">GO</i></span>
+        </div>
+      </figure>
+
+      <figure class="graph" id="graph-floor" data-reveal>
+        <figcaption><span class="lbl">Graph B</span><h3>The floor holds</h3><p class="muted">Two questions under an official warning, across all four drills. Flat lines, never lowered.</p></figcaption>
+        <svg viewBox="0 0 560 330" class="g-svg" role="img" aria-labelledby="gb-t gb-d">
+          <title id="gb-t">Paradip and Mumbai 6 AM risk scores under each drill</title>
+          <desc id="gb-d">Paradip, severe cyclone warning: 92 EXTREME and NO-GO under healthy, stale, unavailable and recovery. Mumbai 6 AM, IMD fishermen warning: 70 HIGH and NO-GO under all four drills.</desc>
+          <g class="axis">
+            <path d="M60 302.8H540"/>
+            <path d="M60 22.8V302.8"/>
+            <text x="50" y="306" text-anchor="end">0</text>
+            <text x="50" y="166" text-anchor="end">50</text>
+            <text x="50" y="27" text-anchor="end">100</text>
+            <text x="110" y="324" text-anchor="middle">Healthy</text>
+            <text x="246" y="324" text-anchor="middle">Stale</text>
+            <text x="382" y="324" text-anchor="middle">Unavailable</text>
+            <text x="540" y="324" text-anchor="end">Recovery</text>
+          </g>
+          <!-- the floors, dashed -->
+          <path class="floor-l" d="M60 45.2H540"/>
+          <path class="floor-l" d="M60 106.8H540"/>
+          <text x="540" y="38" text-anchor="end" class="floor-t">severe-warning floor 92</text>
+          <text x="540" y="130" text-anchor="end" class="floor-t">fishermen-warning floor 70</text>
+          <!-- the lines -->
+          <path class="line l-ext" pathLength="1" d="M110 45.2H518"/>
+          <path class="line l-high" pathLength="1" d="M110 106.8H518"/>
+          <g class="pts">
+            <circle class="p-ext" style="--i:0" cx="110" cy="45.2" r="6"/><circle class="p-ext" style="--i:1" cx="246" cy="45.2" r="6"/><circle class="p-ext" style="--i:2" cx="382" cy="45.2" r="6"/><circle class="p-ext" style="--i:3" cx="518" cy="45.2" r="6"/>
+            <circle class="p-high" style="--i:0" cx="110" cy="106.8" r="6"/><circle class="p-high" style="--i:1" cx="246" cy="106.8" r="6"/><circle class="p-high" style="--i:2" cx="382" cy="106.8" r="6"/><circle class="p-high" style="--i:3" cx="518" cy="106.8" r="6"/>
+          </g>
+          <text x="110" y="70" class="ln-t ln-ext">Paradip · 92 EXTREME · NO-GO</text>
+          <text x="110" y="160" class="ln-t ln-high">Mumbai 6 AM · 70 HIGH · NO-GO</text>
+          <text x="300" y="250" text-anchor="middle" class="g-note">Bad data can only push ORCA toward caution.</text>
+          <text x="300" y="270" text-anchor="middle" class="g-note">The official warning still wins.</text>
+        </svg>
+      </figure>
+
+      <figure class="graph" id="graph-matrix" data-reveal>
+        <figcaption><span class="lbl">Graph C</span><h3>The decision matrix</h3><p class="muted">The existing verdict against the state of the evidence. Six cells, one law. The live demo lights the cell it lands in.</p></figcaption>
+        <table class="matrix">
+          <thead>
+            <tr><td></td><th scope="col">All critical inputs fresh</th><th scope="col">A critical input stale, still usable</th><th scope="col">A critical input missing or too old</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Risk engine says go</th>
+              <td data-cell="go-fresh" data-label="All critical inputs fresh" style="--i:0"><span class="stamp stamp-sm" data-tone="go">GO</span><small>normal</small></td>
+              <td data-cell="go-stale" data-label="A critical input stale, still usable" style="--i:1"><span class="stamp stamp-sm" data-tone="caution">CAUTION</span><small>degraded</small></td>
+              <td data-cell="go-missing" data-label="A critical input missing or too old" style="--i:2"><span class="stamp stamp-sm" data-tone="insufficient">INSUFFICIENT DATA</span><small>insufficient</small></td>
+            </tr>
+            <tr>
+              <th scope="row">Risk engine says no-go</th>
+              <td data-cell="nogo-fresh" data-label="All critical inputs fresh" style="--i:3"><span class="stamp stamp-sm" data-tone="nogo">NO-GO</span><small>normal</small></td>
+              <td data-cell="nogo-stale" data-label="A critical input stale, still usable" style="--i:4"><span class="stamp stamp-sm" data-tone="nogo">NO-GO</span><small>degraded</small></td>
+              <td data-cell="nogo-missing" data-label="A critical input missing or too old" style="--i:5"><span class="stamp stamp-sm" data-tone="nogo">NO-GO</span><small>insufficient</small></td>
+            </tr>
+          </tbody>
+        </table>
+      </figure>
+
+      <figure class="graph graph-term" id="graph-tests" data-reveal>
+        <figcaption><span class="lbl">Graph D</span><h3>The tests, as they ran</h3><p class="muted">One command from a clean start. The four named scenarios, then the floor law under every drill.</p></figcaption>
+        <div class="term" tabindex="0" aria-label="pytest output">
+          <div class="term-bar" aria-hidden="true"><i></i><i></i><i></i><span>backend · pytest</span></div>
+<pre class="term-out"><span class="t-l t-cmd">$ python -m pytest backend/tests/test_safety_gate.py -v</span>
+<span class="t-l t-dim">collecting ... collected 74 items</span>
+<span class="t-l">test_safety_gate.py::test_scenario_1_healthy_data_keeps_the_existing_verdict <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_scenario_2_stale_marine_data_is_not_presented_as_fresh <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_scenario_3_missing_marine_data_fails_safe_and_invents_nothing <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_scenario_4_recovery_returns_to_normal_without_a_restart <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_official_warning_floors_hold_under_every_drill[Can I go fishing tomorrow at 6 AM near Mumbai?-70-HIGH-healthy] <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_official_warning_floors_hold_under_every_drill[Can I go fishing tomorrow at 6 AM near Mumbai?-70-HIGH-stale] <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_official_warning_floors_hold_under_every_drill[Can I go fishing tomorrow at 6 AM near Mumbai?-70-HIGH-unavailable] <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_official_warning_floors_hold_under_every_drill[Can I go fishing tomorrow at 6 AM near Mumbai?-70-HIGH-recovery] <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_official_warning_floors_hold_under_every_drill[Is there a cyclone near Paradip? Can I go fishing?-92-EXTREME-healthy] <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_official_warning_floors_hold_under_every_drill[Is there a cyclone near Paradip? Can I go fishing?-92-EXTREME-stale] <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_official_warning_floors_hold_under_every_drill[Is there a cyclone near Paradip? Can I go fishing?-92-EXTREME-unavailable] <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_official_warning_floors_hold_under_every_drill[Is there a cyclone near Paradip? Can I go fishing?-92-EXTREME-recovery] <b>PASSED</b></span>
+<span class="t-l">test_safety_gate.py::test_live_outage_recovers_by_itself_after_the_failure_cache_expires <b>PASSED</b></span>
+<span class="t-l t-total">============================= 74 passed in 0.38s ==============================</span>
+<span class="t-l t-cmd">$ python -X utf8 backend/smoke_test.py</span>
+<span class="t-l t-dim">SAFETY GATE — data sufficiency (same sea, only the marine feed changes)</span>
+<span class="t-l">  healthy      -> GO                normal       score 9/100     All 4 critical inputs are fresh.</span>
+<span class="t-l">  stale        -> CAUTION           degraded     score 9/100     Wave height is 4 h 10 min old — over the 3 h limit.</span>
+<span class="t-l">  unavailable  -> INSUFFICIENT_DATA insufficient score withheld  Wave height: no reading — the marine forecast feed did not respond.</span>
+<span class="t-l">  recovery     -> GO                normal       score 9/100     The marine forecast feed reconnected 1 min ago — readings are fresh again.</span>
+<span class="t-l">  floor check  -> Paradip with the marine feed down: 92/100 EXTREME, gate NO_GO</span>
+<span class="t-l t-total">ALL DEMO CHECKS PASSED</span></pre>
+        </div>
+        <p class="footnote">Lines selected from the full run; the other 61 gate tests cover the limits, the agents, the gate table and the API. The whole backend suite: <strong>248 passed</strong>.</p>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================= 8 RECOVERY (ink) -->
+<section class="sec band-ink" id="recovery" aria-labelledby="rec-title">
+  <div class="wrap">
+    <header class="sec-head" data-reveal>
+      <p class="folio"><span>Sheet 08</span> Recovery in LIVE mode</p>
+      <h2 id="rec-title">The feed comes back. <em>So does the go.</em></h2>
+      <p class="sec-lead">With live data, nobody presses a drill chip. A failed Open-Meteo fetch is remembered for 60 seconds, then retried. When it answers, the next question is GO again.</p>
+    </header>
+
+    <ol class="timeline" data-reveal>
+      <li class="tl-step" style="--i:0">
+        <span class="tl-node" aria-hidden="true"><svg viewBox="-20 -20 40 40"><path d="M-7-7l14 14M7-7l-14 14"/></svg></span>
+        <p class="lbl">t = 0</p>
+        <h3>Provider down</h3>
+        <p>The fetch fails. The wave reading is MISSING; the gate says INSUFFICIENT DATA.</p>
+      </li>
+      <li class="tl-step" style="--i:1">
+        <span class="tl-node tl-count" aria-hidden="true"><svg viewBox="-20 -20 40 40"><circle r="15" class="cd-track"/><circle r="15" class="cd-run" pathLength="100"/></svg></span>
+        <p class="lbl">0 to 60 s</p>
+        <h3>Failure remembered</h3>
+        <p>For 60 s (<code>CACHE_TTL_FAIL</code>) ORCA does not hammer a dead feed; it fails fast and honestly.</p>
+      </li>
+      <li class="tl-step" style="--i:2">
+        <span class="tl-node" aria-hidden="true"><svg viewBox="-20 -20 40 40"><path d="M9-3A9.5 9.5 0 1 0 6 7"/><path d="M10-10v8h-8"/></svg></span>
+        <p class="lbl">after 60 s</p>
+        <h3>Retried</h3>
+        <p>The next question tries Open-Meteo again.</p>
+      </li>
+      <li class="tl-step" style="--i:3">
+        <span class="tl-node" aria-hidden="true"><svg viewBox="-20 -20 40 40"><path d="M-9 1l6 6 12-13"/></svg></span>
+        <p class="lbl">answer</p>
+        <h3>Fresh</h3>
+        <p>The series arrives with its own <code>fetched_at</code>; the wave is FRESH.</p>
+      </li>
+      <li class="tl-step tl-go" style="--i:4">
+        <span class="tl-node" aria-hidden="true"><span class="tl-stamp">GO</span></span>
+        <p class="lbl">next question</p>
+        <h3>GO again</h3>
+        <p>Normal confidence. <strong>No restart, no code change.</strong></p>
+      </li>
+      <li class="tl-run" aria-hidden="true"><span class="tl-dot"></span></li>
+    </ol>
+    <p class="footnote footnote-ink">Tested with a fake HTTP client and a fake clock: <code>test_live_outage_recovers_by_itself_after_the_failure_cache_expires PASSED</code>.</p>
+  </div>
+</section>
+
+<!-- ======================================================= 9 CLOSE -->
+<section class="sec close" id="close" aria-labelledby="close-title">
+  <div class="wrap close-in" data-reveal>
+    <svg class="close-mark" viewBox="0 0 44 44" fill="none" aria-hidden="true">
+      <circle cx="22" cy="22" r="20" stroke="currentColor" stroke-width="1.2"/>
+      <circle cx="22" cy="22" r="16.5" stroke="currentColor" stroke-width=".6" opacity=".55"/>
+      <path d="M22 2v4M22 38v4M2 22h4M38 22h4" stroke="currentColor" stroke-width="1.1"/>
+      <g class="needle"><path d="M17.2 27.5C17.2 19.5 19.6 12.5 22.3 9c.6 6 3.1 12 4.8 18.5Z" fill="currentColor"/></g>
+      <path d="M10.5 30q3.5-2.4 7 0t7 0 7 0" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>
+    <p class="folio"><span>Sheet 09</span> Close</p>
+    <h2 id="close-title" class="close-title">Before, ORCA knew when the sea was dangerous.<br><em>Now it also knows when it doesn't know.</em></h2>
+    <ul class="links">
+      <li><a class="btn btn-ink" href="/">Open the ORCA app</a></li>
+      <li><a class="btn btn-line" href="https://github.com/SaudSatopay/orca-sih26176">The code on GitHub</a></li>
+      <li><a class="btn btn-line" href="https://github.com/SaudSatopay/orca-sih26176#readme">Read the docs</a></li>
+      <li><a class="btn btn-line" href="#demo">Run the demo again</a></li>
+    </ul>
+    <p class="disclaimer">ORCA is decision support. It never replaces an official advisory: follow IMD, INCOIS and Coast Guard instructions.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <p>ORCA · SIH26176 · Vibeathon 2026 mentor challenge, "Know when NOT to decide"</p>
+    <p>DEMO data is simulated and labelled as such; it is not a live government feed.</p>
+  </div>
+</footer>
+</body>
+</html>
