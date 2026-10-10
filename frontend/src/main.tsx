@@ -61,3 +61,13 @@ Promise.all([ROOT_LOADERS[kind](), shellPainted])
     status.replaceChildren(`${t.offlineTitle}. `, retry);
     status.setAttribute("role", "alert");
   });
+
+// The app shell opens without signal in production (public/sw.js): network
+// first for the page, so an online visit always gets the deployed app.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      /* no worker: the app still works online */
+    });
+  });
+}

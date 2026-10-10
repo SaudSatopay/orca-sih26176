@@ -67,6 +67,8 @@ import { alpha, ink, paper } from "../tokens";
 import "./mobile.css";
 import { tripIsOff } from "./todayModel";
 import { locationAlreadyAllowed } from "../locate";
+import { agePlan, isNetworkFailure, loadPlan, regateOutlook, savePlan, type SavedPlan } from "../offline";
+import { AskOfflineNotice, OfflinePlanNotice } from "./OfflinePlan";
 
 // `/?debug=1`: an on-screen list of over-wide elements, for layout checks.
 const LayoutProbe = lazy(() => import("./LayoutProbe"));
@@ -859,6 +861,14 @@ export default function MobileApp() {
   // A ?drill= link answers every reading under that data drill (the safety
   // gate's demo), carried by each request; the server's own drill is untouched.
   const [drill] = useState(() => readBootParams(window.location.search).drill);
+  // A ?offline=<minutes> link reads once, keeps that plan as if received
+  // <minutes> ago, then behaves as if the network is down (offline.ts).
+  const [offlineDemo, setOfflineDemo] = useState(() => readBootParams(window.location.search).offline);
+  const [demoCut, setDemoCut] = useState(false);
+  // The phone itself says the network is gone, or a request could not reach anyone.
+  const [netDown, setNetDown] = useState(() => typeof navigator !== "undefined" && navigator.onLine === false);
+  // The clock a saved plan is re-judged against; it ticks while offline.
+  const [now, setNow] = useState(() => Date.now());
   const canLocate = typeof navigator !== "undefined" && "geolocation" in navigator;
   const [geo, setGeo] = useState<Geo>(() =>
     pinned ? "pinned" : canLocate ? "checking" : "unavailable",
@@ -878,11 +888,17 @@ export default function MobileApp() {
     place: Place;
     language: Language;
     data: FishingOutlook;
+    /** When the phone received it. */
+    at: number;
   } | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [failed, setFailed] = useState<{ place: Place; language: Language; attempt: number } | null>(
-    null,
-  );
+  const [failed, setFailed] = useState<{
+    place: Place;
+    language: Language;
+    attempt: number;
+    /** No connection, as opposed to a server that answered badly. */
+    network: boolean;
+  } | null>(null);
   const [zones, setZones] = useState<ZoneFeature[]>([]);
   const [zonesFailed, setZonesFailed] = useState(false);
   const [zonesAttempt, setZonesAttempt] = useState(0);
@@ -901,6 +917,7 @@ export default function MobileApp() {
   const [question, setQuestion] = useState<string | null>(null);
   const [answer, setAnswer] = useState<ChatResponse | null>(null);
   const [askFailed, setAskFailed] = useState(false);
+  const [askOffline, setAskOffline] = useState(false);
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
   const [listenIssue, setListenIssue] = useState<ListenProblem | null>(null);
@@ -962,6 +979,8 @@ export default function MobileApp() {
 
   useEffect(() => {
     if (!place) return;
+    // The offline demo has cut the line: nothing more is fetched.
+    if (offlineDemo !== null && demoCut) return;
     let alive = true;
     api
       .fishingOutlook(place.lat, place.lon, {
@@ -972,14 +991,44 @@ export default function MobileApp() {
       })
       .then((d) => {
         if (!alive) return;
-        setLoaded({ place, language, data: d });
+        const got: SavedPlan = { at: Date.now(), lat: place.lat, lon: place.lon, language, data: d };
+        const plan = offlineDemo !== null ? agePlan(got, offlineDemo) : got;
+        savePlan("phone", plan);
+        setLoaded({ place, language, data: plan.data, at: plan.at });
         setFailed(null);
+        setNetDown(false); // it answered: the line is up
+        setNow(got.at);
+        if (offlineDemo !== null) setDemoCut(true);
       })
-      .catch(() => alive && setFailed({ place, language, attempt }));
+      .catch((e: unknown) => {
+        if (!alive) return;
+        setNow(Date.now());
+        setFailed({ place, language, attempt, network: isNetworkFailure(e, navigator.onLine) });
+        if (offlineDemo !== null) setDemoCut(true);
+      });
     return () => {
       alive = false;
     };
-  }, [place, language, attempt, drill]);
+  }, [place, language, attempt, drill, offlineDemo, demoCut]);
+
+  // The phone's own word on the network: going offline re-judges the saved
+  // plan at once; coming back reads the sea again.
+  useEffect(() => {
+    const down = () => {
+      setNow(Date.now());
+      setNetDown(true);
+    };
+    const up = () => {
+      setNetDown(false);
+      setAttempt((a) => a + 1);
+    };
+    window.addEventListener("offline", down);
+    window.addEventListener("online", up);
+    return () => {
+      window.removeEventListener("offline", down);
+      window.removeEventListener("online", up);
+    };
+  }, []);
 
   // The page itself speaks the chosen language, and names the open tab.
   useEffect(() => {
@@ -1005,22 +1054,41 @@ export default function MobileApp() {
   }, [tab]);
 
   // ---------------------------------------------------------------- data
-  const current =
-    loaded && loaded.place === place && loaded.language === language ? loaded.data : null;
   const failedNow =
     failed !== null &&
     failed.place === place &&
     failed.language === language &&
     failed.attempt === attempt;
+  // No connection: Today shows ORCA's last plan, re-judged for its age.
+  const offline = demoCut || netDown || (failedNow && failed.network);
+  const lastPlan = useMemo<SavedPlan | null>(
+    () =>
+      loaded
+        ? { at: loaded.at, lat: loaded.place.lat, lon: loaded.place.lon, language: loaded.language, data: loaded.data }
+        : loadPlan("phone"),
+    [loaded],
+  );
+  const offlineView = useMemo(
+    () => (offline && lastPlan ? regateOutlook(lastPlan, now) : null),
+    [offline, lastPlan, now],
+  );
+  useEffect(() => {
+    if (!offline) return;
+    const id = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(id);
+  }, [offline]);
+  const current =
+    !offline && loaded && loaded.place === place && loaded.language === language ? loaded.data : null;
   // The last reading stays on screen when the crew cannot be reached, and
   // while the same position is re-read in another language.
   const stale =
     !current && loaded && (failedNow || loaded.place === place) ? loaded.data : null;
-  const outlook = current ?? stale;
+  const outlook = offline ? offlineView : (current ?? stale);
   // A kept reading after a failure must never look live (PT6) …
-  const staleShown = failedNow && !current && stale != null;
+  const staleShown = (failedNow && !current && stale != null) || offlineView != null;
   // … and it is spoken in its own language, whatever the app switched to.
-  const outlookLang = current ? language : (loaded?.language ?? language);
+  const outlookLang =
+    offlineView && lastPlan ? lastPlan.language : current ? language : (loaded?.language ?? language);
   const placeName = outlook?.location.nearest_landing_centre ?? (place && place.name !== "—" ? place.name : "…");
 
   // Stable identities for the chart (guidelines audit R1): a fresh origin
@@ -1168,7 +1236,14 @@ export default function MobileApp() {
     setQuestion(text);
     setAnswer(null);
     setAskFailed(false);
+    setAskOffline(false);
     setListenIssue(null);
+    // No connection: ORCA does not guess; the notice points to the last plan.
+    if (offline || !navigator.onLine) {
+      setNow(Date.now());
+      setAskOffline(true);
+      return;
+    }
     setBusy(true);
     try {
       const res = await api.ask({
@@ -1181,8 +1256,11 @@ export default function MobileApp() {
       setAnswer(res);
       if (res.language !== language) setLanguage(res.language);
       say("answer", sentences(res.answer).slice(0, 3).join(" "), res.language);
-    } catch {
-      setAskFailed(true);
+    } catch (e) {
+      if (isNetworkFailure(e, navigator.onLine)) {
+        setNow(Date.now());
+        setAskOffline(true);
+      } else setAskFailed(true);
     } finally {
       setBusy(false);
     }
@@ -1309,18 +1387,34 @@ export default function MobileApp() {
       {/* ================= TODAY ================= */}
       {tab === "today" && (
         <main ref={paneRef} className="m-main space-y-3" tabIndex={-1}>
-          {failedNow && (
-            <OfflineNotice
+          {offline ? (
+            <OfflinePlanNotice
               language={language}
-              body={stale ? ERRORS[language].offlineBody : t.offlineFirst}
-              note={stale ? lastReadingNote(stale, language) : undefined}
-              onRetry={() => setAttempt((a) => a + 1)}
+              plan={offlineView ? lastPlan : null}
+              now={now}
+              demo={demoCut}
+              onRetry={() => {
+                // the demo's "try again" reconnects: the next read is live
+                setOfflineDemo(null);
+                setDemoCut(false);
+                setNetDown(false);
+                setAttempt((a) => a + 1);
+              }}
             />
+          ) : (
+            failedNow && (
+              <OfflineNotice
+                language={language}
+                body={stale ? ERRORS[language].offlineBody : t.offlineFirst}
+                note={stale ? lastReadingNote(stale, language) : undefined}
+                onRetry={() => setAttempt((a) => a + 1)}
+              />
+            )
           )}
 
-          {!outlook && failedNow && locationNotice}
+          {!outlook && (failedNow || offline) && locationNotice}
 
-          {!outlook && !failedNow && <TodayDraft label={place ? t.reading : t.locating} />}
+          {!outlook && !failedNow && !offline && <TodayDraft label={place ? t.reading : t.locating} />}
 
           {outlook && (
             <>
@@ -1328,7 +1422,7 @@ export default function MobileApp() {
                 outlook={outlook}
                 language={language}
                 t={t}
-                updating={!current && !failedNow}
+                updating={!current && !failedNow && !offline}
                 stale={staleShown}
                 speaking={speakingId === "plan"}
                 canSpeak={canSpeak}
@@ -1623,6 +1717,17 @@ export default function MobileApp() {
                 <span className="m-dot" />
                 <span className="m-dot" />
               </div>
+            )}
+
+            {askOffline && question && (
+              <AskOfflineNotice
+                language={language}
+                plan={lastPlan}
+                now={now}
+                todayLabel={t.today}
+                onOpenPlan={() => setTab("today")}
+                onRetry={() => void sendAsk(question)}
+              />
             )}
 
             {askFailed && question && (

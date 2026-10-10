@@ -100,6 +100,7 @@ describe("deep links", () => {
       demo: null,
       tour: false,
       drill: null,
+      offline: null,
     });
   });
 
@@ -123,8 +124,19 @@ describe("deep links", () => {
       demo: null,
       tour: false,
       drill: null,
+      offline: null,
     });
     expect(readBootParams("?at=18.95").at).toBeNull();
+  });
+
+  it("reads the offline demo as whole minutes, up to a week", () => {
+    expect(readBootParams("?m=1&offline=90").offline).toBe(90);
+    expect(readBootParams("?offline=200").offline).toBe(200);
+    expect(readBootParams("?offline=0").offline).toBe(0);
+    expect(readBootParams("?offline=10080").offline).toBe(10080);
+    for (const bad of ["", "-5", "1.5", "abc", "90min", "10081", "999999"])
+      expect(readBootParams(`?offline=${bad}`).offline, bad).toBeNull();
+    expect(readBootParams("?m=1").offline).toBeNull();
   });
 });
 

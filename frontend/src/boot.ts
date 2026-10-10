@@ -48,6 +48,18 @@ export interface BootParams {
   tour: boolean;
   /** `?drill=` — the rehearsed marine feed's health, for the safety-gate demo. */
   drill: DataDrill | null;
+  /**
+   * `?offline=<minutes>` — the phone behaves as if the network is down and its
+   * saved plan is that many minutes old (the offline demo; see offline.ts).
+   */
+  offline: number | null;
+}
+
+/** Whole minutes, 0 to a week; anything else is not an offline demo. */
+function offlineMinutes(v: string | null): number | null {
+  if (v == null || !/^\d{1,5}$/.test(v.trim())) return null;
+  const n = Number(v.trim());
+  return n <= 7 * 24 * 60 ? n : null;
 }
 
 /** Everything a deep link can ask for, parsed from `location.search`. */
@@ -68,6 +80,7 @@ export function readBootParams(search: string): BootParams {
       drill === "healthy" || drill === "stale" || drill === "unavailable" || drill === "recovery"
         ? drill
         : null,
+    offline: offlineMinutes(params.get("offline")),
   };
 }
 
