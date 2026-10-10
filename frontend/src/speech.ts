@@ -19,8 +19,15 @@ export interface SpeechRecognitionLike {
   abort?(): void;
 }
 
+/** One recognition result: its alternatives, best first. */
+export interface SpeechResultLike extends ArrayLike<{ transcript: string }> {
+  isFinal?: boolean;
+}
+
 export interface SpeechResultEvent {
-  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+  /** The first entry of `results` this event changed. */
+  resultIndex?: number;
+  results: ArrayLike<SpeechResultLike>;
 }
 
 /** `error` is one of the Web Speech error codes ("no-speech", "not-allowed"…). */
@@ -47,6 +54,111 @@ export function speechRecognitionSupported(): boolean {
 export function getRecognition(): SpeechRecognitionLike | null {
   const Ctor = recognitionCtor();
   return Ctor ? new Ctor() : null;
+}
+
+const squash = (s: string) => s.replace(/\s+/g, " ").trim();
+
+/**
+ * Adds one piece of heard text to what was heard so far. Browsers disagree on
+ * how they report one utterance: Android Chrome re-sends it as it grows ("is",
+ * "is it", "is it safe"), desktop Chrome sends distinct segments. A piece that
+ * starts with the text so far replaces it; a shorter repeat is dropped;
+ * anything else is a new segment, joined with a space.
+ */
+function addHeard(soFar: string, next: string): string {
+  const piece = squash(next);
+  if (!piece) return soFar;
+  if (!soFar) return piece;
+  const a = soFar.toLowerCase();
+  const b = piece.toLowerCase();
+  if (b.startsWith(a)) return piece;
+  if (a.startsWith(b)) return soFar;
+  return `${soFar} ${piece}`;
+}
+
+/** The best transcript of a results list: each result's first alternative, merged. */
+export function transcriptOf(results: ArrayLike<SpeechResultLike>): string {
+  let text = "";
+  for (let i = 0; i < results.length; i += 1) {
+    text = addHeard(text, results[i]?.[0]?.transcript ?? "");
+  }
+  return text;
+}
+
+export interface ListenHandlers {
+  /** What has been heard so far, while still listening. */
+  onPartial?: (text: string) => void;
+  /** The whole question, once, when listening is over. */
+  onFinal: (text: string) => void;
+  /** Listening ended on its own and nothing was heard. */
+  onNothing?: () => void;
+  /** The recognizer failed (a Web Speech error code); nothing is sent. */
+  onError?: (code: string | undefined) => void;
+  /** Listening is over, whatever the outcome. Called once. */
+  onEnd?: () => void;
+}
+
+export interface ListenSession {
+  /** The fisher's STOP: the browser hands over what it heard, and that is sent. */
+  stop(): void;
+  /** Walk away: nothing more is sent or reported. */
+  abort(): void;
+}
+
+/**
+ * Wires a recognizer to take exactly one question. Every result event only
+ * updates the best transcript; the question is sent once, when the recognizer
+ * ends. It is not sent on the first "final" result, because Android Chrome
+ * marks each growing transcript final and that would send "is". The caller
+ * sets `lang` and calls `start()`.
+ */
+export function listenOnce(rec: SpeechRecognitionLike, h: ListenHandlers): ListenSession {
+  let best = "";
+  let done = false; // the question was sent, or listening failed or was abandoned
+  let stopped = false; // the fisher pressed STOP
+  let ended = false;
+
+  const finish = () => {
+    if (ended) return;
+    ended = true;
+    h.onEnd?.();
+  };
+
+  rec.interimResults = false;
+  rec.maxAlternatives = 1;
+  rec.onresult = (e) => {
+    if (done) return;
+    const next = addHeard(best, transcriptOf(e.results));
+    if (next === best) return;
+    best = next;
+    h.onPartial?.(best);
+  };
+  rec.onerror = (e) => {
+    if (done) return;
+    done = true;
+    h.onError?.(e?.error);
+    finish();
+  };
+  rec.onend = () => {
+    if (!done) {
+      done = true;
+      if (best) h.onFinal(best);
+      else if (!stopped) h.onNothing?.();
+    }
+    finish();
+  };
+
+  return {
+    stop() {
+      stopped = true;
+      rec.stop();
+    },
+    abort() {
+      done = true;
+      if (rec.abort) rec.abort();
+      else rec.stop();
+    },
+  };
 }
 
 /** Whether this browser can read an answer aloud. */

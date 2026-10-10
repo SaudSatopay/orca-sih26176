@@ -6,9 +6,10 @@ import { PLACEHOLDER, T } from "../i18n/chat";
 import { ERRORS } from "../i18n/errors";
 import {
   getRecognition,
+  listenOnce,
   SPEECH_LOCALE,
   speechRecognitionSupported,
-  type SpeechRecognitionLike,
+  type ListenSession,
 } from "../speech";
 
 /**
@@ -45,7 +46,7 @@ export default function ChatPanel({
   const [text, setText] = useState("");
   const [listening, setListening] = useState(false);
   const [speechSupported] = useState(speechRecognitionSupported);
-  const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const recRef = useRef<ListenSession | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   // Messages already in the log when it was opened do not rise again.
@@ -75,6 +76,9 @@ export default function ChatPanel({
     setListening(false);
   };
 
+  // Leaving the panel must not leave the microphone open, or send later.
+  useEffect(() => () => recRef.current?.abort(), []);
+
   const toggleMic = () => {
     if (listening) {
       stopMic();
@@ -83,17 +87,16 @@ export default function ChatPanel({
     const rec = getRecognition();
     if (!rec) return;
     rec.lang = SPEECH_LOCALE[language];
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    rec.onresult = (e) => {
-      const said = e.results[0][0].transcript;
-      setText(said);
-      setListening(false);
-      submit(said);
-    };
-    rec.onerror = () => setListening(false);
-    rec.onend = () => setListening(false);
-    recRef.current = rec;
+    // One spoken question is sent once, whole, when listening ends; what has
+    // been heard so far shows in the field meanwhile.
+    recRef.current = listenOnce(rec, {
+      onPartial: setText,
+      onFinal: (said) => {
+        setText(said);
+        submit(said);
+      },
+      onEnd: () => setListening(false),
+    });
     rec.start();
     setListening(true);
   };

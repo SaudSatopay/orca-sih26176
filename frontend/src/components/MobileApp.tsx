@@ -52,12 +52,13 @@ import { RATING_COLOR, RATING_INK, RISK_BANDS, RISK_COLOR, RISK_INK } from "../r
 import {
   askInput,
   getRecognition,
+  listenOnce,
   listenProblem,
   SPEECH_LOCALE,
   speechRecognitionSupported,
   speechSynthesisSupported,
   type ListenProblem,
-  type SpeechRecognitionLike,
+  type ListenSession,
 } from "../speech";
 import { alpha, ink, paper } from "../tokens";
 import "./mobile.css";
@@ -854,7 +855,7 @@ export default function MobileApp() {
   const [listening, setListening] = useState(false);
   const [listenIssue, setListenIssue] = useState<ListenProblem | null>(null);
   const [typed, setTyped] = useState("");
-  const recRef = useRef<SpeechRecognitionLike | null>(null);
+  const recRef = useRef<ListenSession | null>(null);
   const paneRef = useRef<HTMLElement>(null);
 
   // ---------------------------------------------------------------- boot
@@ -1041,7 +1042,7 @@ export default function MobileApp() {
   useEffect(
     () => () => {
       if (speechSynthesisSupported()) window.speechSynthesis.cancel();
-      recRef.current?.abort?.();
+      recRef.current?.abort();
     },
     [],
   );
@@ -1142,22 +1143,18 @@ export default function MobileApp() {
     hush();
     setListenIssue(null);
     rec.lang = SPEECH_LOCALE[language];
-    rec.interimResults = false;
-    rec.maxAlternatives = 1;
-    rec.onresult = (e) => {
-      setListening(false);
-      const heard = e.results[0]?.[0]?.transcript.trim();
-      if (heard) void sendAsk(heard);
-      else setListenIssue("no-speech");
-    };
-    rec.onerror = (e) => {
-      setListening(false);
-      const problem = listenProblem(e?.error);
-      if (problem === "blocked") setMicBlocked(true);
-      setListenIssue(problem);
-    };
-    rec.onend = () => setListening(false);
-    recRef.current = rec;
+    // One spoken question is asked once, whole, when listening ends — never
+    // once per word, however the phone reports what it heard.
+    recRef.current = listenOnce(rec, {
+      onFinal: (heard) => void sendAsk(heard),
+      onNothing: () => setListenIssue("no-speech"),
+      onError: (code) => {
+        const problem = listenProblem(code);
+        if (problem === "blocked") setMicBlocked(true);
+        setListenIssue(problem);
+      },
+      onEnd: () => setListening(false),
+    });
     try {
       rec.start();
       setListening(true);
