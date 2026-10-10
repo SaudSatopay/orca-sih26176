@@ -82,6 +82,7 @@ class DataHealth(BaseModel):
     critical: bool
     usable: bool                                   # may a decision rest on it?
     detail: str = ""                               # why, in the reader's language
+    note: Optional[str] = None                     # "reconnected" | "standin"
     mode: DataMode = "DEMO"
 
 

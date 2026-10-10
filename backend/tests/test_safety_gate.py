@@ -189,3 +189,160 @@ def test_every_safety_agent_reports_its_inputs():
 def test_agents_write_the_health_in_the_readers_language():
     h = ocean_agent.run(GOA, now(), "mr").health[0]
     assert h.label == "लाटांची उंची" and "मिनिटे" in h.detail
+
+
+# ---- the gate's table: deterministic, small, explicit ------------------------
+
+import re  # noqa: E402
+
+from app.schemas import RiskAssessment  # noqa: E402
+from app.services import safety_gate  # noqa: E402
+
+GOA_Q = "Is it safe to go fishing tomorrow morning near Goa?"
+MUMBAI_6AM = "Can I go fishing tomorrow at 6 AM near Mumbai?"
+PARADIP = "Is there a cyclone near Paradip? Can I go fishing?"
+
+
+def _risk(go=True):
+    return RiskAssessment(score=9 if go else 70, category="LOW" if go else "HIGH",
+                          factors=[], go=go, official_warning=not go)
+
+
+def _health(**status_by_input):
+    """A full, healthy set of records, with some inputs forced to a status."""
+    records = [data_health.check(k, _feed(60), now()) for k in ("wave", "wind", "warnings",
+                                                                  "rain", "current")]
+    records.append(data_health.check("position", feeds.chart_feed(), now()))
+    out = []
+    for h in data_health.complete(records):
+        status = status_by_input.get(h.input)
+        if status:
+            h = h.model_copy(update={"status": status, "usable": status in ("FRESH", "STALE"),
+                                     "age_seconds": 4 * 3600 + 600 if status == "STALE"
+                                     else h.age_seconds})
+        out.append(h)
+    return out
+
+
+@pytest.mark.parametrize("go,forced,state,confidence", [
+    (True, {}, "GO", "normal"),
+    (True, {"wave": "STALE"}, "CAUTION", "degraded"),
+    (True, {"wave": "MISSING"}, "INSUFFICIENT_DATA", "insufficient"),
+    (True, {"warnings": "MISSING"}, "INSUFFICIENT_DATA", "insufficient"),
+    (True, {"wind": "ERROR"}, "INSUFFICIENT_DATA", "insufficient"),
+    (True, {"wave": "STALE", "wind": "MISSING"}, "INSUFFICIENT_DATA", "insufficient"),
+    (True, {"rain": "MISSING", "current": "MISSING"}, "GO", "normal"),  # supporting only
+    (False, {}, "NO_GO", "normal"),
+    (False, {"wave": "MISSING"}, "NO_GO", "insufficient"),
+    (False, {"wind": "STALE"}, "NO_GO", "degraded"),
+])
+def test_the_gate_table(go, forced, state, confidence):
+    d = safety_gate.decide(_risk(go), _health(**forced), now())
+    assert (d.state, d.confidence, d.risk_go) == (state, confidence, go)
+
+
+def test_go_needs_every_critical_input_fresh():
+    for key in config.DATA_HEALTH.critical_inputs():
+        for status in ("STALE", "MISSING", "ERROR"):
+            d = safety_gate.decide(_risk(True), _health(**{key: status}), now())
+            assert d.state != "GO", (key, status)
+
+
+def test_an_unreported_critical_input_blocks_like_a_missing_one():
+    only_wave = [data_health.check("wave", _feed(60), now())]
+    d = safety_gate.decide(_risk(True), only_wave, now())
+    assert d.state == "INSUFFICIENT_DATA"
+    assert d.blocking_inputs == ["wind", "warnings", "position"]
+
+
+def test_no_risk_result_is_insufficient_never_go():
+    d = safety_gate.decide(None, _health(), now())
+    assert (d.state, d.risk_go) == ("INSUFFICIENT_DATA", None)
+
+
+def test_the_gate_never_touches_the_risk_assessment():
+    risk = _risk(True)
+    before = risk.model_dump()
+    safety_gate.decide(risk, _health(wave="MISSING"), now())
+    assert risk.model_dump() == before
+
+
+# ---- the four required scenarios ------------------------------------------------
+
+def test_scenario_1_healthy_data_keeps_the_existing_verdict(ask):
+    r = ask(GOA_Q)
+    assert (r.risk.score, r.risk.category, r.risk.go) == (9, "LOW", True)
+    assert (r.decision.state, r.decision.confidence) == ("GO", "normal")
+    assert r.decision.blocking_inputs == [] and r.decision.stale_inputs == []
+    assert len(r.data_health) == 6 and all(h.status == "FRESH" for h in r.data_health)
+    labels = [e.label for e in r.evidence]
+    assert "Safety gate" in labels and "Freshness · Wave height" in labels
+    assert r.answer.startswith("Conditions look safe. Risk score: 9/100.")
+
+
+def test_scenario_2_stale_marine_data_is_not_presented_as_fresh(ask):
+    feeds.set_drill("stale")
+    r = ask(GOA_Q)
+    assert (r.decision.state, r.decision.confidence) == ("CAUTION", "degraded")
+    assert r.decision.stale_inputs == ["wave"]
+    assert r.risk.score == 9                     # the same sea, the same number
+    assert any("4 h 10 min" in reason for reason in r.decision.reasons)
+    assert r.answer.startswith("Caution")
+    wave = next(h for h in r.data_health if h.input == "wave")
+    assert (wave.status, wave.age_seconds, wave.usable) == ("STALE", 4 * 3600 + 600, True)
+
+
+def test_scenario_3_missing_marine_data_fails_safe_and_invents_nothing(ask):
+    feeds.set_drill("unavailable")
+    r = ask(GOA_Q)
+    assert (r.decision.state, r.decision.confidence) == ("INSUFFICIENT_DATA", "insufficient")
+    assert r.decision.blocking_inputs == ["wave"]
+    labels = [e.label for e in r.evidence]
+    assert "Wave height" not in labels, "no wave reading may be invented"
+    assert "Risk score" not in r.answer
+    assert "official advisory" in r.answer.lower()
+    assert next(t for t in r.trace if t.agent == "ocean").status == "degraded"
+    wave = next(h for h in r.data_health if h.input == "wave")
+    assert (wave.status, wave.available, wave.observed_at) == ("MISSING", False, None)
+
+
+def test_scenario_4_recovery_returns_to_normal_without_a_restart(ask):
+    feeds.set_drill("unavailable")
+    assert ask(GOA_Q).decision.state == "INSUFFICIENT_DATA"
+    feeds.set_drill("recovery")                  # same process, same chat session
+    r = ask(GOA_Q)
+    assert (r.decision.state, r.decision.confidence) == ("GO", "normal")
+    assert (r.risk.score, r.risk.category) == (9, "LOW")
+    assert any("reconnected" in reason for reason in r.decision.reasons)
+
+
+# ---- the law: no data problem can lower an official-warning floor ---------------
+
+@pytest.mark.parametrize("drill", list(feeds.DRILLS))
+@pytest.mark.parametrize("question,score,category", [
+    (MUMBAI_6AM, 70, "HIGH"), (PARADIP, 92, "EXTREME")])
+def test_official_warning_floors_hold_under_every_drill(ask, drill, question, score, category):
+    feeds.set_drill(drill)
+    r = ask(question)
+    assert (r.risk.score, r.risk.category) == (score, category)
+    assert r.risk.official_warning and r.risk.overrides
+    assert r.decision.state == "NO_GO"
+
+
+# ---- every word of the gate in the reader's language -----------------------------
+
+ALLOWED = {"ORCA", "IMD", "INCOIS", "MOSDAC", "ISRO", "OpenStreetMap", "Open-Meteo",
+           "Marine", "PFZ", "IST", "km", "m", "h", "s", "mg", "C"}
+
+
+@pytest.mark.parametrize("lang", ["hi", "mr"])
+@pytest.mark.parametrize("drill", list(feeds.DRILLS))
+def test_the_gate_speaks_the_readers_language(ask, lang, drill):
+    feeds.set_drill(drill)
+    r = ask(GOA_Q, language=lang)
+    texts = [r.decision.headline, *r.decision.reasons, r.answer,
+             *(e.value for e in r.evidence), *(e.source for e in r.evidence),
+             *(h.label for h in r.data_health), *(h.detail for h in r.data_health)]
+    for text in texts:
+        leftover = set(re.findall(r"[A-Za-z][A-Za-z\-]*", text)) - ALLOWED
+        assert not leftover, f"{drill}/{lang}: untranslated {sorted(leftover)} in {text!r}"

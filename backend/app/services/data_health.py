@@ -48,7 +48,7 @@ def check(input_key: str, feed: FeedStatus, now: datetime, *, lang: Language = "
     base = dict(input=input_key, label=i18n.t(f"dhi_{input_key}", lang),
                 source=i18n.source_label(feed.source, lang), feed=policy.feed,
                 freshness_limit_seconds=limit, max_age_seconds=max_age,
-                critical=policy.critical,
+                critical=policy.critical, note=feed.note,
                 mode="LIVE" if mode == "LIVE" and feed.source == "OPEN_METEO" else "DEMO")
 
     def record(status: str, usable: bool, detail: str, *, available: bool = True,

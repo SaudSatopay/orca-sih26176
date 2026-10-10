@@ -8,10 +8,11 @@ invent a number, because it never sees free text — only typed measurements.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
-from ..schemas import (AgentResult, Evidence, Language, Location, PFZZone,
-                       RiskAssessment, RouteOption)
+from ..schemas import (AgentResult, DataHealth, Evidence, Language, Location, PFZZone,
+                       RiskAssessment, RouteOption, SafetyDecision)
+from ..services import safety_gate
 from ..services.i18n import (SEA_STATE_L10N, SUGGESTIONS, direction, format_stamp,
                              humanise_duration, sea_state, source_label, t, verdict_key,
                              zone_name)
@@ -109,12 +110,27 @@ def build_evidence(weather: Dict, ocean: Dict, cyclone: Dict, gis: Dict,
 def run(*, intent, risk: Optional[RiskAssessment], pfz: List[PFZZone],
         routes: List[RouteOption], geofence: List, weather: Dict, ocean: Dict,
         cyclone: Dict, gis: Dict, agents: Dict[str, AgentResult],
-        mode: str, when: datetime) -> AgentResult:
+        mode: str, when: datetime, decision: Optional[SafetyDecision] = None,
+        health: Sequence[DataHealth] = ()) -> AgentResult:
     lang: Language = intent.language
     parts: List[str] = []
+    # The safety gate decides how much of the normal answer may be given.
+    # GO, and a NO-GO on clean evidence, keep the answer exactly as it was.
+    state = decision.state if decision else "GO"
+    data_problem = bool(decision and (decision.blocking_inputs or decision.stale_inputs))
+    insufficient = state == "INSUFFICIENT_DATA"
+
+    if insufficient:
+        # No score, no reasons from a model that is missing its inputs, and
+        # nothing that plans a trip: what is missing, and who to listen to.
+        parts.append(decision.headline)  # type: ignore[union-attr]
+        parts.extend(decision.reasons)  # type: ignore[union-attr]
+        parts.append(t("gate_advisory", lang))
+    elif state == "CAUTION":
+        parts.append(decision.headline)  # type: ignore[union-attr]
 
     # ---- WHAT ------------------------------------------------------------
-    if risk is not None:
+    if risk is not None and not insufficient:
         verdict = t(verdict_key(risk.category), lang)
         parts.append(f"{verdict}. {t('risk_score', lang)}: {risk.score}/100.")
 
@@ -137,8 +153,12 @@ def run(*, intent, risk: Optional[RiskAssessment], pfz: List[PFZZone],
             else:
                 parts.append(t("no_improvement", lang))
 
+        # ---- how far the evidence can be trusted ---------------------------
+        if data_problem:
+            parts.extend(decision.reasons)  # type: ignore[union-attr]
+
     # ---- fishing zones ---------------------------------------------------
-    if pfz and intent.intent in ("find_pfz", "route"):
+    if pfz and intent.intent in ("find_pfz", "route") and not insufficient:
         top = pfz[0]
         parts.append(
             f"{t('pfz_intro', lang)}: "
@@ -153,7 +173,7 @@ def run(*, intent, risk: Optional[RiskAssessment], pfz: List[PFZZone],
         parts.append(t("pfz_note", lang))
 
     # ---- route -----------------------------------------------------------
-    if routes:
+    if routes and not insufficient:
         rec = next((r for r in routes if r.recommended), routes[0])
         parts.append(
             f"{t('route_intro', lang)}: "
@@ -178,12 +198,17 @@ def run(*, intent, risk: Optional[RiskAssessment], pfz: List[PFZZone],
 
     answer = " ".join(parts)
 
+    evidence = build_evidence(weather, ocean, cyclone, gis, agents, lang)
+    if decision is not None:
+        # The data-health result rides the same provenance path as every reading.
+        evidence += safety_gate.evidence_rows(decision, health, lang, mode)
+
     return AgentResult(
         agent="explanation",
         ok=True,
         data={
             "answer": answer,
-            "evidence": [e.model_dump() for e in build_evidence(weather, ocean, cyclone, gis, agents, lang)],
+            "evidence": [e.model_dump() for e in evidence],
             "suggestions": SUGGESTIONS.get(lang, SUGGESTIONS["en"]),
             "disclaimer": t("disclaimer", lang),
         },

@@ -24,10 +24,12 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 
 from ..config import get_data_mode
+from ..data import feeds
 from ..data.demo_store import IST, now_ist
 from ..schemas import (AgentTrace, ChatRequest, ChatResponse, Evidence,
                        GeofenceAlert, Intent, Location, PFZZone, RiskAssessment,
                        RouteOption)
+from ..services import data_health, safety_gate
 from ..services.i18n import RISK_BAND, sea_state, t
 from . import (cyclone_agent, explanation_agent, gis_agent, intent_agent,
                ocean_agent, pfz_agent, risk_agent, route_agent, weather_agent)
@@ -38,10 +40,13 @@ _SESSIONS: Dict[str, Intent] = {}
 # One line per agent for the crew trace, in the reader's language (`g`).
 # The intent line stays as the parser wrote it: it is a readback of code names.
 AGENT_SUMMARY = {
-    "weather": lambda d, g: t("trace_weather", g, wind=d.get("wind_speed_kmh"),
-                              rain=d.get("rain_probability_pct")),
-    "ocean": lambda d, g: t("trace_ocean", g, wave=d.get("wave_height_m"),
-                            state=sea_state(d.get("sea_state"), g) if d.get("sea_state") else None),
+    "weather": lambda d, g: (t("trace_weather", g, wind=d.get("wind_speed_kmh"),
+                               rain=d.get("rain_probability_pct"))
+                             if d.get("wind_speed_kmh") is not None
+                             else t("trace_weather_none", g)),
+    "ocean": lambda d, g: (t("trace_ocean", g, wave=d.get("wave_height_m"),
+                             state=sea_state(d.get("sea_state"), g) if d.get("sea_state") else None)
+                           if d.get("wave_height_m") is not None else t("trace_ocean_none", g)),
     "pfz": lambda d, g: t("trace_pfz", g, n=len(d.get("zones", []))),
     "cyclone": lambda d, g: (d.get("headline") or t("trace_no_warning", g)),
     "gis": lambda d, g: t("trace_gis", g, km=d.get("distance_from_shore_km"),
@@ -111,9 +116,9 @@ def handle(req: ChatRequest) -> ChatResponse:
     jobs = {}
     with ThreadPoolExecutor(max_workers=5) as pool:
         if "weather" in needs:
-            jobs["weather"] = pool.submit(weather_agent.run, location, when)
+            jobs["weather"] = pool.submit(weather_agent.run, location, when, lang)
         if "ocean" in needs:
-            jobs["ocean"] = pool.submit(ocean_agent.run, location, when)
+            jobs["ocean"] = pool.submit(ocean_agent.run, location, when, lang)
         if "pfz" in needs:
             jobs["pfz"] = pool.submit(pfz_agent.run, location, when)
         if "cyclone" in needs:
@@ -146,6 +151,12 @@ def handle(req: ChatRequest) -> ChatResponse:
         trace.append(_trace(risk_res, "risk", lang))
         if risk_res.ok:
             risk = RiskAssessment(**risk_res.data)
+
+    # ---- node 3b: the safety gate ----------------------------------------
+    # Is the evidence behind that verdict fresh and complete enough to give it
+    # at normal confidence? Deterministic, and it never alters `risk`.
+    health = data_health.complete([h for r in results.values() for h in r.health], lang=lang)
+    decision = safety_gate.decide(risk, health, now_ist(), lang=lang, drill=feeds.active_drill())
 
     # ---- node 4: pfz list / route ---------------------------------------
     pfz_zones: List[PFZZone] = []
@@ -181,6 +192,7 @@ def handle(req: ChatRequest) -> ChatResponse:
         intent=intent, risk=risk, pfz=pfz_zones, routes=routes, geofence=geofence,
         weather=weather_d, ocean=ocean_d, cyclone=cyclone_d, gis=gis_d,
         agents=agents, mode=mode, when=when,  # type: ignore[arg-type]
+        decision=decision, health=health,
     )
     trace.append(_trace(expl_res, "explanation", lang))
 
@@ -202,6 +214,8 @@ def handle(req: ChatRequest) -> ChatResponse:
         mode=mode,  # type: ignore[arg-type]
         disclaimer=expl_res.data.get("disclaimer", ""),
         elapsed_ms=int((time.perf_counter() - started) * 1000),
+        decision=decision,
+        data_health=health,
     )
 
 
