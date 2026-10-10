@@ -107,3 +107,11 @@ def test_chat_keeps_context_per_session_and_reset_clears_it(client, session_id):
 
 def test_chat_requires_a_message(client):
     assert client.post("/api/chat", json={}).status_code == 422
+
+
+def test_position_check_flags_land_so_the_chart_does_not_recentre_there(client):
+    sea = client.get("/api/position", params={"lat": 18.60, "lon": 72.20}).json()
+    land = client.get("/api/position", params={"lat": 19.30, "lon": 73.20}).json()
+    assert sea["on_land"] is False
+    assert land["on_land"] is True
+    assert land["status"] == "warning"

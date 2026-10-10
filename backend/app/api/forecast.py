@@ -85,7 +85,8 @@ def position(lat: float = Query(...), lon: float = Query(...),
     def named(name) -> str:
         return zone_name(str(name), language)
 
-    if is_on_land(lat, lon):
+    on_land = is_on_land(lat, lon)
+    if on_land:
         status, headline = "warning", t("pos_on_land", language)
     elif data.get("inside_restricted_zone"):
         status, headline = "critical", t("pos_inside", language,
@@ -112,6 +113,8 @@ def position(lat: float = Query(...), lon: float = Query(...),
         "geofence_alerts": data.get("geofence_alerts", []),
         "official_warning_active": cyc.data.get("official_warning_active"),
         "checked_at": dt.isoformat(timespec="seconds"),
+        # The chart re-centres the outlook on a dropped boat only at sea.
+        "on_land": on_land,
     }
 
 
