@@ -8,3 +8,8 @@ __pycache__
 *.pyc
 .env
 .env.local
+
+# Working files that stay on this machine (as in .gitignore)
+/HANDOFF.md
+/MISSILE.md
+/CLAUDE.md
