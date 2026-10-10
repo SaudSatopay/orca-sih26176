@@ -29,6 +29,9 @@ import {
 } from "./todayModel";
 import "./views.css";
 
+/** The verdict dial: wide enough that a two- or three-digit score clears its ring, as in Ask. */
+const DIAL = 124;
+
 /**
  * The hand-drawn mark (and rough-notation) load with the first closed area,
  * not with the sheet. Its own chunk also keeps the kit's token defaults out
@@ -237,12 +240,12 @@ function Advice({
         data-fresh={fresh ? "" : undefined}
       >
         {withheld ? (
-          <div className="flex shrink-0 flex-col items-center gap-1.5" style={{ width: 96 }}>
-            <SonarDial size={96} />
+          <div className="flex shrink-0 flex-col items-center gap-1.5" style={{ width: DIAL }}>
+            <SonarDial size={DIAL} />
             <span className="text-center font-mono text-label leading-snug text-ink-500">{gate.noScore}</span>
           </div>
         ) : (
-          <RiskDial score={data.safety.score} category={data.safety.category} size={96} fresh={fresh} />
+          <RiskDial score={data.safety.score} category={data.safety.category} size={DIAL} fresh={fresh} />
         )}
         <div className="min-w-0 flex-1 basis-[240px]">
           <span className="stamp" style={{ color: verdictInk }}>
